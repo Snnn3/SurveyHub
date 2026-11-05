@@ -3,7 +3,7 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)
 **Course:** CPE 334 Software Engineering, Semester 1/2026
 **Deliverable:** Project Deliverable 1 — Part A (10 points)
-**Document status:** Baseline v3, aligned with team decisions on 5 November 2026
+**Document status:** Baseline v4, aligned with team decisions on 5 November 2026
 **Team:** Worawut Sereethai (67070501040), Chanon Lhumsa-ard (67070501059)
 **Repository:** <https://github.com/Snnn3/SurveyHub>
 
@@ -76,13 +76,14 @@ to open a survey form but forbidden to submit it.
 1. Authentication with login, logout, current-user identity and server-side token revocation.
 2. Two roles with backend-enforced permissions and per-record ownership.
 3. Survey lifecycle: `DRAFT → PUBLISHED → CLOSED`. `CLOSED` is terminal.
-4. Survey authoring: title, description, ordered questions, required flags, single-choice options.
-5. Question types: single-choice and short text in Sprint 1; multi-choice and 1–5 rating in Sprint 2.
+4. Survey authoring: title, description, ordered questions, required flags and type-specific options.
+5. Question types: single-choice and short text in Sprint 1; multi-choice, long text, yes/no, five-point
+   Likert, 1–5 rating, bounded integer and date questions in Sprint 2.
 6. Response collection with validation, duplicate prevention and concurrency protection.
 7. Identified responses in Sprint 1; anonymous responses with identity/answer separation in Sprint 2.
 8. Response eligibility: all authenticated respondents in Sprint 1; an explicit allowlist in Sprint 2.
-9. Aggregate summary: response counts, per-option counts and percentages, rating averages, and
-   unlinked short-text answers.
+9. Aggregate summary: response counts, per-option counts and percentages, rating/integer statistics,
+   date counts and unlinked short- and long-text answers.
 10. Rich analysis, individual response browsing and CSV/JSON export in Sprint 3.
 11. Docker Compose local development from Sprint 1; CI/CD and GCP deployment from Lab 5 onward.
 
@@ -122,6 +123,7 @@ breaking migration. This baseline records the following approved changes:
 |---|---|
 | Added `GET /api/surveys/:id`, `PUT /api/surveys/:id`, `DELETE /api/surveys/:id` | Make draft authoring real and make BR-07 testable |
 | Added `AnswerOption` join table and `Answer.numberValue` | Support multi-choice and rating without redesigning answers later |
+| Expanded F-06 from multi-choice and rating to a defined nine-type catalogue | Give the product useful answer formats while keeping Sprint 1 limited to single-choice and short text; record the additional Sprint 2 scope before implementation (GitHub Issues [#1](https://github.com/Snnn3/SurveyHub/issues/1) and [#9](https://github.com/Snnn3/SurveyHub/issues/9)). |
 | Added `SurveyEligibility` and `ResponseClaim` models | Make eligibility and anonymous duplicate prevention explicit and forward-compatible |
 | Added `User.tokenVersion` and server-side logout | Logout must invalidate the token, not just clear browser state |
 | Added `GET /api/health` | Required for container and cloud health checks |
@@ -158,9 +160,9 @@ Stable IDs are used in Parts B–F. "Sprint" is the planned delivery sprint.
 | **FR-07** | Browse published surveys | A Respondent can list published surveys and see whether they have already submitted. | 1 |
 | **FR-08** | Take and submit survey | A Respondent can open a published survey, answer the questions and submit exactly one response. | 1 |
 | **FR-09** | Persisted confirmation | A successful submission is stored in PostgreSQL and the respondent receives a receipt with response id and timestamp. The receipt can be retrieved later. | 1 |
-| **FR-10** | Aggregate summary | A Survey Owner can view aggregate results for their own survey: total responses, answered count, option counts and percentages, and unlinked text answers. Rating averages are added when rating questions arrive in Sprint 2. | 1 (aggregate) / 2 (rating average) |
+| **FR-10** | Aggregate summary | A Survey Owner can view total responses and per-question answered counts. Choice questions show option counts and percentages; short- and long-text answers appear unlinked; rating and integer questions show count, average, minimum and maximum; date questions show counts by calendar date. Sprint 1 delivers counts, choice summaries and short text; F-06 adds the remaining formats in Sprint 2. | 1 (base) / 2 (F-06 formats) |
 | **FR-11** | Anonymous responses | A survey can run in anonymous mode. Responses are stored without a link to the respondent, while duplicate submission is still prevented. | 2 |
-| **FR-12** | Advanced question types | Multi-choice (with min/max selections) and 1–5 rating questions are supported end to end. | 2 |
+| **FR-12** | Expanded question types | In addition to Sprint 1 single-choice and short text, owners can author and respondents can answer multi-choice, long text, yes/no, five-point Likert, 1–5 rating, bounded integer and date questions. Results preserve the answer type and are included in the owner summary. | 2 |
 | **FR-13** | Export results | A Survey Owner can export their own survey results as CSV and JSON. Anonymous surveys export aggregates only. | 3 |
 | **FR-14** | Eligibility management | A Survey Owner can restrict a survey to an explicit set of eligible respondents. An empty list means all respondents are eligible. | 2 |
 | **FR-15** | Scheduled close | A Survey Owner can set a closing date and time. After that time the survey behaves as closed for submissions. | 2 |
@@ -174,10 +176,10 @@ Stable IDs are used in Parts B–F. "Sprint" is the planned delivery sprint.
 |---|---|---|---|
 | **BR-01** | One response per respondent per survey | A second submission by the same respondent returns `409 DUPLICATE_SUBMISSION`. Exactly one response is stored, including under concurrent requests. Enforced by a service check, a `ResponseClaim` unique constraint and an identified-response unique constraint. | 1 |
 | **BR-02** | Survey state guard | Responses are accepted only while the survey is `PUBLISHED` and, from Sprint 2, before `closesAt`. A `DRAFT` or `CLOSED` survey returns `400 SURVEY_NOT_ACCEPTING_RESPONSES`. | 1 (state) / 2 (scheduled close) |
-| **BR-03** | Answer validation | Every required question must be answered. Each answer must match its question type. A selected option must belong to that question. Text is trimmed, non-empty when required, and at most 2,000 characters. Invalid input returns `400 INVALID_ANSWER` or `400 MISSING_REQUIRED_QUESTIONS`. | 1 |
+| **BR-03** | Answer validation | Every required question must be answered and each answer must use exactly the value shape for its type. Selected options must belong to that question. Short text is trimmed and at most 2,000 characters; long text is trimmed and at most 10,000 characters. Yes/no has exactly one fixed `Yes` or `No` option; Likert has exactly one of five ordered labels; rating is an integer from 1 through 5; integer answers respect any configured minimum and maximum; date answers are calendar dates without a time zone. Invalid input returns `400 INVALID_ANSWER` or `400 MISSING_REQUIRED_QUESTIONS`. Sprint 1 enforces the single-choice and short-text subset. | 1 (subset) / 2 (extensions) |
 | **BR-04** | Survey ownership boundary | Only the owner may read, update, delete, publish, close or summarize a survey. A non-owner receives `403 FORBIDDEN_OWNERSHIP`; an unknown survey id receives `404 NOT_FOUND`. | 1 |
 | **BR-05** | Cross-response privacy | A respondent may retrieve only their own response receipt. Requesting another respondent's receipt returns `403 FORBIDDEN_CROSS_RESPONSE_ACCESS` without returning any answer data. | 1 |
-| **BR-06** | Publish structure | A survey can be published only if it has at least one question, every choice question has at least two options, every rating scale has `1 ≤ scaleMin < scaleMax ≤ 10`, and every prompt is non-empty. Otherwise `400 INVALID_QUESTION_STRUCTURE`. | 1 |
+| **BR-06** | Publish structure | A survey can be published only if it has at least one question and every prompt is non-empty. Single-choice and multi-choice questions have at least two options; multi-choice selection bounds are valid and do not exceed the option count. Yes/no has the fixed `Yes` and `No` options, Likert has five ordered labels, rating uses the fixed 1–5 scale, and configured integer bounds do not contradict each other. Otherwise `400 INVALID_QUESTION_STRUCTURE`. Sprint 1 enforces the single-choice subset. | 1 (subset) / 2 (extensions) |
 | **BR-07** | Immutable structure after publication | Questions and options cannot be added, edited, reordered or removed after publication. `PUT /api/surveys/:id` returns `400 SURVEY_NOT_EDITABLE`. Metadata edits are also blocked in Sprint 1 for simplicity. | 1 |
 | **BR-08** | Response eligibility | Only authenticated users with the `RESPONDENT` role may submit. From Sprint 2, if a survey has eligibility entries, the respondent must be on the list; otherwise `403 NOT_ELIGIBLE`. In Sprint 1 an empty eligibility list means all respondents are eligible. | 1 (role) / 2 (allowlist) |
 | **BR-09** | Terminal closed state | `CLOSED` is terminal. Publishing a published or closed survey, or closing a draft or closed survey, returns `400 INVALID_STATE_TRANSITION`. | 1 |
@@ -274,8 +276,11 @@ local seed.
 
 The Sprint 1 schema already contains the structures needed by later sprints:
 
-- `AnswerOption` join table, so one answer can reference several options for multi-choice.
-- `Answer.numberValue`, so ratings do not need a text hack.
+- `AnswerOption` join table, so one answer can reference several options for multi-choice and one
+  ordered option for yes/no or Likert.
+- `Answer.numberValue` for 1–5 ratings and bounded integer questions; `Answer.dateValue` for dates.
+- `Question.numberMin/numberMax` for optional integer bounds; short and long text share `textValue`
+  with type-specific length limits.
 - `SurveyEligibility`, so eligibility can be switched on without a new table.
 - Nullable `SurveyResponse.respondentId` plus `ResponseClaim`, so anonymous mode does not require a
   breaking migration.
@@ -331,7 +336,7 @@ The course handouts disagree: the group specification and Final Delivery section
 | Q4 | How is logout made real with stateless JWT? | `User.tokenVersion` is embedded in the token and checked on every request. Logout increments it. Old tokens return `401 TOKEN_REVOKED`. |
 | Q5 | Who is eligible in Sprint 1? | Every authenticated `RESPONDENT`. The `SurveyEligibility` table is present but empty, which means "open to all respondents". Sprint 2 adds allowlist management. |
 | Q6 | Does anonymous mode need cryptography? | No. It needs separation: the response row has no user link, the claim row has no response link, and no request metadata is stored. Residual risk: a database administrator could correlate timestamps. That risk is documented rather than overclaimed. |
-| Q7 | How do we model multi-select and ratings without redesigning later? | `AnswerOption` join table for selected options; `Answer.numberValue` for ratings; `Question.scaleMin/scaleMax/minSelections/maxSelections`. |
+| Q7 | How do we model the expanded question types without redesigning later? | `AnswerOption` stores single-choice, multi-choice, yes/no and Likert selections; `Answer.textValue` stores short and long text; `Answer.numberValue` stores ratings and bounded integers; `Answer.dateValue` stores calendar dates. `Question.minSelections/maxSelections` and `numberMin/numberMax` hold type-specific bounds. |
 | Q8 | What is the evidence standard for this project? | Only real command output, commit ids, PR links and screenshots from the submitted release count. Planned checks are labelled PLANNED and are never reported as PASS. |
 | Q9 | The handouts give different video limits. Which do we follow? | 4 minutes unless the TA confirms 10. |
 | Q10 | Student ids end in 9 and 0; why Theme 10? | Theme 10 matches the partner's last digit (0). Theme 9 was also available but Survey was the team's preference. Recorded here as the theme decision. |

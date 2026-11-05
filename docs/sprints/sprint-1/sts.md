@@ -3,7 +3,7 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)\
 **Course:** CPE 334 Software Engineering, Semester 1/2026\
 **Deliverable:** Project Deliverable 1 — Part E (20 points; shared by GitHub Issues [#1](https://github.com/Snnn3/SurveyHub/issues/1) and [#7](https://github.com/Snnn3/SurveyHub/issues/7))\
-**Document status:** Contract baseline v3, aligned with team decisions on 5 November 2026\
+**Document status:** Contract baseline v4, aligned with team decisions on 5 November 2026\
 **Related documents:** [SRS](../../srs.md), [feature inventory](../../features.md), [traceability](../../traceability.md), [system design](../../system-sds.md), [verification plan](../../verification.md)
 
 ## 6. System Endpoint Contract: GET `/api/health`
@@ -156,7 +156,8 @@ reproduced, the team must say so rather than fabricate it.
 |---|---|---|---|
 | v1 | 4 Nov 2026 | Original Thai draft; F-01..F-04 outlined; no edit/delete endpoints; single `selectedOptionId`; client-only logout; fabricated execution log | Superseded |
 | v2 | 5 Nov 2026 | English rewrite; added draft detail/update/delete endpoints; `AnswerOption` and `numberValue`; `ResponseClaim`; `tokenVersion`; corrected BR IDs; defined 40-test plan; removed fabricated evidence | Superseded |
-| v3 | 5 Nov 2026 | Aligned repository paths and issue links with the shared Kanban; included Docker Compose in Sprint 1; documented feature PRs to staging and release PRs to main | Current, pre-implementation |
+| v3 | 5 Nov 2026 | Aligned repository paths and issue links with the shared Kanban; included Docker Compose in Sprint 1; documented feature PRs to staging and release PRs to main | Superseded |
+| v4 | 5 Nov 2026 | Expanded the F-06 answer catalog; aligned rating range to 1–5 and documented text, integer and date value shapes and summaries | Current, pre-implementation |
 
 The version history is kept so the change is visible. Contracts are not silently rewritten after
 implementation.

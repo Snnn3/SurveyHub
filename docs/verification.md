@@ -3,7 +3,7 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)
 **Course:** CPE 334 Software Engineering, Semester 1/2026
 **Deliverable:** Project Deliverable 1 — Part F (20 points)
-**Document status:** Verification guide v3, aligned with team decisions on 5 November 2026
+**Document status:** Verification guide v4, aligned with team decisions on 5 November 2026
 **Related documents:** Part E (contracts and test specifications), Part C (design), Part B (traceability)
 
 > **Status: PLANNED.**
@@ -652,7 +652,7 @@ This section must be truthful at submission time. Replace the placeholders after
 | Item | Status | Detail |
 |---|---|---|
 | F-05 Anonymous mode | Deferred to Sprint 2 | Schema and claim design exist; no anonymous endpoint in Sprint 1 |
-| F-06 Multi-choice and rating | Deferred to Sprint 2 | Schema fields exist; Sprint 1 UI and validation cover single-choice and short text only |
+| F-06 Expanded question types | Deferred to Sprint 2; Issue [#9](https://github.com/Snnn3/SurveyHub/issues/9) | Typed answer fields are designed; Sprint 1 UI and validation cover single-choice and short text only |
 | F-07 Eligibility allowlist and scheduled close | Deferred to Sprint 2 | `SurveyEligibility` table exists; Sprint 1 treats all respondents as eligible; no date picker |
 | F-08 Export, charts, raw-response browser | Deferred to Sprint 3 | Not implemented |
 | Docker Compose local environment | Sprint 1, Issue [#2](https://github.com/Snnn3/SurveyHub/issues/2) | In scope; completion and persistence checks remain PLANNED until executed |

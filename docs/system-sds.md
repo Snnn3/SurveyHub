@@ -3,7 +3,7 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)
 **Course:** CPE 334 Software Engineering, Semester 1/2026
 **Deliverable:** Project Deliverable 1 — Part C (15 points)
-**Document status:** Baseline v3, aligned with team decisions on 5 November 2026
+**Document status:** Baseline v4, aligned with team decisions on 5 November 2026
 **Related documents:** Part A (requirements), Part B (traceability), Part E (feature contracts)
 
 > Status note: this is a design document. It does not claim that the system is implemented or
@@ -96,10 +96,10 @@ boundaries, and no distributed-system overhead for a two-person course project.
 |---|---|---|
 | BR-01 one response per respondent | Pre-check claim, catch `P2002` | `ResponseClaim(survey_id, user_id)` unique; identified `SurveyResponse(survey_id, respondent_id)` unique |
 | BR-02 state guard | Check `status = PUBLISHED` and `closesAt` | No direct constraint; status is an enum |
-| BR-03 answer validation | Validate required, type, option ownership, text length, rating range | `Answer(response_id, question_id)` unique; FKs |
+| BR-03 answer validation | Validate required, exact value shape, option ownership, type-specific text length, rating and integer bounds, date validity | `Answer(response_id, question_id)` unique; FKs |
 | BR-04 ownership | Compare `survey.ownerId` with current user | FK `owner_id` |
 | BR-05 cross-response privacy | Compare `response.respondentId` with current user | FK `respondent_id` |
-| BR-06 publish structure | Validate question count, options, scales, prompts | Service-level only |
+| BR-06 publish structure | Validate question count, type-specific options, selection/integer bounds and prompts | Service-level only |
 | BR-07 immutable structure | Reject update when status is not DRAFT | Service-level only |
 | BR-08 eligibility | Role check; optional allowlist check | `SurveyEligibility(survey_id, user_id)` unique |
 | BR-09 terminal state | State-transition check | Enum status |
@@ -134,9 +134,10 @@ erDiagram
 
 ### 2.2 Design decisions
 
-1. **Answers are generic.** One `Answer` row exists per question per response. Choice answers
-   reference options through `AnswerOption`; text answers use `textValue`; rating answers use
-   `numberValue`. This supports single-choice, multi-choice, text and rating without a schema change.
+1. **Answers are typed.** One `Answer` row exists per question per response. Single-choice,
+   multi-choice, yes/no and Likert answers reference options through `AnswerOption`; short and long
+   text use `textValue`; rating and integer answers use `numberValue`; date answers use `dateValue`.
+   The service validates that each answer has the value shape required by its question type.
 2. **One answer row per question per response.** `Answer(response_id, question_id)` is unique. A
    multi-choice answer still has one `Answer` row and several `AnswerOption` rows.
 3. **Duplicate prevention is separate from response storage.** `ResponseClaim` records that a user
@@ -181,7 +182,12 @@ enum QuestionType {
   SINGLE_CHOICE
   MULTI_CHOICE
   SHORT_TEXT
+  LONG_TEXT
+  YES_NO
+  LIKERT
   RATING
+  INTEGER
+  DATE
 }
 
 model User {
@@ -247,10 +253,10 @@ model Question {
   questionType  QuestionType @map("question_type")
   isRequired    Boolean      @default(true) @map("is_required")
   orderIndex    Int          @default(0) @map("order_index")
-  scaleMin      Int?         @map("scale_min")
-  scaleMax      Int?         @map("scale_max")
   minSelections Int?         @map("min_selections")
   maxSelections Int?         @map("max_selections")
+  numberMin     Int?         @map("number_min")
+  numberMax     Int?         @map("number_max")
 
   options Option[]
   answers Answer[]
@@ -309,6 +315,7 @@ model Answer {
   question    Question       @relation(fields: [questionId], references: [id], onDelete: Restrict)
   textValue   String?        @map("text_value")
   numberValue Int?           @map("number_value")
+  dateValue   DateTime?      @map("date_value") @db.Date
 
   selectedOptions AnswerOption[]
 
@@ -340,21 +347,22 @@ ALTER TABLE surveys
 
 ALTER TABLE questions
   ADD CONSTRAINT question_prompt_length CHECK (char_length(prompt) BETWEEN 1 AND 500),
-  ADD CONSTRAINT question_scale_order CHECK (
-    scale_min IS NULL OR scale_max IS NULL OR (scale_min >= 1 AND scale_min < scale_max AND scale_max <= 10)
-  ),
   ADD CONSTRAINT question_selection_bounds CHECK (
     min_selections IS NULL OR max_selections IS NULL OR
     (min_selections >= 1 AND min_selections <= max_selections)
+  ),
+  ADD CONSTRAINT question_integer_bounds CHECK (
+    number_min IS NULL OR number_max IS NULL OR number_min <= number_max
   );
 
 ALTER TABLE answers
-  ADD CONSTRAINT answer_text_length CHECK (text_value IS NULL OR char_length(text_value) <= 2000),
-  ADD CONSTRAINT answer_rating_range CHECK (number_value IS NULL OR number_value BETWEEN 1 AND 10);
+  ADD CONSTRAINT answer_text_length CHECK (text_value IS NULL OR char_length(text_value) <= 10000);
 ```
 
 These constraints are defence in depth. The service still returns friendly validation messages; the
-database is the last line of defence.
+database is the last line of defence. Type-specific limits remain service-validated: Sprint 1 short
+text is limited to 2,000 characters, Sprint 2 long text to 10,000, rating to 1–5, and integer answers
+to their question's configured bounds.
 
 ### 2.5 Migration and seed strategy
 
@@ -468,7 +476,7 @@ Rules:
 - `message` is safe for end users and never contains SQL, stack traces or secrets.
 - `details` is optional and contains field-level validation messages.
 - HTTP status codes carry the class of error; the `code` is stable for tests and clients.
-- All timestamps are ISO 8601 UTC strings.
+- All timestamps are ISO 8601 UTC strings. Date answers use the date-only `YYYY-MM-DD` form.
 - All ids are UUID strings.
 - JSON request bodies are limited to 100 kB.
 
@@ -503,7 +511,7 @@ Rules:
 | `DUPLICATE_SUBMISSION` | 409 | Claim already exists or unique violation |
 | `SURVEY_NOT_ACCEPTING_RESPONSES` | 400 | Survey is draft, closed or past `closesAt` |
 | `MISSING_REQUIRED_QUESTIONS` | 400 | Required answers absent |
-| `INVALID_ANSWER` | 400 | Wrong type, foreign option, duplicate question, bad rating |
+| `INVALID_ANSWER` | 400 | Wrong value shape, foreign option, duplicate question, invalid type-specific bound or date |
 | `INVALID_QUESTION_STRUCTURE` | 400 | Publish requirements not met |
 | `SURVEY_NOT_EDITABLE` | 400 | Update/delete attempted after publication |
 | `INVALID_STATE_TRANSITION` | 400 | Publish/close transition not allowed |
@@ -681,7 +689,8 @@ This section exists now because the schema must not need a breaking migration la
 ### 7.2 What the owner sees
 
 - Aggregate counts and percentages.
-- Unlinked text answers.
+- Rating and integer statistics and date counts.
+- Unlinked short- and long-text answers.
 - No respondent names, emails or ids.
 - Export for an anonymous survey contains aggregates and unlinked text only.
 
@@ -699,8 +708,7 @@ limitation is disclosed rather than overclaimed.
 
 | Future need | Present in Sprint 1 schema | Later work |
 |---|---|---|
-| Multi-choice | `QuestionType.MULTI_CHOICE`, `AnswerOption`, `minSelections`, `maxSelections` | Validation, UI, summary |
-| Rating | `QuestionType.RATING`, `numberValue`, `scaleMin`, `scaleMax` | Validation, UI, average summary |
+| Expanded question types | `QuestionType`; `AnswerOption`; `textValue`; `numberValue`; `dateValue`; `minSelections`, `maxSelections`, `numberMin`, `numberMax` | Sprint 2 validation, authoring UI, response UI and summary for multi-choice, long text, yes/no, Likert, rating, integer and date |
 | Anonymous mode | `SurveyMode.ANONYMOUS`, nullable `respondentId`, `ResponseClaim` without response link | Endpoints, privacy tests, UI |
 | Eligibility | `SurveyEligibility` table | Management API and UI |
 | Scheduled close | `closesAt` | Date picker and server check |

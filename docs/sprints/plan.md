@@ -3,7 +3,7 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)
 **Course:** CPE 334 Software Engineering, Semester 1/2026
 **Deliverable:** Project Deliverable 1 — Part D (5 points)
-**Document status:** Baseline v3, aligned with team decisions on 5 November 2026
+**Document status:** Baseline v4, aligned with team decisions on 5 November 2026
 **Related documents:** Part A (scope), Part B (features), Part C (design), Part F (verification)
 
 > Status note: this plan starts from the actual situation on 5 November 2026: the engineering
@@ -29,7 +29,7 @@ flowchart LR
 
     subgraph S2["Sprint 2 — Core expansion (29 Nov)"]
         F05["F-05 Anonymous mode"]
-        F06["F-06 Multi-choice & rating"]
+        F06["F-06 Seven additional question types"]
         F07["F-07 Eligibility & scheduled close"]
         L5["Lab 5 — CI/CD, GCP"]
         L6["Lab 6 — Cross-team UAT"]
@@ -52,7 +52,7 @@ flowchart LR
 | Sprint | Dates | Goal | Features | Requirements | Completion outcome |
 |---|---|---|---|---|---|
 | **Sprint 1** | 5–8 Nov 2026 | Working vertical slice through UI, API and database with authentication, ownership and tested rules | F-01, F-02, F-03, F-04 | FR-01..FR-10; BR-01..BR-09; BR-11 (aggregate privacy portion); NFR-SEC-01..04, NFR-PERF-01, NFR-DATA-01 | Feature PRs merged to `sprint-1-staging`; approved release PR to `main`, tag `v0.1.0-sprint1`, tests and demo evidence, D1 PDF |
-| **Sprint 2** | 9–29 Nov 2026 | Complete the core product: anonymous mode, advanced question types, eligibility, deployment and independent UAT | F-05, F-06, F-07 | FR-11, FR-12, FR-14, FR-15; BR-02 (scheduled close), BR-08 (allowlist), BR-10, NFR-PRIV-01 | Deployed integrated release candidate on GCP; D2; Lab 5 and Lab 6 complete |
+| **Sprint 2** | 9–29 Nov 2026 | Complete the core product: anonymous mode, advanced question types, eligibility, deployment and independent UAT | F-05, F-06 ([Issue #9](https://github.com/Snnn3/SurveyHub/issues/9)), F-07 | FR-11, FR-12, FR-14, FR-15; BR-02 (scheduled close), BR-08 (allowlist), BR-10, NFR-PRIV-01 | Deployed integrated release candidate on GCP; D2; Lab 5 and Lab 6 complete |
 | **Sprint 3** | 30 Nov–13 Dec 2026 | Finish analytics/export, harden, fix defects and release the complete product | F-08 plus hardening | FR-13, FR-16; BR-11 (raw/export policy) | Final release, Lab 7 change, final report and video |
 
 ### 2.1 Schedule constraints
@@ -82,7 +82,7 @@ flowchart LR
 ### 3.2 Out of scope for Sprint 1
 
 - Anonymous mode (F-05) — Sprint 2.
-- Multi-choice and rating (F-06) — Sprint 2.
+- Multi-choice, long text, yes/no, Likert, rating, integer and date (F-06) — Sprint 2.
 - Eligibility allowlist management and scheduled close (F-07) — Sprint 2.
 - CSV/JSON export, charts, raw-response browser (F-08) — Sprint 3.
 - CI/CD and GCP deployment — Lab 5, after D1. Docker Compose local setup is included in Sprint 1 Issue [#2](https://github.com/Snnn3/SurveyHub/issues/2).
@@ -171,7 +171,7 @@ The contribution table in Part F records actual work, not this plan.
 |---|---|---|---|---|---|
 | 1 | **Schedule:** implementation starts on 5 Nov with D1 due 8 Nov | High | High | Freeze Sprint 1 scope; build the vertical slice first; no optional UI polish before tests and release | Both |
 | 2 | **Fabricated evidence:** documents claim tests/PRs/screenshots that do not exist | High if not corrected | High | Part F is a verification plan until real runs; every result must include command, commit and output; no placeholder is submitted as PASS | Both |
-| 3 | **Schema rework in Sprint 2:** multi-select, rating or anonymous mode break the model | Medium | High | Forward-compatible schema now: `AnswerOption`, `numberValue`, `SurveyEligibility`, `ResponseClaim`, nullable respondent | Worawut |
+| 3 | **Schema rework in Sprint 2:** expanded answer types or anonymous mode break the model | Medium | High | Define typed storage now: `AnswerOption`, `textValue`, `numberValue`, `dateValue`, numeric bounds, `SurveyEligibility`, `ResponseClaim`, nullable respondent | Worawut |
 | 4 | **Anonymous privacy overclaim:** identity can be correlated | Medium | High | Separate claim and response; no metadata; document residual risk; test `respondent_id IS NULL` and response shape | Both |
 | 5 | **Authorization bypass:** UI-only restrictions | Medium | High | Backend role/ownership guards; API tests for every forbidden operation; never trust hidden controls | Worawut |
 | 6 | **Duplicate race condition:** two simultaneous submissions | Medium | Medium | Service pre-check + unique claim constraint + `P2002` mapping; concurrency test | Worawut |

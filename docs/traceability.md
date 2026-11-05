@@ -3,7 +3,7 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)\
 **Course:** CPE 334 Software Engineering, Semester 1/2026\
 **Deliverable:** Project Deliverable 1 — Part B (10 points across `features.md` and this document)\
-**Document status:** Baseline v3, aligned with team decisions on 5 November 2026\
+**Document status:** Baseline v4, aligned with team decisions on 5 November 2026\
 **Related documents:** [SRS](srs.md), [feature inventory](features.md), [system design](system-sds.md), [Sprint 1 contracts](sprints/sprint-1/README.md), [verification plan](verification.md)
 
 > Status note: every row is a **plan** until actual test evidence for the assessed commit is recorded in Part F. No requirement is marked verified in advance.
@@ -26,9 +26,9 @@ Status values: **PLANNED** (designed, not implemented), **IMPLEMENTED** (code ex
 | **FR-07** | Browse published surveys | F-03 | 1 | AC-F03-01 | STS-F03-01 | PLANNED |
 | **FR-08** | Take and submit survey | F-03 | 1 | AC-F03-03..07, AC-F03-09 | STS-F03-03..07, STS-F03-09 | PLANNED |
 | **FR-09** | Persisted confirmation and receipt retrieval | F-03 | 1 | AC-F03-03, AC-F03-10 | STS-F03-03, STS-F03-10 | PLANNED |
-| **FR-10** | Aggregate summary | F-04 | 1 (aggregate) / 2 (rating average) | AC-F04-01, AC-F04-04 for the Sprint 1 aggregate; rating average in the F-06 contract | STS-F04-01, STS-F04-04 | PLANNED |
+| **FR-10** | Aggregate summary | F-04, F-06 | 1 (base) / 2 (F-06 formats) | AC-F04-01, AC-F04-04; AC-F06-09 | STS-F04-01, STS-F04-04; Sprint 2 STS to be defined | PLANNED |
 | **FR-11** | Anonymous responses | F-05 | 2 | AC-S2-01, AC-PRIV-01 | STS-S2-01, STS-PRIV-01 | DEFERRED |
-| **FR-12** | Multi-choice and rating question types | F-06 | 2 | AC-S2-02 | STS-S2-02 | DEFERRED |
+| **FR-12** | Expanded question types | F-06, [Issue #9](https://github.com/Snnn3/SurveyHub/issues/9) | 2 | AC-F06-01..08 | Sprint 2 STS to be defined before implementation | DEFERRED |
 | **FR-13** | CSV/JSON export | F-08 | 3 | AC-S3-01 | STS-S3-01 | DEFERRED |
 | **FR-14** | Eligibility allowlist | F-07 | 2 | AC-S2-03 | STS-S2-03 | DEFERRED |
 | **FR-15** | Scheduled close | F-07 | 2 | AC-S2-04 | STS-S2-04 | DEFERRED |
@@ -95,6 +95,7 @@ defined in the Sprint 2 and Sprint 3 contracts; they are not claimed as existing
 |---|---|---|---|
 | Added owner detail, update and delete draft endpoints | FR-04, BR-07, F-02 | The previous baseline promised editing but had no endpoint, so BR-07 could not be tested | Part A §3.4; Part C API table; Part E F-02 |
 | Added `AnswerOption` and `numberValue` | FR-12, F-06 | One selected option per answer cannot represent multi-select; ratings need a numeric field | Part C §2; Part A ADR-05 |
+| Expanded F-06 to the nine-type question catalog and fixed type-specific answer rules | FR-12, BR-03, BR-06, F-06 | The previous baseline covered only multi-choice and rating; the expanded product needs explicit answer shapes, bounds and Sprint 2 allocation | Part A §§3–5; Part B §§1.2–1.3; Part C §§2, 8; Part D; GitHub Issues [#1](https://github.com/Snnn3/SurveyHub/issues/1) and [#9](https://github.com/Snnn3/SurveyHub/issues/9) |
 | Added `SurveyEligibility` | FR-14, BR-08, F-07 | Eligibility was missing from the baseline despite the theme's Sprint 1 example | Part A §4; Part C §2 |
 | Added `ResponseClaim` | BR-01, BR-10, F-05 | A nullable `respondentId` does not enforce one response per person in anonymous mode | Part C §2.4 |
 | Added `User.tokenVersion` | FR-01, NFR-SEC-04, F-01 | Logout must invalidate the token, not only clear browser state | Part A ADR-02; Part E F-01 |
@@ -107,7 +108,7 @@ defined in the Sprint 2 and Sprint 3 contracts; they are not claimed as existing
 | Item | Status | Handling |
 |---|---|---|
 | Anonymous mode (F-05) | Not in Sprint 1 | Contract and schema placeholders exist; implementation and privacy audit in Sprint 2 |
-| Multi-choice and rating (F-06) | Not in Sprint 1 | Schema forward-compatible; Sprint 2 |
+| Multi-choice, long text, yes/no, Likert, rating, integer and date (F-06) | Not in Sprint 1 | Sprint 2; Sprint 1 remains single-choice and short text |
 | Eligibility allowlist (F-07) | Not in Sprint 1 | Empty eligibility list means "all respondents" in Sprint 1; management in Sprint 2 |
 | Export (F-08) | Not in Sprint 1 | Sprint 3 |
 | Rate limiting, refresh tokens, password reset | Not planned | Recorded as technical debt in Part F; outside the course baseline |
