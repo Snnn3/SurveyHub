@@ -3,7 +3,7 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)
 **Course:** CPE 334 Software Engineering, Semester 1/2026
 **Deliverable:** Project Deliverable 1 — Part E (20 points)
-**Document status:** Contract baseline v4, aligned with team decisions on 5 November 2026
+**Document status:** Contract baseline v5, aligned with review fixes on 6 November 2026
 **Related documents:** Part A (requirements), Part B (traceability), Part C (system design)
 
 > Status note: these are **pre-implementation contracts**. No acceptance criterion is marked passing.

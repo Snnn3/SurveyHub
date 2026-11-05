@@ -3,49 +3,14 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)\
 **Course:** CPE 334 Software Engineering, Semester 1/2026\
 **Deliverable:** Project Deliverable 1 — Part E (20 points; shared by GitHub Issues [#1](https://github.com/Snnn3/SurveyHub/issues/1) and [#7](https://github.com/Snnn3/SurveyHub/issues/7))\
-**Document status:** Contract baseline v4, aligned with team decisions on 5 November 2026\
+**Document status:** Contract baseline v5, aligned with review fixes on 6 November 2026\
 **Related documents:** [SRS](../../srs.md), [feature inventory](../../features.md), [traceability](../../traceability.md), [system design](../../system-sds.md), [verification plan](../../verification.md)
 
-## 6. System Endpoint Contract: GET `/api/health`
+## 6. Health Endpoint Reference
 
-This endpoint is one of the 16 endpoints in the Part C §4.4 system surface. It is delivered by the
-scaffold (Issue #2) rather than by a Sprint 1 feature, so it has no FR or feature AC of its own. It
-proves that the API process is running and can reach the database.
-
-### 6.1 API specification
-
-#### GET `/api/health` (public)
-
-No authentication. No request body.
-
-Success `200`:
-
-```json
-{
-  "success": true,
-  "data": { "status": "ok", "database": "up" }
-}
-```
-
-Failure `503` when the database check fails:
-
-```json
-{
-  "success": false,
-  "error": {
-    "code": "SERVICE_UNAVAILABLE",
-    "message": "Database connection failed."
-  }
-}
-```
-
-Rules:
-
-- The handler runs a trivial `SELECT 1`; it returns no table names, row data or credentials.
-- The response exposes no version, host, environment variable or stack trace.
-- The endpoint is public so a load balancer or container probe can call it.
-- The health check is verified by the Issue #2 acceptance criteria, not by the 40 feature tests below.
-  Its latency is not used as evidence for NFR-PERF-01.
+The scaffold's public `GET /api/health` contract is defined in [Part C §4.4](../../system-sds.md#44-endpoint-table).
+Issue [#2](https://github.com/Snnn3/SurveyHub/issues/2) verifies it; it is outside the feature-test
+count below and its latency is not evidence for NFR-PERF-01.
 
 ---
 
@@ -158,6 +123,7 @@ reproduced, the team must say so rather than fabricate it.
 | v2 | 5 Nov 2026 | English rewrite; added draft detail/update/delete endpoints; `AnswerOption` and `numberValue`; `ResponseClaim`; `tokenVersion`; corrected BR IDs; defined 40-test plan; removed fabricated evidence | Superseded |
 | v3 | 5 Nov 2026 | Aligned repository paths and issue links with the shared Kanban; included Docker Compose in Sprint 1; documented feature PRs to staging and release PRs to main | Superseded |
 | v4 | 5 Nov 2026 | Expanded the F-06 answer catalog; aligned rating range to 1–5 and documented text, integer and date value shapes and summaries | Current, pre-implementation |
+| v5 | 6 Nov 2026 | Moved the health endpoint contract to Part C; added shared unit and E2E tests to traceability; kept all F-06 acceptance criteria deferred under FR-12 | Current, pre-implementation |
 
 The version history is kept so the change is visible. Contracts are not silently rewritten after
 implementation.

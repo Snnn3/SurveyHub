@@ -3,7 +3,7 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)
 **Course:** CPE 334 Software Engineering, Semester 1/2026
 **Deliverable:** Project Deliverable 1 — Part A (10 points)
-**Document status:** Baseline v4, aligned with team decisions on 5 November 2026
+**Document status:** Baseline v5, aligned with the reviewed draft-lifecycle scope on 6 November 2026
 **Team:** Worawut Sereethai (67070501040), Chanon Lhumsa-ard (67070501059)
 **Repository:** <https://github.com/Snnn3/SurveyHub>
 
@@ -153,7 +153,7 @@ Stable IDs are used in Parts B–F. "Sprint" is the planned delivery sprint.
 |---|---|---|---|
 | **FR-01** | Authentication and logout | A user can log in with email and password, receives a JWT, and can log out. Logout revokes existing tokens for that account. | 1 |
 | **FR-02** | Current user and role | `GET /api/auth/me` returns the authenticated user's id, email, full name and role, and never returns the password hash. | 1 |
-| **FR-03** | Create survey draft | A Survey Owner can create a survey with a title, optional description and an ordered set of questions. The new survey is always `DRAFT`. | 1 |
+| **FR-03** | Manage survey drafts | A Survey Owner can list and read their surveys, create a survey with a title, optional description and ordered questions, and delete a survey while it is `DRAFT`. A new survey is always `DRAFT`. | 1 |
 | **FR-04** | Author and edit draft questions | A Survey Owner can add, edit, reorder and remove questions and options while the survey is `DRAFT`. | 1 |
 | **FR-05** | Publish survey | A Survey Owner can publish their own valid draft. The status becomes `PUBLISHED` and `publishedAt` is recorded. | 1 |
 | **FR-06** | Close survey | A Survey Owner can close their own published survey. The status becomes `CLOSED` and `closedAt` is recorded. | 1 |

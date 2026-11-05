@@ -3,7 +3,7 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)
 **Course:** CPE 334 Software Engineering, Semester 1/2026
 **Deliverable:** Project Deliverable 1 — Part C (15 points)
-**Document status:** Baseline v4, aligned with team decisions on 5 November 2026
+**Document status:** Baseline v5, includes the health endpoint contract on 6 November 2026
 **Related documents:** Part A (requirements), Part B (traceability), Part E (feature contracts)
 
 > Status note: this is a design document. It does not claim that the system is implemented or
@@ -493,6 +493,7 @@ Rules:
 | 404 | Record not found |
 | 409 | Duplicate submission |
 | 500 | Unexpected server error; generic message only |
+| 503 | Database readiness check failed |
 
 ### 4.3 Error codes
 
@@ -515,6 +516,7 @@ Rules:
 | `INVALID_QUESTION_STRUCTURE` | 400 | Publish requirements not met |
 | `SURVEY_NOT_EDITABLE` | 400 | Update/delete attempted after publication |
 | `INVALID_STATE_TRANSITION` | 400 | Publish/close transition not allowed |
+| `SERVICE_UNAVAILABLE` | 503 | Database connectivity check failed at the health endpoint |
 | `INTERNAL_ERROR` | 500 | Unhandled error |
 
 ### 4.4 Endpoint table
@@ -542,6 +544,33 @@ All endpoints except login and health require `Authorization: Bearer <token>`.
 
 Route registration order: `/api/surveys/active` must be registered before `/api/surveys/:id` so the
 literal path is not captured as an id.
+
+#### `GET /api/health`
+
+This public endpoint is used by local containers and deployment probes to check API and database
+readiness. It requires no authentication and has no request body. The handler runs `SELECT 1` and
+exposes no table data, credentials, version, host, environment variables or stack trace.
+
+Success `200`:
+
+```json
+{
+  "success": true,
+  "data": { "status": "ok", "database": "up" }
+}
+```
+
+Database check failure `503`:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "SERVICE_UNAVAILABLE",
+    "message": "Database connection failed."
+  }
+}
+```
 
 ### 4.5 Validation approach
 

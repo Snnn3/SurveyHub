@@ -3,7 +3,7 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)\
 **Course:** CPE 334 Software Engineering, Semester 1/2026\
 **Deliverable:** Project Deliverable 1 — Part B (10 points across `features.md` and this document)\
-**Document status:** Baseline v4, aligned with team decisions on 5 November 2026\
+**Document status:** Baseline v5, aligned with the reviewed traceability on 6 November 2026\
 **Related documents:** [SRS](srs.md), [feature inventory](features.md), [system design](system-sds.md), [Sprint 1 contracts](sprints/sprint-1/README.md), [verification plan](verification.md)
 
 > Status note: every row is a **plan** until actual test evidence for the assessed commit is recorded in Part F. No requirement is marked verified in advance.
@@ -19,16 +19,16 @@ Status values: **PLANNED** (designed, not implemented), **IMPLEMENTED** (code ex
 |---|---|---|---|---|---|---|
 | **FR-01** | Login, logout and token revocation | F-01 | 1 | AC-F01-01..05 | STS-F01-01..05 | PLANNED |
 | **FR-02** | Current user and role, no password hash exposure | F-01 | 1 | AC-F01-03, AC-F01-06 | STS-F01-03, STS-F01-06 | PLANNED |
-| **FR-03** | Create survey draft | F-02 | 1 | AC-F02-02 | STS-F02-02 | PLANNED |
+| **FR-03** | Manage survey drafts | F-02 | 1 | AC-F02-01..03, AC-F02-05 | STS-F02-01..03, STS-F02-05 | PLANNED |
 | **FR-04** | Author and edit draft questions | F-02 | 1 | AC-F02-04, AC-F02-10 | STS-F02-04, STS-F02-10 | PLANNED |
 | **FR-05** | Publish survey | F-02 | 1 | AC-F02-06, AC-F02-07 | STS-F02-06, STS-F02-07 | PLANNED |
 | **FR-06** | Close survey | F-02 | 1 | AC-F02-08, AC-F02-11 | STS-F02-08, STS-F02-11 | PLANNED |
-| **FR-07** | Browse published surveys | F-03 | 1 | AC-F03-01 | STS-F03-01 | PLANNED |
+| **FR-07** | Browse published surveys and load a survey form | F-03 | 1 | AC-F03-01, AC-F03-02 | STS-F03-01, STS-F03-02 | PLANNED |
 | **FR-08** | Take and submit survey | F-03 | 1 | AC-F03-03..07, AC-F03-09 | STS-F03-03..07, STS-F03-09 | PLANNED |
 | **FR-09** | Persisted confirmation and receipt retrieval | F-03 | 1 | AC-F03-03, AC-F03-10 | STS-F03-03, STS-F03-10 | PLANNED |
-| **FR-10** | Aggregate summary | F-04, F-06 | 1 (base) / 2 (F-06 formats) | AC-F04-01, AC-F04-04; AC-F06-09 | STS-F04-01, STS-F04-04; Sprint 2 STS to be defined | PLANNED |
+| **FR-10** | Aggregate summary (Sprint 1 formats) | F-04 | 1 | AC-F04-01..04 | STS-F04-01..04 | PLANNED |
 | **FR-11** | Anonymous responses | F-05 | 2 | AC-S2-01, AC-PRIV-01 | STS-S2-01, STS-PRIV-01 | DEFERRED |
-| **FR-12** | Expanded question types | F-06, [Issue #9](https://github.com/Snnn3/SurveyHub/issues/9) | 2 | AC-F06-01..08 | Sprint 2 STS to be defined before implementation | DEFERRED |
+| **FR-12** | Expanded question types and type-aware summary | F-06, [Issue #9](https://github.com/Snnn3/SurveyHub/issues/9) | 2 | AC-F06-01..09 | Sprint 2 STS to be defined before implementation | DEFERRED |
 | **FR-13** | CSV/JSON export | F-08 | 3 | AC-S3-01 | STS-S3-01 | DEFERRED |
 | **FR-14** | Eligibility allowlist | F-07 | 2 | AC-S2-03 | STS-S2-03 | DEFERRED |
 | **FR-15** | Scheduled close | F-07 | 2 | AC-S2-04 | STS-S2-04 | DEFERRED |
@@ -65,6 +65,21 @@ Status values: **PLANNED** (designed, not implemented), **IMPLEMENTED** (code ex
 Deferred rows use `AC-S2-*`, `STS-S2-*`, `AC-S3-*` and `STS-S3-*` as scheduling placeholders. They are
 defined in the Sprint 2 and Sprint 3 contracts; they are not claimed as existing Sprint 1 IDs.
 
+### 2.4 Cross-cutting test suites
+
+These supplemental suites cover criteria across more than one feature. Sprint 2 criteria remain
+deferred until their contracts and tests are defined.
+
+| Test ID | Scope | Linked acceptance criteria | Status |
+|---|---|---|---|
+| **STS-U-01** | Reject a draft with no questions | AC-F02-07 | PLANNED |
+| **STS-U-02** | Reject a single-choice question with one option | AC-F02-07 | PLANNED |
+| **STS-U-03** | Report an omitted required answer | AC-F03-06 | PLANNED |
+| **STS-U-04** | Reject blank required and over-limit short text | AC-F03-06, AC-F03-07 | PLANNED |
+| **STS-U-05** | Calculate response percentages and rounding | AC-F04-01 | PLANNED |
+| **STS-E2E-01** | Complete owner-to-respondent survey journey and inspect summary | AC-F02-02, AC-F02-06, AC-F03-03, AC-F04-01 | PLANNED |
+| **STS-E2E-02** | Reject duplicate submission and cross-response access; verify token revocation | AC-F01-05, AC-F03-04, AC-F03-08 | PLANNED |
+
 ---
 
 ## 3. Coverage and Gap Analysis
@@ -93,7 +108,8 @@ defined in the Sprint 2 and Sprint 3 contracts; they are not claimed as existing
 
 | Change | Affected requirements/features | Reason | Recorded in |
 |---|---|---|---|
-| Added owner detail, update and delete draft endpoints | FR-04, BR-07, F-02 | The previous baseline promised editing but had no endpoint, so BR-07 could not be tested | Part A §3.4; Part C API table; Part E F-02 |
+| Added owner list/detail/update and draft-delete endpoints | FR-03, FR-04, BR-07, F-02 | The previous baseline promised editing but lacked supporting lifecycle endpoints, so the draft flow and BR-07 could not be fully tested | Part A §4; Part C API table; Part E F-02 |
+| Clarified draft lifecycle coverage in FR-03 and Part B | FR-03, F-02 | F-02 already specified list, detail and draft deletion, but the requirements and traceability matrix did not identify those behaviors | Part A §4; Part B §2.1 |
 | Added `AnswerOption` and `numberValue` | FR-12, F-06 | One selected option per answer cannot represent multi-select; ratings need a numeric field | Part C §2; Part A ADR-05 |
 | Expanded F-06 to the nine-type question catalog and fixed type-specific answer rules | FR-12, BR-03, BR-06, F-06 | The previous baseline covered only multi-choice and rating; the expanded product needs explicit answer shapes, bounds and Sprint 2 allocation | Part A §§3–5; Part B §§1.2–1.3; Part C §§2, 8; Part D; GitHub Issues [#1](https://github.com/Snnn3/SurveyHub/issues/1) and [#9](https://github.com/Snnn3/SurveyHub/issues/9) |
 | Added `SurveyEligibility` | FR-14, BR-08, F-07 | Eligibility was missing from the baseline despite the theme's Sprint 1 example | Part A §4; Part C §2 |

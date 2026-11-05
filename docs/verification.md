@@ -3,7 +3,7 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)
 **Course:** CPE 334 Software Engineering, Semester 1/2026
 **Deliverable:** Project Deliverable 1 — Part F (20 points)
-**Document status:** Verification guide v4, aligned with team decisions on 5 November 2026
+**Document status:** Verification guide v5, aligned with the Part E test plan on 6 November 2026
 **Related documents:** Part E (contracts and test specifications), Part C (design), Part B (traceability)
 
 > **Status: PLANNED.**
@@ -328,20 +328,8 @@ the backend enforces the rule.
 
 ### 3.1 Planned test inventory
 
-The counts below are the plan from Part E. The actual run must be recorded exactly, including any
-tests added, failed or skipped.
-
-| Suite | File | Planned |
-|---|---|---:|
-| F-01 Authentication and RBAC | `server/tests/auth.test.ts` | 6 |
-| F-02 Survey lifecycle | `server/tests/survey-lifecycle.test.ts` | 11 |
-| F-03 Response rules | `server/tests/response-submission.test.ts` | 10 |
-| F-04 Aggregate summary | `server/tests/survey-summary.test.ts` | 4 |
-| Security matrix | `server/tests/security-matrix.test.ts` | 2 |
-| **Integration subtotal** | | **33** |
-| Unit rules | `server/tests/unit/rules.test.ts` | 5 |
-| E2E critical journeys | `e2e/sprint1-survey-flow.spec.ts` | 2 |
-| **Total** | | **40** |
+The planned suite counts are maintained in the [Part E test count summary](sprints/sprint-1/sts.md#10-test-count-summary).
+Record the actual run exactly below, including any tests added, failed or skipped.
 
 ### 3.2 Execution record
 
