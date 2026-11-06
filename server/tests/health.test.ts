@@ -1,5 +1,6 @@
 import request from 'supertest';
 import app from '../src/app';
+import { prisma } from '../src/utils/prisma';
 
 describe('GET /api/health (Scaffold Health & Database Connectivity)', () => {
   it('should return 200 and report status ok with database up', async () => {
@@ -34,5 +35,22 @@ describe('GET /api/health (Scaffold Health & Database Connectivity)', () => {
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('should return 503 SERVICE_UNAVAILABLE when database connectivity check fails', async () => {
+    const queryRawSpy = jest.spyOn(prisma, '$queryRaw').mockRejectedValueOnce(new Error('Connection failure'));
+
+    const res = await request(app).get('/api/health');
+
+    expect(res.status).toBe(503);
+    expect(res.body).toEqual({
+      success: false,
+      error: {
+        code: 'SERVICE_UNAVAILABLE',
+        message: 'Database connection failed.',
+      },
+    });
+
+    queryRawSpy.mockRestore();
   });
 });
