@@ -38,18 +38,23 @@ This reproduces the single-origin container deployment with persistent PostgreSQ
 git clone https://github.com/Snnn3/SurveyHub.git
 cd SurveyHub
 
-# 2. Build the multi-stage application image and launch PostgreSQL
+# 2. Configure environment variables (create .env and set a secure JWT secret)
+cp .env.example .env
+# Replace default placeholder with a secure random secret (required for production mode):
+sed -i '' "s/replace-with-a-long-random-value/$(openssl rand -hex 32)/" .env 2>/dev/null || sed -i "s/replace-with-a-long-random-value/$(openssl rand -hex 32)/" .env
+
+# 3. Build the multi-stage application image and launch PostgreSQL
 docker compose build app
 docker compose up -d db
 
-# 3. Apply database migrations and load reproducible synthetic seed data
+# 4. Apply database migrations and load reproducible synthetic seed data
 docker compose run --rm app npm run db:migrate
 docker compose run --rm app npm run db:seed
 
-# 4. Start the application container
+# 5. Start the application container
 docker compose up -d app
 
-# 5. Verify service health and container status
+# 6. Verify service health and container status
 docker compose ps
 curl http://localhost:4000/api/health
 ```
@@ -155,7 +160,7 @@ All seeded demo accounts are initialized with password `Password123!` (bcrypt co
     │   ├── server.ts          # Port listening entrypoint
     │   ├── controllers/       # API controllers (health, etc.)
     │   ├── middleware/        # Error handling & security middleware
-    │   └── utils/             # Prisma singleton, JWT, password helpers
+    │   └── utils/             # Prisma singleton and error envelope utilities
     └── tests/                 # Automated test suites
         ├── setup.ts           # Test DB configuration
         └── health.test.ts     # Health probe & route error tests
