@@ -2,6 +2,12 @@ import { Request, Response, NextFunction } from 'express';
 import { HttpError } from '../utils/errors';
 import { env } from '../config/environment';
 
+interface BodyParserError extends Error {
+  status?: number;
+  statusCode?: number;
+  type?: string;
+}
+
 export function errorHandler(
   err: Error,
   _req: Request,
@@ -20,8 +26,10 @@ export function errorHandler(
     return;
   }
 
+  const parserErr = err as BodyParserError;
+
   // Handle Express body-parser SyntaxError (e.g. malformed JSON)
-  if (err instanceof SyntaxError && 'status' in err && (err as any).status === 400) {
+  if (err instanceof SyntaxError && parserErr.status === 400) {
     res.status(400).json({
       success: false,
       error: {
@@ -33,7 +41,7 @@ export function errorHandler(
   }
 
   // Handle Request Payload Too Large (> 100 kB)
-  if ((err as any).type === 'entity.too.large' || ('status' in err && (err as any).status === 413)) {
+  if (parserErr.type === 'entity.too.large' || parserErr.status === 413) {
     res.status(400).json({
       success: false,
       error: {
