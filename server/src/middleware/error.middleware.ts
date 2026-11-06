@@ -34,7 +34,7 @@ export function errorHandler(
 
   // Handle Request Payload Too Large (> 100 kB)
   if ((err as any).type === 'entity.too.large' || ('status' in err && (err as any).status === 413)) {
-    res.status(413).json({
+    res.status(400).json({
       success: false,
       error: {
         code: 'VALIDATION_ERROR',
