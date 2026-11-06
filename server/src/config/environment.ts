@@ -17,8 +17,16 @@ export interface Environment {
 const nodeEnv = process.env.NODE_ENV || 'development';
 
 const jwtSecret = process.env.JWT_SECRET || 'dev-secret-key-surveyhub-cpe334-do-not-use-in-prod';
-if (nodeEnv === 'production' && (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'replace-with-a-long-random-value')) {
-  console.warn('[SECURITY WARNING] Running in production with a default or placeholder JWT_SECRET!');
+
+if (
+  nodeEnv === 'production' &&
+  (!process.env.JWT_SECRET ||
+    process.env.JWT_SECRET === 'replace-with-a-long-random-value' ||
+    process.env.JWT_SECRET === 'dev-secret-key-surveyhub-cpe334-do-not-use-in-prod')
+) {
+  throw new Error(
+    'FATAL: Production mode requires a secure, non-default JWT_SECRET. System startup aborted.'
+  );
 }
 
 export const env: Environment = {
