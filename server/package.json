@@ -5,18 +5,18 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "prisma generate && tsc",
+    "build": "prisma generate && tsc && tsc prisma/seed.ts --outDir dist/prisma --module commonjs --target ES2022 --moduleResolution node --skipLibCheck --esModuleInterop",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "test": "jest --runInBand --detectOpenHandles --forceExit",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
-    "db:seed": "ts-node --transpile-only prisma/seed.ts",
+    "db:seed": "node -e \"const fs=require('fs');const p=fs.existsSync('./dist/prisma/seed.js')?'./dist/prisma/seed.js':(fs.existsSync('../dist/prisma/seed.js')?'../dist/prisma/seed.js':null);if(p){require(p)}else{require('child_process').execSync('npx ts-node --transpile-only prisma/seed.ts',{stdio:'inherit'})}\"",
     "db:reset": "prisma migrate reset --force",
     "prisma:generate": "prisma generate"
   },
   "prisma": {
-    "seed": "ts-node --transpile-only prisma/seed.ts"
+    "seed": "node -e \"const fs=require('fs');const p=fs.existsSync('./dist/prisma/seed.js')?'./dist/prisma/seed.js':(fs.existsSync('../dist/prisma/seed.js')?'../dist/prisma/seed.js':null);if(p){require(p)}else{require('child_process').execSync('npx ts-node --transpile-only prisma/seed.ts',{stdio:'inherit'})}\""
   },
   "dependencies": {
     "@prisma/client": "^5.14.0",
@@ -26,6 +26,7 @@
     "express": "^4.19.2",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
+    "prisma": "^5.14.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -37,7 +38,6 @@
     "@types/node": "^20.12.12",
     "@types/supertest": "^6.0.2",
     "jest": "^29.7.0",
-    "prisma": "^5.14.0",
     "supertest": "^7.0.0",
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",

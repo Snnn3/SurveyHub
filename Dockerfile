@@ -38,14 +38,14 @@ WORKDIR /app
 
 COPY package*.json ./
 COPY server/package*.json ./server/
-RUN npm ci --include=dev --workspace=surveyhub-server
+RUN npm ci --omit=dev --workspace=surveyhub-server
 
 COPY server/prisma ./server/prisma
-COPY server/tsconfig.json ./server/tsconfig.json
 RUN npx prisma generate --schema=server/prisma/schema.prisma
 
 # Copy compiled backend and frontend bundles
 COPY --from=server-builder /app/server/dist ./dist
+COPY --from=server-builder /app/server/dist ./server/dist
 COPY --from=client-builder /app/client/dist ./client/dist
 
 ENV NODE_ENV=production
