@@ -20,7 +20,7 @@ export function createApp(): Express {
 
   app.use(
     cors({
-      origin: [env.CLIENT_ORIGIN, 'http://localhost:5173', 'http://localhost:4000'],
+      origin: env.CLIENT_ORIGIN,
       credentials: true,
     })
   );
