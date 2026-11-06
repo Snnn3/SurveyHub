@@ -14,7 +14,7 @@ export function errorHandler(
       error: {
         code: err.code,
         message: err.message,
-        ...(err.details && env.NODE_ENV !== 'production' ? { details: err.details } : {}),
+        ...(err.details ? { details: err.details } : {}),
       },
     });
     return;
