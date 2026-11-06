@@ -89,14 +89,6 @@ async function main() {
 
   console.log(`Seeded users: ${owner1.email}, ${owner2.email}, ${resp1.email}, ${resp2.email}`);
 
-  // Clean up any legacy seed records with non-deterministic IDs
-  await prisma.survey.deleteMany({
-    where: {
-      id: { notIn: [SEED_SURVEY_1_ID, SEED_SURVEY_2_ID, SEED_SURVEY_3_ID] },
-      title: { in: ['CPE 334 Midterm Feedback', 'Internal Team Survey Draft', 'Owner 2 Course Pulse'] },
-    },
-  });
-
   // 2. Seed Survey 1 (PUBLISHED - CPE 334 Midterm Feedback)
   const survey1 = await prisma.survey.upsert({
     where: { id: SEED_SURVEY_1_ID },
