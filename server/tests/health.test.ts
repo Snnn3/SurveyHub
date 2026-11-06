@@ -24,4 +24,15 @@ describe('GET /api/health (Scaffold Health & Database Connectivity)', () => {
     expect(res.body.error).toBeDefined();
     expect(res.body.error.code).toBe('NOT_FOUND');
   });
+
+  it('should return 400 VALIDATION_ERROR when request contains malformed JSON', async () => {
+    const res = await request(app)
+      .post('/api/health')
+      .set('Content-Type', 'application/json')
+      .send('{"broken":');
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
 });
