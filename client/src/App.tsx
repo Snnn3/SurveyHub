@@ -15,7 +15,8 @@ export default function App() {
   useEffect(() => {
     async function checkHealth() {
       try {
-        const response = await axios.get('/api/health');
+        const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
+        const response = await axios.get(`${apiBaseUrl}/health`);
         if (response.data && response.data.success) {
           setHealth(response.data.data);
         } else {
