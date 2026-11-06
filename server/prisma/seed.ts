@@ -21,10 +21,6 @@ const SEED_OPT_2_1_ID = '00000000-0000-4000-a000-000000000201';
 const SEED_OPT_2_2_ID = '00000000-0000-4000-a000-000000000202';
 const SEED_OPT_2_3_ID = '00000000-0000-4000-a000-000000000203';
 
-const SEED_OPT_3_1_ID = '00000000-0000-4000-a000-000000000301';
-const SEED_OPT_3_2_ID = '00000000-0000-4000-a000-000000000302';
-const SEED_OPT_3_3_ID = '00000000-0000-4000-a000-000000000303';
-
 async function main() {
   console.log('Seeding database with reproducible synthetic test data...');
 
@@ -280,46 +276,29 @@ async function main() {
     where: { id: SEED_Q4_ID },
     update: {
       surveyId: survey3.id,
-      prompt: 'Are the instructions for the group project clear?',
-      questionType: QuestionType.SINGLE_CHOICE,
+      prompt: 'Overall, how would you rate this course so far (1 to 5)?',
+      questionType: QuestionType.RATING,
       isRequired: true,
       orderIndex: 0,
+      numberMin: 1,
+      numberMax: 5,
     },
     create: {
       id: SEED_Q4_ID,
       surveyId: survey3.id,
-      prompt: 'Are the instructions for the group project clear?',
-      questionType: QuestionType.SINGLE_CHOICE,
+      prompt: 'Overall, how would you rate this course so far (1 to 5)?',
+      questionType: QuestionType.RATING,
       isRequired: true,
       orderIndex: 0,
+      numberMin: 1,
+      numberMax: 5,
     },
   });
 
-  const q4Options = [
-    { id: SEED_OPT_3_1_ID, label: 'Very Clear', orderIndex: 0 },
-    { id: SEED_OPT_3_2_ID, label: 'Somewhat Clear', orderIndex: 1 },
-    { id: SEED_OPT_3_3_ID, label: 'Unclear', orderIndex: 2 },
-  ];
-
-  for (const opt of q4Options) {
-    await prisma.option.upsert({
-      where: {
-        questionId_label: {
-          questionId: q4.id,
-          label: opt.label,
-        },
-      },
-      update: {
-        orderIndex: opt.orderIndex,
-      },
-      create: {
-        id: opt.id,
-        questionId: q4.id,
-        label: opt.label,
-        orderIndex: opt.orderIndex,
-      },
-    });
-  }
+  // Ensure no stale choice options exist for rating question
+  await prisma.option.deleteMany({
+    where: { questionId: q4.id },
+  });
 
   console.log('Seeded surveys, questions, and options successfully via idempotent upsert.');
 }
