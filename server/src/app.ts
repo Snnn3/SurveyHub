@@ -14,7 +14,7 @@ export function createApp(): Express {
   // Security & standard middleware
   app.use(
     helmet({
-      contentSecurityPolicy: false, // Allows flexible client bundling in local environments
+      contentSecurityPolicy: env.NODE_ENV === 'production' ? undefined : false, // Strict CSP in production per SDS §5.2
     })
   );
 
