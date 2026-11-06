@@ -11,12 +11,12 @@
     "test": "jest --runInBand --detectOpenHandles --forceExit",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
-    "db:seed": "node -e \"const fs=require('fs');const p=fs.existsSync('./dist/prisma/seed.js')?'./dist/prisma/seed.js':(fs.existsSync('../dist/prisma/seed.js')?'../dist/prisma/seed.js':null);if(p){require(p)}else{require('child_process').execSync('npx ts-node --transpile-only prisma/seed.ts',{stdio:'inherit'})}\"",
+    "db:seed": "node prisma/run-seed.js",
     "db:reset": "prisma migrate reset --force",
     "prisma:generate": "prisma generate"
   },
   "prisma": {
-    "seed": "node -e \"const fs=require('fs');const p=fs.existsSync('./dist/prisma/seed.js')?'./dist/prisma/seed.js':(fs.existsSync('../dist/prisma/seed.js')?'../dist/prisma/seed.js':null);if(p){require(p)}else{require('child_process').execSync('npx ts-node --transpile-only prisma/seed.ts',{stdio:'inherit'})}\""
+    "seed": "node prisma/run-seed.js"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
