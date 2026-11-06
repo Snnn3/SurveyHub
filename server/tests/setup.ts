@@ -1,3 +1,4 @@
+import path from 'path';
 import { execSync } from 'child_process';
 import { prisma } from '../src/utils/prisma';
 import { env } from '../src/config/environment';
@@ -26,6 +27,7 @@ beforeAll(async () => {
     await prisma.$queryRaw`SELECT 1`;
 
     execSync('npx prisma migrate deploy', {
+      cwd: path.resolve(__dirname, '..'),
       env: {
         ...process.env,
         DATABASE_URL: env.DATABASE_URL_TEST,
