@@ -49,7 +49,7 @@ docker compose build app
 docker compose up -d db
 
 # 4. Apply database migrations and load reproducible synthetic seed data
-docker compose run --rm app npm run db:migrate
+docker compose run --rm app npm run db:migrate:deploy
 docker compose run --rm app npm run db:seed
 
 # 5. Start the application container
