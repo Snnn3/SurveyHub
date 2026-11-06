@@ -58,18 +58,18 @@ export function createApp(): Express {
     // Root fallback when client is not built
     app.get('/', (_req: Request, res: Response) => {
       res.status(200).json({
-        name: 'SurveyHub API',
-        version: '0.1.0',
-        status: 'online',
-        endpoints: {
-          health: '/api/health',
+        success: true,
+        data: {
+          name: 'SurveyHub API',
+          version: '0.1.0',
+          status: 'online',
         },
       });
     });
   }
 
-  // 404 handler for undefined API routes
-  app.use('/api/*', (_req: Request, _res: Response, next: NextFunction) => {
+  // 404 handler for undefined API routes (catches both /api and /api/*)
+  app.use(['/api', '/api/*'], (_req: Request, _res: Response, next: NextFunction) => {
     next(new NotFoundError('The requested API endpoint does not exist.'));
   });
 

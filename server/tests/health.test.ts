@@ -17,13 +17,28 @@ describe('GET /api/health (Scaffold Health & Database Connectivity)', () => {
     });
   });
 
-  it('should return 404 with standard error envelope for undefined API routes', async () => {
-    const res = await request(app).get('/api/nonexistent-endpoint');
+  it('should return 404 with standard error envelope for undefined API routes (both /api and /api/*)', async () => {
+    const resBase = await request(app).get('/api');
+    expect(resBase.status).toBe(404);
+    expect(resBase.headers['content-type']).toMatch(/json/);
+    expect(resBase.body).toEqual({
+      success: false,
+      error: {
+        code: 'NOT_FOUND',
+        message: 'The requested API endpoint does not exist.',
+      },
+    });
 
-    expect(res.status).toBe(404);
-    expect(res.body.success).toBe(false);
-    expect(res.body.error).toBeDefined();
-    expect(res.body.error.code).toBe('NOT_FOUND');
+    const resNested = await request(app).get('/api/nonexistent-endpoint');
+    expect(resNested.status).toBe(404);
+    expect(resNested.headers['content-type']).toMatch(/json/);
+    expect(resNested.body).toEqual({
+      success: false,
+      error: {
+        code: 'NOT_FOUND',
+        message: 'The requested API endpoint does not exist.',
+      },
+    });
   });
 
   it('should return 400 VALIDATION_ERROR when request contains malformed JSON', async () => {
