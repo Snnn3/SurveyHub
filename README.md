@@ -38,10 +38,11 @@ This reproduces the single-origin container deployment with persistent PostgreSQ
 git clone https://github.com/Snnn3/SurveyHub.git
 cd SurveyHub
 
-# 2. Configure environment variables (create .env and set a secure JWT secret)
+# 2. Configure environment variables (create .env and generate a secure JWT secret)
+# Copy template (PowerShell: Copy-Item .env.example .env)
 cp .env.example .env
-# Replace default placeholder with a secure random secret (required for production mode):
-sed -i '' "s/replace-with-a-long-random-value/$(openssl rand -hex 32)/" .env 2>/dev/null || sed -i "s/replace-with-a-long-random-value/$(openssl rand -hex 32)/" .env
+# Replace default placeholder with a secure random secret using Node's built-in crypto (cross-platform):
+node -e "const fs = require('fs'); const s = require('crypto').randomBytes(32).toString('hex'); fs.writeFileSync('.env', fs.readFileSync('.env', 'utf8').replace('replace-with-a-long-random-value', s));"
 
 # 3. Build the multi-stage application image and launch PostgreSQL
 docker compose build app
