@@ -21,6 +21,40 @@ const SEED_OPT_2_1_ID = '00000000-0000-4000-a000-000000000201';
 const SEED_OPT_2_2_ID = '00000000-0000-4000-a000-000000000202';
 const SEED_OPT_2_3_ID = '00000000-0000-4000-a000-000000000203';
 
+interface SeedOption {
+  id: string;
+  label: string;
+  orderIndex: number;
+}
+
+type TransactionClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+async function upsertQuestionOptions(
+  tx: TransactionClient,
+  questionId: string,
+  options: SeedOption[]
+): Promise<void> {
+  for (const opt of options) {
+    await tx.option.upsert({
+      where: {
+        questionId_label: {
+          questionId,
+          label: opt.label,
+        },
+      },
+      update: {
+        orderIndex: opt.orderIndex,
+      },
+      create: {
+        id: opt.id,
+        questionId,
+        label: opt.label,
+        orderIndex: opt.orderIndex,
+      },
+    });
+  }
+}
+
 async function main() {
   console.log('Seeding database with reproducible synthetic test data...');
 
@@ -132,31 +166,13 @@ async function main() {
       },
     });
 
-    const q1Options = [
+    const q1Options: SeedOption[] = [
       { id: SEED_OPT_1_1_ID, label: 'Too Fast', orderIndex: 0 },
       { id: SEED_OPT_1_2_ID, label: 'Just Right', orderIndex: 1 },
       { id: SEED_OPT_1_3_ID, label: 'Too Slow', orderIndex: 2 },
     ];
 
-    for (const opt of q1Options) {
-      await tx.option.upsert({
-        where: {
-          questionId_label: {
-            questionId: q1.id,
-            label: opt.label,
-          },
-        },
-        update: {
-          orderIndex: opt.orderIndex,
-        },
-        create: {
-          id: opt.id,
-          questionId: q1.id,
-          label: opt.label,
-          orderIndex: opt.orderIndex,
-        },
-      });
-    }
+    await upsertQuestionOptions(tx, q1.id, q1Options);
 
     await tx.question.upsert({
       where: { id: SEED_Q2_ID },
@@ -218,31 +234,13 @@ async function main() {
       },
     });
 
-    const q3Options = [
+    const q3Options: SeedOption[] = [
       { id: SEED_OPT_2_1_ID, label: 'Discord', orderIndex: 0 },
       { id: SEED_OPT_2_2_ID, label: 'Slack', orderIndex: 1 },
       { id: SEED_OPT_2_3_ID, label: 'Microsoft Teams', orderIndex: 2 },
     ];
 
-    for (const opt of q3Options) {
-      await tx.option.upsert({
-        where: {
-          questionId_label: {
-            questionId: q3.id,
-            label: opt.label,
-          },
-        },
-        update: {
-          orderIndex: opt.orderIndex,
-        },
-        create: {
-          id: opt.id,
-          questionId: q3.id,
-          label: opt.label,
-          orderIndex: opt.orderIndex,
-        },
-      });
-    }
+    await upsertQuestionOptions(tx, q3.id, q3Options);
 
     // 4. Seed Survey 3 (PUBLISHED - Owner 2 Course Pulse with Rating question)
     const survey3 = await tx.survey.upsert({
