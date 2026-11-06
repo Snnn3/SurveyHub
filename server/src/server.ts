@@ -7,15 +7,17 @@ async function startServer() {
     // Check initial database connectivity
     await prisma.$queryRaw`SELECT 1`;
     console.log('[Database] Connected successfully to PostgreSQL.');
-
-    app.listen(env.PORT, () => {
-      console.log(`[Server] SurveyHub server listening on port ${env.PORT} in ${env.NODE_ENV} mode.`);
-      console.log(`[Health] Probe available at http://localhost:${env.PORT}/api/health`);
-    });
   } catch (error) {
-    console.error('[Database] Failed to connect to PostgreSQL at startup:', error);
-    process.exit(1);
+    console.warn(
+      '[Database] Initial connection check failed. HTTP listener starting; health probe will report 503 until connected:',
+      error
+    );
   }
+
+  app.listen(env.PORT, () => {
+    console.log(`[Server] SurveyHub server listening on port ${env.PORT} in ${env.NODE_ENV} mode.`);
+    console.log(`[Health] Probe available at http://localhost:${env.PORT}/api/health`);
+  });
 }
 
 if (require.main === module) {
