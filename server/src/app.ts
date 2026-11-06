@@ -54,18 +54,6 @@ export function createApp(): Express {
       }
       res.sendFile(path.join(clientDistPath as string, 'index.html'));
     });
-  } else {
-    // Root fallback when client is not built
-    app.get('/', (_req: Request, res: Response) => {
-      res.status(200).json({
-        success: true,
-        data: {
-          name: 'SurveyHub API',
-          version: '0.1.0',
-          status: 'online',
-        },
-      });
-    });
   }
 
   // 404 handler for undefined API routes (catches both /api and /api/*)
