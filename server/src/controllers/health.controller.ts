@@ -1,7 +1,12 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../utils/prisma';
+import { ServiceUnavailableError } from '../utils/errors';
 
-export async function getHealthCheck(_req: Request, res: Response): Promise<void> {
+export async function getHealthCheck(
+  _req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     // Run a fast raw query to confirm database connectivity
     await prisma.$queryRaw`SELECT 1`;
@@ -14,12 +19,6 @@ export async function getHealthCheck(_req: Request, res: Response): Promise<void
       },
     });
   } catch (error) {
-    res.status(503).json({
-      success: false,
-      error: {
-        code: 'SERVICE_UNAVAILABLE',
-        message: 'Database connection failed.',
-      },
-    });
+    next(new ServiceUnavailableError('Database connection failed.'));
   }
 }
