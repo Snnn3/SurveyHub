@@ -190,44 +190,42 @@ export async function deleteSurvey(id: string, ownerId: string) {
 }
 
 export async function publishSurvey(id: string, ownerId: string) {
-  const existing = await getAuthorizedSurvey(id, ownerId, true);
-
-  if (existing.status !== SurveyStatus.DRAFT) {
-    throw new HttpError(400, 'INVALID_STATE_TRANSITION', 'Only draft surveys can be published.');
-  }
-
-  const validation = validateSurveyStructure(existing);
-  if (!validation.isValid) {
-    const details = validation.error
-      ? [
-          {
-            field:
-              validation.error.questionIndex !== undefined
-                ? `questions.${validation.error.questionIndex}`
-                : 'questions',
-            message: validation.error.message,
-          },
-        ]
-      : undefined;
-
-    throw new HttpError(
-      400,
-      'INVALID_QUESTION_STRUCTURE',
-      validation.error?.message || 'Invalid survey structure.',
-      details
-    );
-  }
-
   return prisma.$transaction(async (tx) => {
-    const current = await tx.survey.findUnique({
-      where: { id: existing.id },
-      select: { id: true, ownerId: true, status: true },
+    const existing = await tx.survey.findUnique({
+      where: { id },
+      include: surveyDetailInclude,
     });
-    if (!current || current.ownerId !== ownerId) {
+
+    if (!existing) {
+      throw new NotFoundError('Survey not found.');
+    }
+    if (existing.ownerId !== ownerId) {
       throw new HttpError(403, 'FORBIDDEN_OWNERSHIP', 'You do not own this survey.');
     }
-    if (current.status !== SurveyStatus.DRAFT) {
+    if (existing.status !== SurveyStatus.DRAFT) {
       throw new HttpError(400, 'INVALID_STATE_TRANSITION', 'Only draft surveys can be published.');
+    }
+
+    const validation = validateSurveyStructure(existing);
+    if (!validation.isValid) {
+      const details = validation.error
+        ? [
+            {
+              field:
+                validation.error.questionIndex !== undefined
+                  ? `questions.${validation.error.questionIndex}`
+                  : 'questions',
+              message: validation.error.message,
+            },
+          ]
+        : undefined;
+
+      throw new HttpError(
+        400,
+        'INVALID_QUESTION_STRUCTURE',
+        validation.error?.message || 'Invalid survey structure.',
+        details
+      );
     }
 
     return tx.survey.update({
@@ -242,21 +240,19 @@ export async function publishSurvey(id: string, ownerId: string) {
 }
 
 export async function closeSurvey(id: string, ownerId: string) {
-  const existing = await getAuthorizedSurvey(id, ownerId);
-
-  if (existing.status !== SurveyStatus.PUBLISHED) {
-    throw new HttpError(400, 'INVALID_STATE_TRANSITION', 'Only published surveys can be closed.');
-  }
-
   return prisma.$transaction(async (tx) => {
-    const current = await tx.survey.findUnique({
-      where: { id: existing.id },
+    const existing = await tx.survey.findUnique({
+      where: { id },
       select: { id: true, ownerId: true, status: true },
     });
-    if (!current || current.ownerId !== ownerId) {
+
+    if (!existing) {
+      throw new NotFoundError('Survey not found.');
+    }
+    if (existing.ownerId !== ownerId) {
       throw new HttpError(403, 'FORBIDDEN_OWNERSHIP', 'You do not own this survey.');
     }
-    if (current.status !== SurveyStatus.PUBLISHED) {
+    if (existing.status !== SurveyStatus.PUBLISHED) {
       throw new HttpError(400, 'INVALID_STATE_TRANSITION', 'Only published surveys can be closed.');
     }
 

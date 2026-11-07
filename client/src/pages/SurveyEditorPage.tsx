@@ -225,8 +225,10 @@ export function SurveyEditorPage() {
           } else if (trimmed.length > 200) {
             errors.push(`Question ${qNum}: Option ${optIndex + 1} must be at most 200 characters.`);
             fields[optKey] = 'Option label must be at most 200 characters.';
+            labels.push(trimmed.toLowerCase());
+          } else {
+            labels.push(trimmed.toLowerCase());
           }
-          labels.push(trimmed.toLowerCase());
         });
 
         if (new Set(labels).size !== labels.length && !fields[optionsKey]) {
