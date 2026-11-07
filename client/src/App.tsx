@@ -30,7 +30,7 @@ function getAuthUser(): { token: string; role?: string } | null {
   if (!token) return null;
   try {
     const payloadPart = token.split('.')[1];
-    if (!payloadPart) return { token };
+    if (!payloadPart) return null;
     const base64 = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
     const jsonPayload = decodeURIComponent(
       atob(base64)
@@ -39,9 +39,10 @@ function getAuthUser(): { token: string; role?: string } | null {
         .join('')
     );
     const decoded = JSON.parse(jsonPayload);
-    return { token, role: decoded.role };
+    if (!decoded || typeof decoded !== 'object') return null;
+    return { token, role: typeof decoded.role === 'string' ? decoded.role : undefined };
   } catch {
-    return { token };
+    return null;
   }
 }
 
@@ -60,7 +61,8 @@ function ProtectedRoute({
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (allowedRole && auth.role && auth.role !== allowedRole) {
+  // Fail closed when allowedRole is set: reject missing or mismatched roles per SDS §3.1
+  if (allowedRole && auth.role !== allowedRole) {
     return <Navigate to="/" replace />;
   }
 

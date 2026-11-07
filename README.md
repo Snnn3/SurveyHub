@@ -99,9 +99,6 @@ Automated test suites use an isolated test database (`surveyhub_test`) so tests 
 # Run all server integration and health tests
 npm test
 
-# Run all test suites including E2E Playwright tests
-npm run test:all
-
 # Run a specific test suite
 npm test --prefix server -- tests/health.test.ts
 

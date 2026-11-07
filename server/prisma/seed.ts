@@ -234,78 +234,100 @@ async function main() {
     });
 
     // Reconcile Survey 3 questions and options to ensure exactly 1 Rating question per SDS §2.5:
-    // 1. Clean up temporary Q4 ID (...032) without unique constraint collisions on Answer(responseId, questionId)
-    const prevQ4 = await tx.question.findUnique({
-      where: { id: PREV_Q4_RATING_ID },
-      include: {
-        answers: {
-          select: { id: true, responseId: true },
-        },
-      },
-    });
-
-    if (prevQ4) {
-      for (const ans of prevQ4.answers) {
-        const existingCanonicalAnswer = await tx.answer.findUnique({
-          where: {
-            responseId_questionId: {
-              responseId: ans.responseId,
-              questionId: SEED_Q4_ID,
-            },
-          },
-        });
-
-        if (existingCanonicalAnswer) {
-          // If response already contains an answer for canonical SEED_Q4_ID, remove the legacy duplicate
-          await tx.answer.delete({ where: { id: ans.id } });
-        } else {
-          // Otherwise, safely reassign to canonical SEED_Q4_ID
-          await tx.answer.update({
-            where: { id: ans.id },
-            data: { questionId: SEED_Q4_ID },
-          });
-        }
-      }
-
-      await tx.question.delete({ where: { id: PREV_Q4_RATING_ID } });
-    }
-
-    // 2. Reconcile question type and options:
-    // Only transition to RATING if no existing answers reference options on SEED_Q4_ID (...031).
-    // If choice options are in use by existing answers, preserve legacy question type to prevent corrupting answer meaning.
+    // Decide whether remapping is safe BEFORE touching answers:
+    // If choice options on SEED_Q4_ID (...031) are currently in use by existing responses,
+    // do NOT remap numeric rating answers to ...031 (which would attach numeric answers to a choice question).
+    // Instead, preserve the choice question separately and preserve the Rating question on PREV_Q4_RATING_ID (...032).
     const legacyOptionsInUse = await tx.answerOption.count({
       where: {
         option: { questionId: SEED_Q4_ID },
       },
     });
 
+    const prevQ4 = await tx.question.findUnique({
+      where: { id: PREV_Q4_RATING_ID },
+      include: {
+        answers: {
+          select: { id: true, responseId: true, numberValue: true },
+        },
+      },
+    });
+
+    const ratingPayload = {
+      surveyId: survey3.id,
+      prompt: 'Overall, how would you rate this course so far (1 to 5)?',
+      questionType: QuestionType.RATING,
+      isRequired: true,
+      orderIndex: 0,
+      numberMin: 1,
+      numberMax: 5,
+    };
+
     if (legacyOptionsInUse > 0) {
+      // Branch A: Legacy choice answers exist on SEED_Q4_ID.
+      // Keep SEED_Q4_ID as the choice question to protect existing answer meaning,
+      // and preserve/upsert PREV_Q4_RATING_ID as the canonical Rating question for Survey 3.
       console.warn(
-        `[Seed] Warning: Existing responses reference choice options for SEED_Q4_ID (${SEED_Q4_ID}). Keeping legacy choice question type intact to preserve response integrity.`
+        `[Seed] Notice: Legacy responses reference choice options for SEED_Q4_ID (${SEED_Q4_ID}). Preserving choice question and keeping Rating question on ${PREV_Q4_RATING_ID}.`
       );
+
+      await tx.question.upsert({
+        where: { id: PREV_Q4_RATING_ID },
+        update: { ...ratingPayload, orderIndex: 1 },
+        create: {
+          id: PREV_Q4_RATING_ID,
+          ...ratingPayload,
+          orderIndex: 1,
+        },
+      });
     } else {
+      // Branch B: No choice options are in use. It is 100% safe to make SEED_Q4_ID the canonical Rating question.
       await tx.option.deleteMany({
         where: { questionId: SEED_Q4_ID },
       });
 
-      const q4Payload = {
-        surveyId: survey3.id,
-        prompt: 'Overall, how would you rate this course so far (1 to 5)?',
-        questionType: QuestionType.RATING,
-        isRequired: true,
-        orderIndex: 0,
-        numberMin: 1,
-        numberMax: 5,
-      };
-
       await tx.question.upsert({
         where: { id: SEED_Q4_ID },
-        update: q4Payload,
+        update: ratingPayload,
         create: {
           id: SEED_Q4_ID,
-          ...q4Payload,
+          ...ratingPayload,
         },
       });
+
+      // Now safely reconcile any transient answers from PREV_Q4_RATING_ID without data loss
+      if (prevQ4) {
+        for (const ans of prevQ4.answers) {
+          const existingCanonicalAnswer = await tx.answer.findUnique({
+            where: {
+              responseId_questionId: {
+                responseId: ans.responseId,
+                questionId: SEED_Q4_ID,
+              },
+            },
+          });
+
+          if (existingCanonicalAnswer) {
+            // Both IDs have an answer row for this response.
+            // Preserve the numeric rating value from ans if existingCanonicalAnswer lacks it.
+            if (existingCanonicalAnswer.numberValue === null && ans.numberValue !== null) {
+              await tx.answer.update({
+                where: { id: existingCanonicalAnswer.id },
+                data: { numberValue: ans.numberValue },
+              });
+            }
+            await tx.answer.delete({ where: { id: ans.id } });
+          } else {
+            // Safe to reassign to canonical SEED_Q4_ID
+            await tx.answer.update({
+              where: { id: ans.id },
+              data: { questionId: SEED_Q4_ID },
+            });
+          }
+        }
+
+        await tx.question.delete({ where: { id: PREV_Q4_RATING_ID } });
+      }
     }
 
     console.log('Seeded surveys, questions, and options successfully via idempotent upsert.');
