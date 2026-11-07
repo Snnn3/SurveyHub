@@ -1,10 +1,11 @@
 import { Prisma, QuestionType, SurveyStatus } from '@prisma/client';
 import { prisma } from '../utils/prisma';
 import { HttpError, NotFoundError } from '../utils/errors';
-import { validateSurveyStructure, type SurveyInput } from '../validators/survey.validator';
-import { z } from 'zod';
-
-const idParamSchema = z.string().uuid();
+import {
+  validateSurveyStructure,
+  parseSurveyId,
+  type SurveyInput,
+} from '../validators/survey.validator';
 
 export const surveyDetailInclude = {
   questions: {
@@ -16,11 +17,6 @@ export const surveyDetailInclude = {
     },
   },
 };
-
-export function parseSurveyId(paramId: string): string | null {
-  const result = idParamSchema.safeParse(paramId);
-  return result.success ? result.data : null;
-}
 
 function mapQuestionsToCreate(questions: NonNullable<SurveyInput['questions']>) {
   return questions.map((question, questionIndex) => ({
@@ -142,14 +138,20 @@ export async function getSurveyById(id: string, ownerId: string) {
   return getAuthorizedSurvey(id, ownerId, true);
 }
 
-export async function updateSurvey(id: string, input: SurveyInput) {
+export async function updateSurvey(id: string, ownerId: string, input: SurveyInput) {
+  // 1. Verify owner and DRAFT status per SDS §1.3 & F-02 §3.4
+  const existing = await getAuthorizedSurvey(id, ownerId);
+  if (existing.status !== SurveyStatus.DRAFT) {
+    throw new HttpError(400, 'SURVEY_NOT_EDITABLE', 'Only draft surveys can be edited.');
+  }
+
   const { title, description, questions } = input;
 
   return prisma.$transaction(async (tx) => {
-    await tx.question.deleteMany({ where: { surveyId: id } });
+    await tx.question.deleteMany({ where: { surveyId: existing.id } });
 
     return tx.survey.update({
-      where: { id },
+      where: { id: existing.id },
       data: {
         title,
         description: description || null,

@@ -54,7 +54,11 @@ function applyServerValidationErrors(
         const parts = domField.split('.');
         const qIdx = Number(parts[1]);
         if (!isNaN(qIdx)) {
-          if (parts.length === 2 || parts[2] === 'prompt') {
+          if (parts.length === 2) {
+            domField = d.message.toLowerCase().includes('option')
+              ? fieldKey.options(qIdx)
+              : fieldKey.prompt(qIdx);
+          } else if (parts[2] === 'prompt') {
             domField = fieldKey.prompt(qIdx);
           } else if (parts[2] === 'options') {
             if (parts[3] !== undefined) {
@@ -91,13 +95,22 @@ export function SurveyEditorPage() {
   const [questions, setQuestions] = useState<FormQuestion[]>([]);
 
   const [loading, setLoading] = useState(Boolean(id));
-  const [loadErrorCode, setLoadErrorCode] = useState<403 | 404 | null>(null);
+  const [loadErrorCode, setLoadErrorCode] = useState<400 | 403 | 404 | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [questionIndexToDelete, setQuestionIndexToDelete] = useState<number | null>(null);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+
+  function clearFieldError(fieldId: string) {
+    setFieldErrors((prev) => {
+      if (!prev[fieldId]) return prev;
+      const copy = { ...prev };
+      delete copy[fieldId];
+      return copy;
+    });
+  }
 
   useEffect(() => {
     if (!id) return;
@@ -124,6 +137,7 @@ export function SurveyEditorPage() {
         const survey = res.data.data;
         if (survey.status !== 'DRAFT') {
           setError('Only draft surveys can be edited.');
+          setLoadErrorCode(400);
           return;
         }
 
@@ -372,18 +386,20 @@ export function SurveyEditorPage() {
     }
   }
 
-  if (loadErrorCode === 404 || loadErrorCode === 403) {
-    const isNotFound = loadErrorCode === 404;
+  if (loadErrorCode) {
+    let title = '400 - Survey Not Editable';
+    let msg = 'Only draft surveys can be edited.';
+    if (loadErrorCode === 404) {
+      title = '404 - Survey Not Found';
+      msg = 'The survey you are looking for does not exist or has been removed.';
+    } else if (loadErrorCode === 403) {
+      title = '403 - Access Denied';
+      msg = 'You do not have permission to view or edit this survey.';
+    }
     return (
       <div className="bg-white rounded-xl border border-slate-200 p-8 shadow-sm text-center max-w-lg mx-auto space-y-4">
-        <h2 className="text-xl font-bold text-slate-900">
-          {isNotFound ? '404 - Survey Not Found' : '403 - Access Denied'}
-        </h2>
-        <p className="text-sm text-slate-600">
-          {isNotFound
-            ? 'The survey you are looking for does not exist or has been removed.'
-            : 'You do not have permission to view or edit this survey.'}
-        </p>
+        <h2 className="text-xl font-bold text-slate-900">{title}</h2>
+        <p className="text-sm text-slate-600">{msg}</p>
         <Link
           to="/owner/surveys"
           className="inline-block rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
@@ -467,13 +483,7 @@ export function SurveyEditorPage() {
             value={title}
             onChange={(e) => {
               setTitle(e.target.value);
-              if (fieldErrors['survey-title']) {
-                setFieldErrors((prev) => {
-                  const copy = { ...prev };
-                  delete copy['survey-title'];
-                  return copy;
-                });
-              }
+              clearFieldError('survey-title');
             }}
             placeholder="e.g., CPE 334 Midterm Feedback"
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
@@ -499,13 +509,7 @@ export function SurveyEditorPage() {
             value={description}
             onChange={(e) => {
               setDescription(e.target.value);
-              if (fieldErrors['survey-desc']) {
-                setFieldErrors((prev) => {
-                  const copy = { ...prev };
-                  delete copy['survey-desc'];
-                  return copy;
-                });
-              }
+              clearFieldError('survey-desc');
             }}
             placeholder="Provide context or instructions for respondents..."
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
@@ -604,13 +608,7 @@ export function SurveyEditorPage() {
                   value={question.prompt}
                   onChange={(e) => {
                     updateQuestion(qIndex, { prompt: e.target.value });
-                    if (fieldErrors[`prompt-${qIndex}`]) {
-                      setFieldErrors((prev) => {
-                        const copy = { ...prev };
-                        delete copy[`prompt-${qIndex}`];
-                        return copy;
-                      });
-                    }
+                    clearFieldError(`prompt-${qIndex}`);
                   }}
                   placeholder="e.g. How satisfied are you with the course?"
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
@@ -694,13 +692,7 @@ export function SurveyEditorPage() {
                           value={option.label}
                           onChange={(e) => {
                             updateOption(qIndex, optIndex, e.target.value);
-                            if (fieldErrors[`option-${qIndex}-${optIndex}`]) {
-                              setFieldErrors((prev) => {
-                                const copy = { ...prev };
-                                delete copy[`option-${qIndex}-${optIndex}`];
-                                return copy;
-                              });
-                            }
+                            clearFieldError(`option-${qIndex}-${optIndex}`);
                           }}
                           placeholder={`Option ${optIndex + 1}`}
                           className="flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs outline-none focus:border-indigo-500"
