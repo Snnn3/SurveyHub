@@ -247,42 +247,23 @@ async function main() {
       },
     });
 
-    // 2. If temporary Q4 ID (...032) exists from a previous seed run, reassign any answers to SEED_Q4_ID and remove it
-    const tempQ4 = await tx.question.findUnique({
+    // Reconcile Survey 3 fixture: restore canonical Q4 ID (...031) as RATING per Snnn3 review
+    const prevQ4 = await tx.question.findUnique({
       where: { id: PREV_Q4_RATING_ID },
     });
-    if (tempQ4) {
+    if (prevQ4) {
       await tx.answer.updateMany({
         where: { questionId: PREV_Q4_RATING_ID },
         data: { questionId: SEED_Q4_ID },
-      });
-      await tx.option.deleteMany({
-        where: { questionId: PREV_Q4_RATING_ID },
       });
       await tx.question.delete({
         where: { id: PREV_Q4_RATING_ID },
       });
     }
 
-    // 3. Clean up any stale choice options and associations on SEED_Q4_ID (since it is now RATING)
-    await tx.answerOption.deleteMany({
-      where: {
-        option: { questionId: SEED_Q4_ID },
-      },
-    });
+    // Clean up stale options from when SEED_Q4_ID was temporarily a choice question
     await tx.option.deleteMany({
       where: { questionId: SEED_Q4_ID },
-    });
-
-    // 4. If any legacy answers on SEED_Q4_ID lack numberValue, set a valid default rating
-    await tx.answer.updateMany({
-      where: {
-        questionId: SEED_Q4_ID,
-        numberValue: null,
-      },
-      data: {
-        numberValue: 5,
-      },
     });
 
     console.log('Seeded surveys, questions, and options successfully via idempotent upsert.');

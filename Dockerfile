@@ -45,7 +45,6 @@ RUN npx prisma generate --schema=server/prisma/schema.prisma
 
 # Copy compiled backend and frontend bundles
 COPY --from=server-builder /app/server/dist ./dist
-COPY --from=server-builder /app/server/dist ./server/dist
 COPY --from=client-builder /app/client/dist ./client/dist
 
 ENV NODE_ENV=production
