@@ -37,6 +37,65 @@ describe('Sprint 1 Supporting Unit Tests - Rules (STS-U-01, STS-U-02)', () => {
     expect(result.error?.code).toBe('INVALID_OPTION_LABEL');
   });
 
+  it('rejects an empty question prompt with code EMPTY_PROMPT', () => {
+    const result = validateSurveyStructure({
+      questions: [
+        {
+          prompt: '   ',
+          questionType: QuestionType.SHORT_TEXT,
+        },
+      ],
+    });
+    expect(result.isValid).toBe(false);
+    expect(result.error?.code).toBe('EMPTY_PROMPT');
+    expect(result.error?.questionIndex).toBe(0);
+  });
+
+  it('rejects a question prompt exceeding 500 characters with code PROMPT_TOO_LONG', () => {
+    const result = validateSurveyStructure({
+      questions: [
+        {
+          prompt: 'P'.repeat(501),
+          questionType: QuestionType.SHORT_TEXT,
+        },
+      ],
+    });
+    expect(result.isValid).toBe(false);
+    expect(result.error?.code).toBe('PROMPT_TOO_LONG');
+    expect(result.error?.questionIndex).toBe(0);
+  });
+
+  it('rejects a single-choice question with more than 20 options with code TOO_MANY_OPTIONS', () => {
+    const options = Array.from({ length: 21 }, (_, i) => ({ label: `Option ${i + 1}` }));
+    const result = validateSurveyStructure({
+      questions: [
+        {
+          prompt: 'Which option?',
+          questionType: QuestionType.SINGLE_CHOICE,
+          options,
+        },
+      ],
+    });
+    expect(result.isValid).toBe(false);
+    expect(result.error?.code).toBe('TOO_MANY_OPTIONS');
+    expect(result.error?.questionIndex).toBe(0);
+  });
+
+  it('rejects single-choice duplicate option labels with code DUPLICATE_OPTIONS', () => {
+    const result = validateSurveyStructure({
+      questions: [
+        {
+          prompt: 'Which track do you prefer?',
+          questionType: QuestionType.SINGLE_CHOICE,
+          options: [{ label: 'Track A' }, { label: 'track a' }],
+        },
+      ],
+    });
+    expect(result.isValid).toBe(false);
+    expect(result.error?.code).toBe('DUPLICATE_OPTIONS');
+    expect(result.error?.questionIndex).toBe(0);
+  });
+
   it('accepts a valid draft structure with single-choice and short-text questions', () => {
     const result = validateSurveyStructure({
       questions: [

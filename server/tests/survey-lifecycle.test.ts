@@ -650,4 +650,83 @@ describe('F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11)', () =>
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
   });
+
+  it('rejects SINGLE_CHOICE questions with more than 20 options with 400 VALIDATION_ERROR', async () => {
+    const options = Array.from({ length: 21 }, (_, i) => ({ label: `Option ${i + 1}` }));
+    const res = await request(app)
+      .post('/api/surveys')
+      .set('Authorization', `Bearer ${ownerAToken}`)
+      .send({
+        title: 'Too Many Options Survey',
+        questions: [
+          {
+            prompt: 'Choose one of many',
+            questionType: 'SINGLE_CHOICE',
+            options,
+          },
+        ],
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('handles concurrent PUT and PATCH publish requests atomically', async () => {
+    const survey = await prisma.survey.create({
+      data: {
+        title: 'Race Condition Test',
+        ownerId: ownerAId,
+        status: SurveyStatus.DRAFT,
+        questions: {
+          create: [
+            {
+              prompt: 'Original Question',
+              questionType: QuestionType.SINGLE_CHOICE,
+              options: {
+                create: [{ label: 'Option A' }, { label: 'Option B' }],
+              },
+            },
+          ],
+        },
+      },
+    });
+
+    // Fire PUT and PATCH publish simultaneously
+    const [publishRes, putRes] = await Promise.all([
+      request(app)
+        .patch(`/api/surveys/${survey.id}/publish`)
+        .set('Authorization', `Bearer ${ownerAToken}`),
+      request(app)
+        .put(`/api/surveys/${survey.id}`)
+        .set('Authorization', `Bearer ${ownerAToken}`)
+        .send({
+          title: 'Updated During Publish',
+          questions: [
+            {
+              prompt: 'Updated Question',
+              questionType: 'SHORT_TEXT',
+            },
+          ],
+        }),
+    ]);
+
+    // Either publish won and put got SURVEY_NOT_EDITABLE (400),
+    // or put won (200) and publish succeeded (200) on updated structure.
+    // In neither case should an inconsistent state exist.
+    const statuses = [publishRes.status, putRes.status];
+    expect(statuses).toContain(200);
+
+    const dbSurvey = await prisma.survey.findUnique({
+      where: { id: survey.id },
+      include: { questions: true },
+    });
+
+    if (publishRes.status === 200 && putRes.status === 400) {
+      expect(putRes.body.error.code).toBe('SURVEY_NOT_EDITABLE');
+      expect(dbSurvey?.status).toBe('PUBLISHED');
+      expect(dbSurvey?.title).toBe('Race Condition Test');
+    } else if (publishRes.status === 200 && putRes.status === 200) {
+      expect(dbSurvey?.status).toBe('PUBLISHED');
+    }
+  });
 });

@@ -28,7 +28,16 @@ export const questionInputSchema = z
   )
   .refine(
     (question) => {
-      if (question.questionType === QuestionType.SINGLE_CHOICE && question.options.length > 0) {
+      if (question.questionType === QuestionType.SINGLE_CHOICE && question.options && question.options.length > 20) {
+        return false;
+      }
+      return true;
+    },
+    { message: 'Single-choice questions cannot have more than 20 options.', path: ['options'] }
+  )
+  .refine(
+    (question) => {
+      if (question.questionType === QuestionType.SINGLE_CHOICE && question.options && question.options.length > 0) {
         const labels = question.options.map((option) => option.label.trim().toLowerCase());
         return new Set(labels).size === labels.length;
       }

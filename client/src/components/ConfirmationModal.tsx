@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+
 export type ConfirmationModalVariant = 'danger' | 'warning' | 'primary' | 'neutral';
 
 const variantClasses: Record<ConfirmationModalVariant, string> = {
@@ -30,12 +32,27 @@ export function ConfirmationModal({
 }: ConfirmationModalProps) {
   const buttonColorClass = variantClasses[variant] || variantClasses.primary;
 
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape' && !processing) {
+        onCancel();
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onCancel, processing]);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirmation-modal-title"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !processing) {
+          onCancel();
+        }
+      }}
     >
       <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl border border-slate-200">
         <h3 id="confirmation-modal-title" className="text-base font-bold text-slate-900 mb-2">{title}</h3>

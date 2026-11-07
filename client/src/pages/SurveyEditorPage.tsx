@@ -50,6 +50,7 @@ function applyServerValidationErrors(
       let domField = d.field;
       if (domField === 'title') domField = fieldKey.title;
       else if (domField === 'description') domField = fieldKey.description;
+      else if (domField === 'questions') domField = fieldKey.addQuestionBtn;
       else if (domField.startsWith('questions.')) {
         const parts = domField.split('.');
         const qIdx = Number(parts[1]);
@@ -180,12 +181,12 @@ export function SurveyEditorPage() {
     if (!title.trim()) {
       errors.push('Survey title is required.');
       fields[fieldKey.title] = 'Survey title is required.';
-    } else if (title.length > 120) {
+    } else if (title.trim().length > 120) {
       errors.push('Survey title must be at most 120 characters.');
       fields[fieldKey.title] = 'Survey title must be at most 120 characters.';
     }
 
-    if (description.length > 2000) {
+    if (description.trim().length > 2000) {
       errors.push('Description must be at most 2,000 characters.');
       fields[fieldKey.description] = 'Description must be at most 2,000 characters.';
     }
@@ -203,7 +204,7 @@ export function SurveyEditorPage() {
       if (!question.prompt.trim()) {
         errors.push(`Question ${qNum}: Prompt cannot be empty.`);
         fields[promptKey] = 'Prompt cannot be empty.';
-      } else if (question.prompt.length > 500) {
+      } else if (question.prompt.trim().length > 500) {
         errors.push(`Question ${qNum}: Prompt must be at most 500 characters.`);
         fields[promptKey] = 'Prompt must be at most 500 characters.';
       }
@@ -259,10 +260,14 @@ export function SurveyEditorPage() {
   function removeQuestion(index: number) {
     setQuestions((prev) => prev.filter((_, i) => i !== index));
     setQuestionIndexToDelete(null);
+    setFieldErrors({});
+    setValidationErrors([]);
   }
 
   function moveQuestion(index: number, direction: 'up' | 'down') {
     setQuestions((prev) => swapItems(prev, index, direction));
+    setFieldErrors({});
+    setValidationErrors([]);
   }
 
   function updateQuestion(index: number, patch: Partial<FormQuestion>) {
@@ -290,6 +295,8 @@ export function SurveyEditorPage() {
     updateQuestionOptions(questionIndex, (options) =>
       options.filter((_, optIdx) => optIdx !== optionIndex)
     );
+    setFieldErrors({});
+    setValidationErrors([]);
   }
 
   function updateOption(questionIndex: number, optionIndex: number, label: string) {
@@ -302,12 +309,24 @@ export function SurveyEditorPage() {
 
   function moveOption(questionIndex: number, optionIndex: number, direction: 'up' | 'down') {
     updateQuestionOptions(questionIndex, (options) => swapItems(options, optionIndex, direction));
+    setFieldErrors({});
+    setValidationErrors([]);
   }
 
   async function handleSaveDraft(): Promise<string | null> {
     if (!title.trim()) {
       setFieldErrors({ [fieldKey.title]: 'Survey title is required.' });
       document.getElementById(fieldKey.title)?.focus();
+      return null;
+    }
+    if (title.trim().length > 120) {
+      setFieldErrors({ [fieldKey.title]: 'Survey title must be at most 120 characters.' });
+      document.getElementById(fieldKey.title)?.focus();
+      return null;
+    }
+    if (description.trim().length > 2000) {
+      setFieldErrors({ [fieldKey.description]: 'Description must be at most 2,000 characters.' });
+      document.getElementById(fieldKey.description)?.focus();
       return null;
     }
 
@@ -553,7 +572,12 @@ export function SurveyEditorPage() {
 
         {questions.length === 0 ? (
           <div className="bg-white rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
-            No questions added yet. Add at least one question to publish this survey.
+            <p>No questions added yet. Add at least one question to publish this survey.</p>
+            {fieldErrors[fieldKey.addQuestionBtn] && (
+              <p role="alert" className="text-xs text-red-600 mt-2 font-medium">
+                {fieldErrors[fieldKey.addQuestionBtn]}
+              </p>
+            )}
           </div>
         ) : (
           questions.map((question, qIndex) => (
@@ -589,9 +613,9 @@ export function SurveyEditorPage() {
                     title="Remove question"
                     aria-label={`Remove Question ${qIndex + 1}`}
                     onClick={() => setQuestionIndexToDelete(qIndex)}
-                    className="p-1 text-red-400 hover:text-red-700 ml-2"
+                    className="p-1 text-red-400 hover:text-red-700 ml-2 text-sm leading-none"
                   >
-                    ✕
+                    <span aria-hidden="true">&times;</span>
                   </button>
                 </div>
               </div>
@@ -728,9 +752,9 @@ export function SurveyEditorPage() {
                               type="button"
                               aria-label={`Remove option ${optIndex + 1}`}
                               onClick={() => removeOption(qIndex, optIndex)}
-                              className="text-slate-400 hover:text-red-600 text-xs p-1 ml-0.5"
+                              className="text-slate-400 hover:text-red-600 text-xs p-1 ml-0.5 leading-none"
                             >
-                              ✕
+                              <span aria-hidden="true">&times;</span>
                             </button>
                           )}
                         </div>
