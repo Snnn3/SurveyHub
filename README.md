@@ -10,7 +10,7 @@ SurveyHub is a full-stack survey management system built with React, Express, Ty
 
 ## 🛠️ Tech Stack & Architecture
 
-- **Frontend (`client/`):** React 18, Vite, TypeScript, Tailwind CSS, Lucide Icons, Axios
+- **Frontend (`client/`):** React 18, Vite, TypeScript, Tailwind CSS, React Router, Axios
 - **Backend (`server/`):** Node.js 20 LTS, Express, TypeScript, Prisma ORM, bcryptjs, jsonwebtoken, Zod, Helmet, CORS
 - **Database:** PostgreSQL 16 (with dedicated development and isolated test databases)
 - **Containerization:** Multi-stage Dockerfile serving client and API on the same origin via Docker Compose

@@ -247,7 +247,7 @@ async function main() {
       },
     });
 
-    // Reconcile Survey 3 fixture: restore canonical Q4 ID (...031) as RATING per Snnn3 review
+    // shortcut: reconcile transient Q4 review fixture ID and stale options, safe to remove in Sprint 2
     const prevQ4 = await tx.question.findUnique({
       where: { id: PREV_Q4_RATING_ID },
     });
@@ -261,10 +261,14 @@ async function main() {
       });
     }
 
-    // Clean up stale options from when SEED_Q4_ID was temporarily a choice question
-    await tx.option.deleteMany({
+    const staleOptionsCount = await tx.option.count({
       where: { questionId: SEED_Q4_ID },
     });
+    if (staleOptionsCount > 0) {
+      await tx.option.deleteMany({
+        where: { questionId: SEED_Q4_ID },
+      });
+    }
 
     console.log('Seeded surveys, questions, and options successfully via idempotent upsert.');
   });

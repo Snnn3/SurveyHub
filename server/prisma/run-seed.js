@@ -6,22 +6,26 @@ const tsSeed = path.resolve(__dirname, 'seed.ts');
 const compiled = path.resolve(__dirname, '../dist/prisma/seed.js');
 const rootCompiled = path.resolve(__dirname, '../../dist/prisma/seed.js');
 
-function isUsable(targetPath) {
-  if (!fs.existsSync(targetPath)) return false;
-  if (fs.existsSync(tsSeed)) {
-    return fs.statSync(targetPath).mtimeMs >= fs.statSync(tsSeed).mtimeMs;
-  }
-  return true;
-}
+const target = fs.existsSync(compiled)
+  ? compiled
+  : fs.existsSync(rootCompiled)
+  ? rootCompiled
+  : null;
 
-if (isUsable(compiled)) {
-  require(compiled);
-} else if (isUsable(rootCompiled)) {
-  require(rootCompiled);
+// In production or containers, always run compiled seed directly
+if (target && (process.env.NODE_ENV === 'production' || !fs.existsSync(tsSeed) || fs.statSync(target).mtimeMs >= fs.statSync(tsSeed).mtimeMs)) {
+  require(target);
 } else {
-  execSync(`npx ts-node --transpile-only "${tsSeed}"`, {
-    cwd: path.resolve(__dirname, '..'),
-    stdio: 'inherit',
-  });
+  try {
+    execSync(`npx ts-node --transpile-only "${tsSeed}"`, {
+      cwd: path.resolve(__dirname, '..'),
+      stdio: 'inherit',
+    });
+  } catch (err) {
+    if (target) {
+      require(target);
+    } else {
+      throw err;
+    }
+  }
 }
-
