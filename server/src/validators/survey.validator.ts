@@ -1,0 +1,139 @@
+import { QuestionType } from '@prisma/client';
+
+export interface OptionValidationInput {
+  label?: string | null;
+}
+
+export interface QuestionValidationInput {
+  prompt?: string | null;
+  questionType: QuestionType | string;
+  isRequired?: boolean;
+  options?: OptionValidationInput[] | null;
+}
+
+export interface SurveyStructureValidationInput {
+  questions?: QuestionValidationInput[] | null;
+}
+
+export type SurveyStructureErrorCode =
+  | 'NO_QUESTIONS'
+  | 'EMPTY_PROMPT'
+  | 'PROMPT_TOO_LONG'
+  | 'TOO_FEW_OPTIONS'
+  | 'TOO_MANY_OPTIONS'
+  | 'DUPLICATE_OPTIONS'
+  | 'INVALID_OPTION_LABEL';
+
+export interface SurveyStructureValidationIssue {
+  code: SurveyStructureErrorCode;
+  message: string;
+  questionIndex?: number;
+}
+
+export interface SurveyStructureValidationResult {
+  isValid: boolean;
+  error?: SurveyStructureValidationIssue;
+}
+
+/**
+ * Validates a survey's structure against business rule BR-06 for publishing.
+ * Sprint 1 subset:
+ * - Must have at least 1 question (STS-U-01).
+ * - Every question prompt must be non-empty and <= 500 characters.
+ * - Single-choice questions must have between 2 and 20 options (STS-U-02).
+ * - Option labels must be non-empty, <= 200 characters, and unique (case-insensitive) per question.
+ */
+export function validateSurveyStructure(
+  survey: SurveyStructureValidationInput
+): SurveyStructureValidationResult {
+  const questions = survey.questions ?? [];
+
+  if (questions.length === 0) {
+    return {
+      isValid: false,
+      error: {
+        code: 'NO_QUESTIONS',
+        message: 'Survey must contain at least one question to be published.',
+      },
+    };
+  }
+
+  for (let i = 0; i < questions.length; i++) {
+    const q = questions[i];
+    const prompt = q.prompt ? q.prompt.trim() : '';
+
+    if (prompt.length === 0) {
+      return {
+        isValid: false,
+        error: {
+          code: 'EMPTY_PROMPT',
+          message: 'Question prompt cannot be empty.',
+          questionIndex: i,
+        },
+      };
+    }
+
+    if (prompt.length > 500) {
+      return {
+        isValid: false,
+        error: {
+          code: 'PROMPT_TOO_LONG',
+          message: 'Question prompt must be at most 500 characters.',
+          questionIndex: i,
+        },
+      };
+    }
+
+    if (q.questionType === QuestionType.SINGLE_CHOICE) {
+      const options = q.options ?? [];
+
+      if (options.length < 2) {
+        return {
+          isValid: false,
+          error: {
+            code: 'TOO_FEW_OPTIONS',
+            message: 'Single-choice questions must have at least 2 options.',
+            questionIndex: i,
+          },
+        };
+      }
+
+      if (options.length > 20) {
+        return {
+          isValid: false,
+          error: {
+            code: 'TOO_MANY_OPTIONS',
+            message: 'Single-choice questions must have at most 20 options.',
+            questionIndex: i,
+          },
+        };
+      }
+
+      const labels = options.map((opt) => (opt.label ? opt.label.trim().toLowerCase() : ''));
+
+      if (labels.some((l) => l.length === 0)) {
+        return {
+          isValid: false,
+          error: {
+            code: 'INVALID_OPTION_LABEL',
+            message: 'Option labels must be between 1 and 200 characters.',
+            questionIndex: i,
+          },
+        };
+      }
+
+      if (new Set(labels).size !== labels.length) {
+        return {
+          isValid: false,
+          error: {
+            code: 'DUPLICATE_OPTIONS',
+            message: 'Option labels must be unique within each question.',
+            questionIndex: i,
+          },
+        };
+      }
+    }
+  }
+
+  return { isValid: true };
+}

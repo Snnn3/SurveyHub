@@ -3,6 +3,8 @@ import { Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import api, { SESSION_EXPIRED_EVENT } from './api';
 import { LayersIcon } from './components/Icons';
+import { OwnerSurveysPage } from './pages/OwnerSurveysPage';
+import { SurveyEditorPage } from './pages/SurveyEditorPage';
 
 type UserRole = 'SURVEY_OWNER' | 'RESPONDENT';
 
@@ -204,11 +206,11 @@ function SurveysPage() {
   );
 }
 
-function OwnerSurveysPage() {
+function SurveySummaryPlaceholder() {
   return (
     <PlaceholderCard
-      title="Owner Dashboard"
-      description="Sprint 1 Feature F-02: Survey lifecycle and authoring."
+      title="Survey Summary"
+      description="Sprint 1 Feature F-04: Owner survey summary and real-time response aggregation."
     />
   );
 }
@@ -337,6 +339,30 @@ export default function App() {
             element={
               <ProtectedRoute user={user} loading={authLoading} allowedRole="SURVEY_OWNER">
                 <OwnerSurveysPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/owner/surveys/new"
+            element={
+              <ProtectedRoute user={user} loading={authLoading} allowedRole="SURVEY_OWNER">
+                <SurveyEditorPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/owner/surveys/:id/edit"
+            element={
+              <ProtectedRoute user={user} loading={authLoading} allowedRole="SURVEY_OWNER">
+                <SurveyEditorPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/owner/surveys/:id/summary"
+            element={
+              <ProtectedRoute user={user} loading={authLoading} allowedRole="SURVEY_OWNER">
+                <SurveySummaryPlaceholder />
               </ProtectedRoute>
             }
           />

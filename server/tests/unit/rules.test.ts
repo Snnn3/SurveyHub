@@ -1,0 +1,42 @@
+import { QuestionType } from '@prisma/client';
+import { validateSurveyStructure } from '../../src/validators/survey.validator';
+
+describe('Sprint 1 Supporting Unit Tests - Rules (STS-U-01, STS-U-02)', () => {
+  it('STS-U-01: rejects a draft with zero questions with code NO_QUESTIONS', () => {
+    const result = validateSurveyStructure({ questions: [] });
+    expect(result.isValid).toBe(false);
+    expect(result.error?.code).toBe('NO_QUESTIONS');
+  });
+
+  it('STS-U-02: rejects a single-choice question with fewer than two options with code TOO_FEW_OPTIONS', () => {
+    const result = validateSurveyStructure({
+      questions: [
+        {
+          prompt: 'Which track do you prefer?',
+          questionType: QuestionType.SINGLE_CHOICE,
+          options: [{ label: 'Track A' }],
+        },
+      ],
+    });
+    expect(result.isValid).toBe(false);
+    expect(result.error?.code).toBe('TOO_FEW_OPTIONS');
+  });
+
+  it('accepts a valid draft structure with single-choice and short-text questions', () => {
+    const result = validateSurveyStructure({
+      questions: [
+        {
+          prompt: 'Which track do you prefer?',
+          questionType: QuestionType.SINGLE_CHOICE,
+          options: [{ label: 'Track A' }, { label: 'Track B' }],
+        },
+        {
+          prompt: 'Any additional feedback?',
+          questionType: QuestionType.SHORT_TEXT,
+        },
+      ],
+    });
+    expect(result.isValid).toBe(true);
+    expect(result.error).toBeUndefined();
+  });
+});
