@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import {
   LayersIcon,
@@ -22,6 +22,52 @@ function getErrorMessage(err: unknown): string {
     return err.message;
   }
   return 'Failed to connect to API';
+}
+
+// Protected route guard per SDS §3.1 (checks authentication for client navigation)
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  const token = localStorage.getItem('token');
+  if (!token) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+  return <>{children}</>;
+}
+
+function LoginPage() {
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center">
+      <h2 className="text-xl font-bold text-slate-900 mb-2">Login</h2>
+      <p className="text-sm text-slate-600 mb-4">Sprint 1 Feature F-01: Authentication, session and RBAC.</p>
+      <Link to="/" className="text-sm font-semibold text-indigo-600 hover:text-indigo-800">
+        Return to Home
+      </Link>
+    </div>
+  );
+}
+
+function SurveysPage() {
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center">
+      <h2 className="text-xl font-bold text-slate-900 mb-2">Survey Catalogue</h2>
+      <p className="text-sm text-slate-600 mb-4">Sprint 1 Feature F-03: Respondent survey taking and response rules.</p>
+      <Link to="/" className="text-sm font-semibold text-indigo-600 hover:text-indigo-800">
+        Return to Home
+      </Link>
+    </div>
+  );
+}
+
+function OwnerSurveysPage() {
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center">
+      <h2 className="text-xl font-bold text-slate-900 mb-2">Owner Dashboard</h2>
+      <p className="text-sm text-slate-600 mb-4">Sprint 1 Feature F-02: Survey lifecycle and authoring.</p>
+      <Link to="/" className="text-sm font-semibold text-indigo-600 hover:text-indigo-800">
+        Return to Home
+      </Link>
+    </div>
+  );
 }
 
 function ScaffoldHome() {
@@ -147,7 +193,13 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 text-xs font-medium">
+          <div className="flex items-center space-x-4 text-xs font-medium">
+            <nav className="hidden sm:flex items-center space-x-3 text-slate-600">
+              <Link to="/" className="hover:text-indigo-600">Home</Link>
+              <Link to="/login" className="hover:text-indigo-600">Login</Link>
+              <Link to="/surveys" className="hover:text-indigo-600">Surveys</Link>
+              <Link to="/owner/surveys" className="hover:text-indigo-600">Owner</Link>
+            </nav>
             <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100">
               Sprint 1 Scaffold
             </span>
@@ -159,6 +211,23 @@ export default function App() {
       <main className="max-w-4xl mx-auto px-4 py-12 flex-1 w-full">
         <Routes>
           <Route path="/" element={<ScaffoldHome />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="/surveys"
+            element={
+              <ProtectedRoute>
+                <SurveysPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/owner/surveys"
+            element={
+              <ProtectedRoute>
+                <OwnerSurveysPage />
+              </ProtectedRoute>
+            }
+          />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>

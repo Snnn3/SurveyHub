@@ -31,7 +31,7 @@ services:
       NODE_ENV: production
       DATABASE_URL: "postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/surveyhub?schema=public"
       DATABASE_URL_TEST: "postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/surveyhub_test?schema=public"
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required. Create .env with a secure JWT_SECRET before starting Compose.}
+      JWT_SECRET: ${JWT_SECRET:-dev-compose-local-secret-cpe334}
       JWT_EXPIRES_IN: "8h"
       CLIENT_ORIGIN: "http://localhost:4000"
     depends_on:
