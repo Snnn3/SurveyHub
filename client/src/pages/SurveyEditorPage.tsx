@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import api, { getApiErrorMessage } from '../api';
+import { ConfirmationModal } from '../components/ConfirmationModal';
 
 export type QuestionType = 'SINGLE_CHOICE' | 'SHORT_TEXT';
 
@@ -15,6 +16,15 @@ export interface FormQuestion {
   isRequired: boolean;
   options: FormOption[];
 }
+
+export const fieldKey = {
+  title: 'survey-title',
+  description: 'survey-desc',
+  prompt: (qIndex: number) => `prompt-${qIndex}`,
+  options: (qIndex: number) => `options-${qIndex}`,
+  option: (qIndex: number, optIndex: number) => `option-${qIndex}-${optIndex}`,
+  addQuestionBtn: 'add-question-btn',
+};
 
 function swapItems<T>(items: T[], index: number, direction: 'up' | 'down'): T[] {
   const targetIndex = direction === 'up' ? index - 1 : index + 1;
@@ -113,26 +123,26 @@ export function SurveyEditorPage() {
 
     if (!title.trim()) {
       errors.push('Survey title is required.');
-      fields['survey-title'] = 'Survey title is required.';
+      fields[fieldKey.title] = 'Survey title is required.';
     } else if (title.length > 120) {
       errors.push('Survey title must be at most 120 characters.');
-      fields['survey-title'] = 'Survey title must be at most 120 characters.';
+      fields[fieldKey.title] = 'Survey title must be at most 120 characters.';
     }
 
     if (description.length > 2000) {
       errors.push('Description must be at most 2,000 characters.');
-      fields['survey-desc'] = 'Description must be at most 2,000 characters.';
+      fields[fieldKey.description] = 'Description must be at most 2,000 characters.';
     }
 
     if (questions.length === 0) {
       errors.push('Survey must contain at least one question to be published.');
-      fields['add-question-btn'] = 'Survey must contain at least one question.';
+      fields[fieldKey.addQuestionBtn] = 'Survey must contain at least one question.';
       return { errors, fieldErrors: fields };
     }
 
     questions.forEach((question, qIndex) => {
       const qNum = qIndex + 1;
-      const promptKey = `prompt-${qIndex}`;
+      const promptKey = fieldKey.prompt(qIndex);
 
       if (!question.prompt.trim()) {
         errors.push(`Question ${qNum}: Prompt cannot be empty.`);
@@ -143,7 +153,7 @@ export function SurveyEditorPage() {
       }
 
       if (question.questionType === 'SINGLE_CHOICE') {
-        const optionsKey = `options-${qIndex}`;
+        const optionsKey = fieldKey.options(qIndex);
         if (question.options.length < 2) {
           errors.push(`Question ${qNum}: Single-choice questions must have at least 2 options.`);
           fields[optionsKey] = 'Single-choice questions must have at least 2 options.';
@@ -154,7 +164,7 @@ export function SurveyEditorPage() {
 
         const labels: string[] = [];
         question.options.forEach((opt, optIndex) => {
-          const optKey = `option-${qIndex}-${optIndex}`;
+          const optKey = fieldKey.option(qIndex, optIndex);
           const trimmed = opt.label.trim();
           if (!trimmed) {
             errors.push(`Question ${qNum}: Option ${optIndex + 1} cannot be empty.`);
@@ -238,8 +248,8 @@ export function SurveyEditorPage() {
 
   async function handleSaveDraft(): Promise<string | null> {
     if (!title.trim()) {
-      setFieldErrors({ 'survey-title': 'Survey title is required.' });
-      document.getElementById('survey-title')?.focus();
+      setFieldErrors({ [fieldKey.title]: 'Survey title is required.' });
+      document.getElementById(fieldKey.title)?.focus();
       return null;
     }
 
@@ -271,7 +281,43 @@ export function SurveyEditorPage() {
         return newId;
       }
     } catch (err: unknown) {
-      setError(getApiErrorMessage(err, 'Failed to save survey.'));
+      if (axios.isAxiosError(err) && err.response?.data?.error) {
+        const errObj = err.response.data.error;
+        if (Array.isArray(errObj.details) && errObj.details.length > 0) {
+          const newFieldErrors: Record<string, string> = {};
+          const detailMessages: string[] = [];
+          errObj.details.forEach((d: { field?: string; message?: string }) => {
+            if (d.message) detailMessages.push(d.message);
+            if (d.field && d.message) {
+              let domField = d.field;
+              if (domField === 'title') domField = fieldKey.title;
+              else if (domField === 'description') domField = fieldKey.description;
+              else {
+                const qPromptMatch = domField.match(/^questions\.(\d+)\.prompt$/);
+                const qOptionsMatch = domField.match(/^questions\.(\d+)\.options$/);
+                const qOptionLabelMatch = domField.match(/^questions\.(\d+)\.options\.(\d+)(?:\.label)?$/);
+                if (qPromptMatch) domField = fieldKey.prompt(Number(qPromptMatch[1]));
+                else if (qOptionLabelMatch) domField = fieldKey.option(Number(qOptionLabelMatch[1]), Number(qOptionLabelMatch[2]));
+                else if (qOptionsMatch) domField = fieldKey.options(Number(qOptionsMatch[1]));
+              }
+              newFieldErrors[domField] = d.message;
+            }
+          });
+          if (Object.keys(newFieldErrors).length > 0) {
+            setFieldErrors(newFieldErrors);
+            const firstId = Object.keys(newFieldErrors)[0];
+            document.getElementById(firstId)?.focus();
+          }
+          setError(errObj.message || 'Failed to save survey.');
+          if (detailMessages.length > 0) {
+            setValidationErrors(detailMessages);
+          }
+        } else {
+          setError(errObj.message || 'Failed to save survey.');
+        }
+      } else {
+        setError(getApiErrorMessage(err, 'Failed to save survey.'));
+      }
       return null;
     } finally {
       setSaving(false);
@@ -750,7 +796,7 @@ export function SurveyEditorPage() {
 
       {/* Confirmation Dialog for Closing Editor */}
       {showCloseConfirm && (
-        <EditorModal
+        <ConfirmationModal
           title="Close Survey Editor"
           message="Are you sure you want to exit? Any unsaved changes will be lost."
           cancelLabel="Keep Editing"
@@ -763,61 +809,15 @@ export function SurveyEditorPage() {
 
       {/* Confirmation Dialog for Question Removal */}
       {questionIndexToDelete !== null && (
-        <EditorModal
+        <ConfirmationModal
           title="Remove Question"
           message={`Are you sure you want to remove Question ${questionIndexToDelete + 1}? This action cannot be undone.`}
-          cancelLabel="Cancel"
           confirmLabel="Remove"
           confirmButtonClass="bg-red-600 text-white hover:bg-red-700"
           onCancel={() => setQuestionIndexToDelete(null)}
           onConfirm={() => removeQuestion(questionIndexToDelete)}
         />
       )}
-    </div>
-  );
-}
-
-interface EditorModalProps {
-  title: string;
-  message: string;
-  cancelLabel: string;
-  confirmLabel: string;
-  confirmButtonClass: string;
-  onCancel: () => void;
-  onConfirm: () => void;
-}
-
-function EditorModal({
-  title,
-  message,
-  cancelLabel,
-  confirmLabel,
-  confirmButtonClass,
-  onCancel,
-  onConfirm,
-}: EditorModalProps) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-      <div className="bg-white rounded-xl max-w-sm w-full p-6 shadow-xl border border-slate-200">
-        <h3 className="text-base font-bold text-slate-900 mb-2">{title}</h3>
-        <p className="text-sm text-slate-600 mb-6">{message}</p>
-        <div className="flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50"
-          >
-            {cancelLabel}
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg ${confirmButtonClass}`}
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
