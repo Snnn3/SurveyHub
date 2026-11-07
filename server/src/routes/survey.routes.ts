@@ -17,6 +17,8 @@ const requireOwner = [authenticateJWT, requireRole(Role.SURVEY_OWNER)];
 
 router.get('/', ...requireOwner, listOwnerSurveys);
 router.post('/', ...requireOwner, createSurvey);
+
+// Route registration order per SDS §4.4: F-03 GET /active must precede /:id so literal path is not captured as id
 router.get('/:id', ...requireOwner, getSurveyById);
 router.put('/:id', ...requireOwner, updateSurvey);
 router.delete('/:id', ...requireOwner, deleteSurvey);

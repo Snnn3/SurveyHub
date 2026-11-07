@@ -1,12 +1,7 @@
 import { Prisma, QuestionType, SurveyStatus } from '@prisma/client';
 import { prisma } from '../utils/prisma';
 import { HttpError, NotFoundError } from '../utils/errors';
-import {
-  validateSurveyStructure,
-  parseSurveyInput,
-  formatZodDetails,
-  type SurveyInput,
-} from '../validators/survey.validator';
+import { validateSurveyStructure, type SurveyInput } from '../validators/survey.validator';
 import { z } from 'zod';
 
 const idParamSchema = z.string().uuid();
@@ -86,6 +81,14 @@ export async function getAuthorizedSurvey(
   return survey;
 }
 
+export async function assertSurveyEditable(id: string, ownerId: string) {
+  const existing = await getAuthorizedSurvey(id, ownerId);
+  if (existing.status !== SurveyStatus.DRAFT) {
+    throw new HttpError(400, 'SURVEY_NOT_EDITABLE', 'Only draft surveys can be edited.');
+  }
+  return existing;
+}
+
 export async function listOwnerSurveys(ownerId: string) {
   const surveys = await prisma.survey.findMany({
     where: { ownerId },
@@ -118,18 +121,8 @@ export async function listOwnerSurveys(ownerId: string) {
   }));
 }
 
-export async function createSurvey(ownerId: string, rawInput: unknown) {
-  const parsed = parseSurveyInput(rawInput);
-  if (!parsed.success) {
-    throw new HttpError(
-      400,
-      'VALIDATION_ERROR',
-      'Invalid survey data.',
-      formatZodDetails(parsed.error)
-    );
-  }
-
-  const { title, description, questions } = parsed.data;
+export async function createSurvey(ownerId: string, input: SurveyInput) {
+  const { title, description, questions } = input;
 
   return prisma.survey.create({
     data: {
@@ -149,32 +142,14 @@ export async function getSurveyById(id: string, ownerId: string) {
   return getAuthorizedSurvey(id, ownerId, true);
 }
 
-export async function updateSurvey(id: string, ownerId: string, rawInput: unknown) {
-  // BR-04 Ownership check must precede validation so unauthorized callers receive 403
-  const existing = await getAuthorizedSurvey(id, ownerId);
-
-  // BR-07 Immutable structure check
-  if (existing.status !== SurveyStatus.DRAFT) {
-    throw new HttpError(400, 'SURVEY_NOT_EDITABLE', 'Only draft surveys can be edited.');
-  }
-
-  const parsed = parseSurveyInput(rawInput);
-  if (!parsed.success) {
-    throw new HttpError(
-      400,
-      'VALIDATION_ERROR',
-      'Invalid survey structure.',
-      formatZodDetails(parsed.error)
-    );
-  }
-
-  const { title, description, questions } = parsed.data;
+export async function updateSurvey(id: string, input: SurveyInput) {
+  const { title, description, questions } = input;
 
   return prisma.$transaction(async (tx) => {
-    await tx.question.deleteMany({ where: { surveyId: existing.id } });
+    await tx.question.deleteMany({ where: { surveyId: id } });
 
     return tx.survey.update({
-      where: { id: existing.id },
+      where: { id },
       data: {
         title,
         description: description || null,
