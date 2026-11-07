@@ -3,15 +3,28 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import api from '../api';
 
+export type SurveyStatus = 'DRAFT' | 'PUBLISHED' | 'CLOSED';
+export type SurveyMode = 'IDENTIFIED' | 'ANONYMOUS';
+
 export interface SurveyListItem {
   id: string;
   title: string;
-  status: 'DRAFT' | 'PUBLISHED' | 'CLOSED';
-  mode: 'IDENTIFIED' | 'ANONYMOUS';
+  status: SurveyStatus;
+  mode: SurveyMode;
   questionCount: number;
   responseCount: number;
   createdAt: string;
   updatedAt: string;
+}
+
+function getApiErrorMessage(err: unknown, fallback: string): string {
+  if (axios.isAxiosError(err)) {
+    return err.response?.data?.error?.message || err.message;
+  }
+  if (err instanceof Error) {
+    return err.message;
+  }
+  return fallback;
 }
 
 export function OwnerSurveysPage() {
@@ -30,13 +43,7 @@ export function OwnerSurveysPage() {
       const res = await api.get<{ success: boolean; data: SurveyListItem[] }>('/surveys');
       setSurveys(res.data.data);
     } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.error?.message || err.message);
-      } else if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('Failed to load surveys');
-      }
+      setError(getApiErrorMessage(err, 'Failed to load surveys'));
     } finally {
       setLoading(false);
     }
@@ -53,13 +60,7 @@ export function OwnerSurveysPage() {
       await api.patch(`/surveys/${surveyId}/publish`);
       await fetchSurveys();
     } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        setActionError(err.response?.data?.error?.message || 'Publish failed.');
-      } else if (err instanceof Error) {
-        setActionError(err.message);
-      } else {
-        setActionError('Failed to publish survey');
-      }
+      setActionError(getApiErrorMessage(err, 'Failed to publish survey'));
     } finally {
       setProcessingId(null);
     }
@@ -75,13 +76,7 @@ export function OwnerSurveysPage() {
       setConfirmCloseSurvey(null);
       await fetchSurveys();
     } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        setActionError(err.response?.data?.error?.message || 'Close failed.');
-      } else if (err instanceof Error) {
-        setActionError(err.message);
-      } else {
-        setActionError('Failed to close survey');
-      }
+      setActionError(getApiErrorMessage(err, 'Failed to close survey'));
     } finally {
       setProcessingId(null);
     }
@@ -95,21 +90,15 @@ export function OwnerSurveysPage() {
     try {
       await api.delete(`/surveys/${surveyId}`);
       setConfirmDeleteSurvey(null);
-      setSurveys((prev) => prev.filter((s) => s.id !== surveyId));
+      setSurveys((prev) => prev.filter((survey) => survey.id !== surveyId));
     } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        setActionError(err.response?.data?.error?.message || 'Delete failed.');
-      } else if (err instanceof Error) {
-        setActionError(err.message);
-      } else {
-        setActionError('Failed to delete survey');
-      }
+      setActionError(getApiErrorMessage(err, 'Failed to delete survey'));
     } finally {
       setProcessingId(null);
     }
   }
 
-  function getStatusBadge(status: SurveyListItem['status']) {
+  function getStatusBadge(status: SurveyStatus) {
     switch (status) {
       case 'DRAFT':
         return (
@@ -157,6 +146,7 @@ export function OwnerSurveysPage() {
           <span>{actionError}</span>
           <button
             type="button"
+            aria-label="Dismiss action error"
             onClick={() => setActionError(null)}
             className="text-red-500 hover:text-red-800 font-bold ml-4"
           >
@@ -166,7 +156,11 @@ export function OwnerSurveysPage() {
       )}
 
       {error && (
-        <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div
+          role="alert"
+          aria-live="polite"
+          className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+        >
           {error}
         </div>
       )}

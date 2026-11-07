@@ -22,6 +22,21 @@ describe('Sprint 1 Supporting Unit Tests - Rules (STS-U-01, STS-U-02)', () => {
     expect(result.error?.code).toBe('TOO_FEW_OPTIONS');
   });
 
+  it('rejects single-choice options with empty or over 200 character labels with code INVALID_OPTION_LABEL', () => {
+    const longLabel = 'A'.repeat(201);
+    const result = validateSurveyStructure({
+      questions: [
+        {
+          prompt: 'Which track do you prefer?',
+          questionType: QuestionType.SINGLE_CHOICE,
+          options: [{ label: 'Track A' }, { label: longLabel }],
+        },
+      ],
+    });
+    expect(result.isValid).toBe(false);
+    expect(result.error?.code).toBe('INVALID_OPTION_LABEL');
+  });
+
   it('accepts a valid draft structure with single-choice and short-text questions', () => {
     const result = validateSurveyStructure({
       questions: [

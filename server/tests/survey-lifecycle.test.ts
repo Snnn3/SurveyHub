@@ -574,7 +574,7 @@ describe('F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11)', () =>
     expect(res.body.error.code).toBe('FORBIDDEN_ROLE');
   });
 
-  it('returns 404 NOT_FOUND for non-existent survey ID', async () => {
+  it('returns 404 NOT_FOUND for non-existent survey ID or malformed UUID', async () => {
     const fakeId = '00000000-0000-0000-0000-000000000000';
     const res = await request(app)
       .get(`/api/surveys/${fakeId}`)
@@ -582,5 +582,49 @@ describe('F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11)', () =>
 
     expect(res.status).toBe(404);
     expect(res.body.error.code).toBe('NOT_FOUND');
+
+    const malformedRes = await request(app)
+      .get('/api/surveys/not-a-valid-uuid')
+      .set('Authorization', `Bearer ${ownerAToken}`);
+
+    expect(malformedRes.status).toBe(404);
+    expect(malformedRes.body.error.code).toBe('NOT_FOUND');
+  });
+
+  it('rejects duplicate option labels with 400 VALIDATION_ERROR', async () => {
+    const res = await request(app)
+      .post('/api/surveys')
+      .set('Authorization', `Bearer ${ownerAToken}`)
+      .send({
+        title: 'Duplicate Option Test',
+        questions: [
+          {
+            prompt: 'Choose one',
+            questionType: 'SINGLE_CHOICE',
+            options: [{ label: 'Option A' }, { label: 'option a' }],
+          },
+        ],
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('rejects Sprint 2 question types with 400 VALIDATION_ERROR in Sprint 1', async () => {
+    const res = await request(app)
+      .post('/api/surveys')
+      .set('Authorization', `Bearer ${ownerAToken}`)
+      .send({
+        title: 'Sprint 2 Question Type',
+        questions: [
+          {
+            prompt: 'Rate 1 to 5',
+            questionType: 'RATING',
+          },
+        ],
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
   });
 });

@@ -5,28 +5,68 @@ import { prisma } from '../utils/prisma';
 import { HttpError, NotFoundError } from '../utils/errors';
 import { validateSurveyStructure } from '../validators/survey.validator';
 
-const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-function isValidUUID(id: string): boolean {
-  return uuidRegex.test(id);
-}
+const idParamSchema = z.string().uuid();
 
 const questionOptionInputSchema = z.object({
   label: z.string().trim().min(1, 'Option label is required').max(200, 'Option label must be at most 200 characters'),
 });
 
-const questionInputSchema = z.object({
-  prompt: z.string().trim().min(1, 'Question prompt is required').max(500, 'Question prompt must be at most 500 characters'),
-  questionType: z.nativeEnum(QuestionType, { errorMap: () => ({ message: 'Invalid question type' }) }),
-  isRequired: z.boolean().optional().default(true),
-  options: z.array(questionOptionInputSchema).optional().default([]),
-});
+const questionInputSchema = z
+  .object({
+    prompt: z.string().trim().min(1, 'Question prompt is required').max(500, 'Question prompt must be at most 500 characters'),
+    questionType: z.enum([QuestionType.SINGLE_CHOICE, QuestionType.SHORT_TEXT], {
+      errorMap: () => ({ message: 'Invalid question type. Sprint 1 supports SINGLE_CHOICE and SHORT_TEXT.' }),
+    }),
+    isRequired: z.boolean().optional().default(true),
+    options: z.array(questionOptionInputSchema).optional().default([]),
+  })
+  .refine(
+    (question) => {
+      if (question.questionType === QuestionType.SINGLE_CHOICE && question.options.length > 0) {
+        const labels = question.options.map((option) => option.label.trim().toLowerCase());
+        return new Set(labels).size === labels.length;
+      }
+      return true;
+    },
+    { message: 'Option labels must be unique within each question.', path: ['options'] }
+  );
 
 const surveyInputSchema = z.object({
   title: z.string().trim().min(1, 'Title is required').max(120, 'Title must be at most 120 characters'),
   description: z.string().trim().max(2000, 'Description must be at most 2,000 characters').optional().nullable(),
   questions: z.array(questionInputSchema).optional().default([]),
 });
+
+const surveyDetailInclude = {
+  questions: {
+    orderBy: [{ orderIndex: 'asc' as const }, { id: 'asc' as const }],
+    include: {
+      options: {
+        orderBy: [{ orderIndex: 'asc' as const }, { id: 'asc' as const }],
+      },
+    },
+  },
+};
+
+function mapQuestionsToCreate(questions: z.infer<typeof questionInputSchema>[]) {
+  return questions.map((question, questionIndex) => ({
+    prompt: question.prompt,
+    questionType: question.questionType,
+    isRequired: question.isRequired,
+    orderIndex: questionIndex,
+    options: {
+      create: (question.options || []).map((option, optionIndex) => ({
+        label: option.label,
+        orderIndex: optionIndex,
+      })),
+    },
+  }));
+}
+
+function parseSurveyId(paramId: string): string | null {
+  const result = idParamSchema.safeParse(paramId);
+  return result.success ? result.data : null;
+}
 
 export async function listOwnerSurveys(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -50,15 +90,15 @@ export async function listOwnerSurveys(req: Request, res: Response, next: NextFu
       },
     });
 
-    const data = surveys.map((s) => ({
-      id: s.id,
-      title: s.title,
-      status: s.status,
-      mode: s.mode,
-      questionCount: s._count.questions,
-      responseCount: s._count.responses,
-      createdAt: s.createdAt.toISOString(),
-      updatedAt: s.updatedAt.toISOString(),
+    const data = surveys.map((survey) => ({
+      id: survey.id,
+      title: survey.title,
+      status: survey.status,
+      mode: survey.mode,
+      questionCount: survey._count.questions,
+      responseCount: survey._count.responses,
+      createdAt: survey.createdAt.toISOString(),
+      updatedAt: survey.updatedAt.toISOString(),
     }));
 
     res.status(200).json({ success: true, data });
@@ -94,30 +134,10 @@ export async function createSurvey(req: Request, res: Response, next: NextFuncti
         ownerId,
         status: SurveyStatus.DRAFT,
         questions: {
-          create: questions.map((q, qIndex) => ({
-            prompt: q.prompt,
-            questionType: q.questionType,
-            isRequired: q.isRequired,
-            orderIndex: qIndex,
-            options: {
-              create: (q.options || []).map((opt, optIndex) => ({
-                label: opt.label,
-                orderIndex: optIndex,
-              })),
-            },
-          })),
+          create: mapQuestionsToCreate(questions),
         },
       },
-      include: {
-        questions: {
-          orderBy: [{ orderIndex: 'asc' }, { id: 'asc' }],
-          include: {
-            options: {
-              orderBy: [{ orderIndex: 'asc' }, { id: 'asc' }],
-            },
-          },
-        },
-      },
+      include: surveyDetailInclude,
     });
 
     res.status(201).json({ success: true, data: survey });
@@ -128,26 +148,17 @@ export async function createSurvey(req: Request, res: Response, next: NextFuncti
 
 export async function getSurveyById(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { id } = req.params;
-    const ownerId = req.auth!.id;
-
-    if (!isValidUUID(id)) {
+    const surveyId = parseSurveyId(req.params.id);
+    if (!surveyId) {
       next(new NotFoundError('Survey not found.'));
       return;
     }
 
+    const ownerId = req.auth!.id;
+
     const survey = await prisma.survey.findUnique({
-      where: { id },
-      include: {
-        questions: {
-          orderBy: [{ orderIndex: 'asc' }, { id: 'asc' }],
-          include: {
-            options: {
-              orderBy: [{ orderIndex: 'asc' }, { id: 'asc' }],
-            },
-          },
-        },
-      },
+      where: { id: surveyId },
+      include: surveyDetailInclude,
     });
 
     if (!survey) {
@@ -167,13 +178,13 @@ export async function getSurveyById(req: Request, res: Response, next: NextFunct
 }
 
 export async function updateSurvey(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const { id } = req.params;
-  const ownerId = req.auth!.id;
-
-  if (!isValidUUID(id)) {
+  const surveyId = parseSurveyId(req.params.id);
+  if (!surveyId) {
     next(new NotFoundError('Survey not found.'));
     return;
   }
+
+  const ownerId = req.auth!.id;
 
   const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
   const parsed = surveyInputSchema.safeParse(body);
@@ -192,7 +203,7 @@ export async function updateSurvey(req: Request, res: Response, next: NextFuncti
 
   try {
     const existing = await prisma.survey.findUnique({
-      where: { id },
+      where: { id: surveyId },
       select: { id: true, ownerId: true, status: true },
     });
 
@@ -215,38 +226,18 @@ export async function updateSurvey(req: Request, res: Response, next: NextFuncti
 
     const updated = await prisma.$transaction(async (tx) => {
       // Cascade delete existing questions and recreate atomically
-      await tx.question.deleteMany({ where: { surveyId: id } });
+      await tx.question.deleteMany({ where: { surveyId } });
 
       return tx.survey.update({
-        where: { id },
+        where: { id: surveyId },
         data: {
           title,
           description: description || null,
           questions: {
-            create: questions.map((q, qIndex) => ({
-              prompt: q.prompt,
-              questionType: q.questionType,
-              isRequired: q.isRequired,
-              orderIndex: qIndex,
-              options: {
-                create: (q.options || []).map((opt, optIndex) => ({
-                  label: opt.label,
-                  orderIndex: optIndex,
-                })),
-              },
-            })),
+            create: mapQuestionsToCreate(questions),
           },
         },
-        include: {
-          questions: {
-            orderBy: [{ orderIndex: 'asc' }, { id: 'asc' }],
-            include: {
-              options: {
-                orderBy: [{ orderIndex: 'asc' }, { id: 'asc' }],
-              },
-            },
-          },
-        },
+        include: surveyDetailInclude,
       });
     });
 
@@ -258,16 +249,16 @@ export async function updateSurvey(req: Request, res: Response, next: NextFuncti
 
 export async function deleteSurvey(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { id } = req.params;
-    const ownerId = req.auth!.id;
-
-    if (!isValidUUID(id)) {
+    const surveyId = parseSurveyId(req.params.id);
+    if (!surveyId) {
       next(new NotFoundError('Survey not found.'));
       return;
     }
 
+    const ownerId = req.auth!.id;
+
     const existing = await prisma.survey.findUnique({
-      where: { id },
+      where: { id: surveyId },
       select: { id: true, ownerId: true, status: true },
     });
 
@@ -286,7 +277,7 @@ export async function deleteSurvey(req: Request, res: Response, next: NextFuncti
       return;
     }
 
-    await prisma.survey.delete({ where: { id } });
+    await prisma.survey.delete({ where: { id: surveyId } });
 
     res.status(204).send();
   } catch (error) {
@@ -296,16 +287,16 @@ export async function deleteSurvey(req: Request, res: Response, next: NextFuncti
 
 export async function publishSurvey(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { id } = req.params;
-    const ownerId = req.auth!.id;
-
-    if (!isValidUUID(id)) {
+    const surveyId = parseSurveyId(req.params.id);
+    if (!surveyId) {
       next(new NotFoundError('Survey not found.'));
       return;
     }
 
+    const ownerId = req.auth!.id;
+
     const existing = await prisma.survey.findUnique({
-      where: { id },
+      where: { id: surveyId },
       include: {
         questions: {
           include: {
@@ -351,21 +342,12 @@ export async function publishSurvey(req: Request, res: Response, next: NextFunct
     }
 
     const published = await prisma.survey.update({
-      where: { id },
+      where: { id: surveyId },
       data: {
         status: SurveyStatus.PUBLISHED,
         publishedAt: new Date(),
       },
-      include: {
-        questions: {
-          orderBy: [{ orderIndex: 'asc' }, { id: 'asc' }],
-          include: {
-            options: {
-              orderBy: [{ orderIndex: 'asc' }, { id: 'asc' }],
-            },
-          },
-        },
-      },
+      include: surveyDetailInclude,
     });
 
     res.status(200).json({ success: true, data: published });
@@ -376,16 +358,16 @@ export async function publishSurvey(req: Request, res: Response, next: NextFunct
 
 export async function closeSurvey(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { id } = req.params;
-    const ownerId = req.auth!.id;
-
-    if (!isValidUUID(id)) {
+    const surveyId = parseSurveyId(req.params.id);
+    if (!surveyId) {
       next(new NotFoundError('Survey not found.'));
       return;
     }
 
+    const ownerId = req.auth!.id;
+
     const existing = await prisma.survey.findUnique({
-      where: { id },
+      where: { id: surveyId },
       select: { id: true, ownerId: true, status: true },
     });
 
@@ -411,7 +393,7 @@ export async function closeSurvey(req: Request, res: Response, next: NextFunctio
     }
 
     const closed = await prisma.survey.update({
-      where: { id },
+      where: { id: surveyId },
       data: {
         status: SurveyStatus.CLOSED,
         closedAt: new Date(),

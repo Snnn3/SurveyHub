@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import api from '../api';
 
@@ -14,6 +14,16 @@ export interface FormQuestion {
   questionType: QuestionType;
   isRequired: boolean;
   options: FormOption[];
+}
+
+function getApiErrorMessage(err: unknown, fallback: string): string {
+  if (axios.isAxiosError(err)) {
+    return err.response?.data?.error?.message || err.message;
+  }
+  if (err instanceof Error) {
+    return err.message;
+  }
+  return fallback;
 }
 
 export function SurveyEditorPage() {
@@ -37,6 +47,7 @@ export function SurveyEditorPage() {
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [questionToDelete, setQuestionToDelete] = useState<number | null>(null);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -78,13 +89,7 @@ export function SurveyEditorPage() {
         );
       } catch (err: unknown) {
         if (!active) return;
-        if (axios.isAxiosError(err)) {
-          setError(err.response?.data?.error?.message || err.message);
-        } else if (err instanceof Error) {
-          setError(err.message);
-        } else {
-          setError('Failed to load survey.');
-        }
+        setError(getApiErrorMessage(err, 'Failed to load survey.'));
       } finally {
         if (active) setLoading(false);
       }
@@ -107,22 +112,22 @@ export function SurveyEditorPage() {
       return errors;
     }
 
-    questions.forEach((q, qIndex) => {
+    questions.forEach((question, qIndex) => {
       const qNum = qIndex + 1;
-      if (!q.prompt.trim()) {
+      if (!question.prompt.trim()) {
         errors.push(`Question ${qNum}: Prompt cannot be empty.`);
-      } else if (q.prompt.length > 500) {
+      } else if (question.prompt.length > 500) {
         errors.push(`Question ${qNum}: Prompt must be at most 500 characters.`);
       }
 
-      if (q.questionType === 'SINGLE_CHOICE') {
-        if (q.options.length < 2) {
+      if (question.questionType === 'SINGLE_CHOICE') {
+        if (question.options.length < 2) {
           errors.push(`Question ${qNum}: Single-choice questions must have at least 2 options.`);
-        } else if (q.options.length > 20) {
+        } else if (question.options.length > 20) {
           errors.push(`Question ${qNum}: Single-choice questions cannot exceed 20 options.`);
         }
 
-        const labels = q.options.map((opt) => opt.label.trim().toLowerCase());
+        const labels = question.options.map((option) => option.label.trim().toLowerCase());
         if (labels.some((l) => l.length === 0)) {
           errors.push(`Question ${qNum}: All option labels must be filled in.`);
         }
@@ -236,13 +241,7 @@ export function SurveyEditorPage() {
         return res.data.data.id;
       }
     } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.error?.message || 'Failed to save survey.');
-      } else if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('Failed to save survey.');
-      }
+      setError(getApiErrorMessage(err, 'Failed to save survey.'));
       return null;
     } finally {
       setSaving(false);
@@ -273,13 +272,7 @@ export function SurveyEditorPage() {
       await api.patch(`/surveys/${savedId}/publish`);
       navigate('/owner/surveys');
     } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.error?.message || 'Publishing failed.');
-      } else if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('Publishing failed.');
-      }
+      setError(getApiErrorMessage(err, 'Publishing failed.'));
     } finally {
       setSaving(false);
     }
@@ -303,22 +296,31 @@ export function SurveyEditorPage() {
           </h2>
           <p className="text-sm text-slate-600">Configure survey metadata and questions.</p>
         </div>
-        <Link
-          to="/owner/surveys"
+        <button
+          type="button"
+          onClick={() => setShowCloseConfirm(true)}
           className="text-sm font-semibold text-slate-600 hover:text-slate-900"
         >
-          Cancel
-        </Link>
+          Close Editor
+        </button>
       </div>
 
       {error && (
-        <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div
+          role="alert"
+          aria-live="polite"
+          className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+        >
           {error}
         </div>
       )}
 
       {validationErrors.length > 0 && (
-        <div role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 space-y-1">
+        <div
+          role="alert"
+          aria-live="polite"
+          className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 space-y-1"
+        >
           <p className="font-semibold">Survey structure must be completed before publishing:</p>
           <ul className="list-disc pl-5 space-y-0.5 text-xs">
             {validationErrors.map((msg, i) => (
@@ -339,6 +341,7 @@ export function SurveyEditorPage() {
             type="text"
             required
             maxLength={120}
+            aria-invalid={!title.trim() && validationErrors.length > 0}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g., CPE 334 Midterm Feedback"
@@ -391,7 +394,7 @@ export function SurveyEditorPage() {
             No questions added yet. Add at least one question to publish this survey.
           </div>
         ) : (
-          questions.map((q, qIndex) => (
+          questions.map((question, qIndex) => (
             <div
               key={qIndex}
               className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-4 relative"
@@ -402,6 +405,7 @@ export function SurveyEditorPage() {
                   <button
                     type="button"
                     title="Move up"
+                    aria-label={`Move Question ${qIndex + 1} up`}
                     disabled={qIndex === 0}
                     onClick={() => moveQuestion(qIndex, 'up')}
                     className="p-1 text-slate-400 hover:text-slate-700 disabled:opacity-30"
@@ -411,6 +415,7 @@ export function SurveyEditorPage() {
                   <button
                     type="button"
                     title="Move down"
+                    aria-label={`Move Question ${qIndex + 1} down`}
                     disabled={qIndex === questions.length - 1}
                     onClick={() => moveQuestion(qIndex, 'down')}
                     className="p-1 text-slate-400 hover:text-slate-700 disabled:opacity-30"
@@ -420,6 +425,7 @@ export function SurveyEditorPage() {
                   <button
                     type="button"
                     title="Remove question"
+                    aria-label={`Remove Question ${qIndex + 1}`}
                     onClick={() => setQuestionToDelete(qIndex)}
                     className="p-1 text-red-400 hover:text-red-700 ml-2"
                   >
@@ -428,15 +434,20 @@ export function SurveyEditorPage() {
                 </div>
               </div>
 
-              {/* Prompt */}
+              {/* Prompt with explicit label htmlFor */}
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
+                <label
+                  htmlFor={`prompt-${qIndex}`}
+                  className="block text-xs font-medium text-slate-700 mb-1"
+                >
                   Prompt <span className="text-red-500">*</span>
                 </label>
                 <input
+                  id={`prompt-${qIndex}`}
                   type="text"
                   maxLength={500}
-                  value={q.prompt}
+                  aria-invalid={!question.prompt.trim() && validationErrors.length > 0}
+                  value={question.prompt}
                   onChange={(e) => updateQuestion(qIndex, { prompt: e.target.value })}
                   placeholder="e.g. How satisfied are you with the course?"
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
@@ -446,9 +457,10 @@ export function SurveyEditorPage() {
               {/* Type and Required Toggle */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
                 <div className="flex items-center gap-3">
-                  <label className="text-xs font-medium text-slate-700">Type:</label>
+                  <label htmlFor={`type-${qIndex}`} className="text-xs font-medium text-slate-700">Type:</label>
                   <select
-                    value={q.questionType}
+                    id={`type-${qIndex}`}
+                    value={question.questionType}
                     onChange={(e) => {
                       const newType = e.target.value as QuestionType;
                       updateQuestion(qIndex, {
@@ -466,7 +478,7 @@ export function SurveyEditorPage() {
                 <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-700">
                   <input
                     type="checkbox"
-                    checked={q.isRequired}
+                    checked={question.isRequired}
                     onChange={(e) => updateQuestion(qIndex, { isRequired: e.target.checked })}
                     className="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4"
                   />
@@ -475,25 +487,33 @@ export function SurveyEditorPage() {
               </div>
 
               {/* Single Choice Options */}
-              {q.questionType === 'SINGLE_CHOICE' && (
+              {question.questionType === 'SINGLE_CHOICE' && (
                 <div className="space-y-2 pt-2 border-t border-slate-100">
                   <label className="block text-xs font-semibold text-slate-700">
                     Options (2–20 required for publish)
                   </label>
-                  {q.options.map((opt, optIndex) => (
+                  {question.options.map((option, optIndex) => (
                     <div key={optIndex} className="flex items-center gap-2">
-                      <span className="text-xs text-slate-400 w-5 text-right">{optIndex + 1}.</span>
+                      <label
+                        htmlFor={`option-${qIndex}-${optIndex}`}
+                        className="text-xs text-slate-400 w-5 text-right cursor-pointer"
+                      >
+                        {optIndex + 1}.
+                      </label>
                       <input
+                        id={`option-${qIndex}-${optIndex}`}
+                        aria-label={`Question ${qIndex + 1} Option ${optIndex + 1}`}
                         type="text"
                         maxLength={200}
-                        value={opt.label}
+                        value={option.label}
                         onChange={(e) => updateOption(qIndex, optIndex, e.target.value)}
                         placeholder={`Option ${optIndex + 1}`}
                         className="flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs outline-none focus:border-indigo-500"
                       />
-                      {q.options.length > 2 && (
+                      {question.options.length > 2 && (
                         <button
                           type="button"
+                          aria-label={`Remove option ${optIndex + 1}`}
                           onClick={() => removeOption(qIndex, optIndex)}
                           className="text-slate-400 hover:text-red-600 text-xs px-2 py-1"
                         >
@@ -503,7 +523,7 @@ export function SurveyEditorPage() {
                     </div>
                   ))}
 
-                  {q.options.length < 20 && (
+                  {question.options.length < 20 && (
                     <button
                       type="button"
                       onClick={() => addOption(qIndex)}
@@ -521,12 +541,13 @@ export function SurveyEditorPage() {
 
       {/* Action Footer */}
       <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-4 border-t border-slate-200">
-        <Link
-          to="/owner/surveys"
+        <button
+          type="button"
+          onClick={() => setShowCloseConfirm(true)}
           className="w-full sm:w-auto px-4 py-2 text-sm font-semibold rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 text-center"
         >
-          Cancel
-        </Link>
+          Close
+        </button>
         <button
           type="button"
           disabled={saving}
@@ -544,6 +565,34 @@ export function SurveyEditorPage() {
           {saving ? 'Processing...' : 'Publish Survey'}
         </button>
       </div>
+
+      {/* Confirmation Dialog for Closing Editor */}
+      {showCloseConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+          <div className="bg-white rounded-xl max-w-sm w-full p-6 shadow-xl border border-slate-200">
+            <h3 className="text-base font-bold text-slate-900 mb-2">Close Survey Editor</h3>
+            <p className="text-sm text-slate-600 mb-6">
+              Are you sure you want to exit? Any unsaved changes will be lost.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowCloseConfirm(false)}
+                className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50"
+              >
+                Keep Editing
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/owner/surveys')}
+                className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 text-white hover:bg-slate-900"
+              >
+                Discard & Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Confirmation Dialog for Question Removal */}
       {questionToDelete !== null && (

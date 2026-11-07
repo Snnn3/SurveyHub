@@ -59,8 +59,8 @@ export function validateSurveyStructure(
   }
 
   for (let i = 0; i < questions.length; i++) {
-    const q = questions[i];
-    const prompt = q.prompt ? q.prompt.trim() : '';
+    const question = questions[i];
+    const prompt = question.prompt ? question.prompt.trim() : '';
 
     if (prompt.length === 0) {
       return {
@@ -84,8 +84,8 @@ export function validateSurveyStructure(
       };
     }
 
-    if (q.questionType === QuestionType.SINGLE_CHOICE) {
-      const options = q.options ?? [];
+    if (question.questionType === QuestionType.SINGLE_CHOICE) {
+      const options = question.options ?? [];
 
       if (options.length < 2) {
         return {
@@ -109,9 +109,17 @@ export function validateSurveyStructure(
         };
       }
 
-      const labels = options.map((opt) => (opt.label ? opt.label.trim().toLowerCase() : ''));
+      const labels = options.map((option) => (option.label ? option.label.trim().toLowerCase() : ''));
 
-      if (labels.some((l) => l.length === 0)) {
+      // Check empty or exceeding 200 characters limit
+      if (
+        options.some(
+          (option) =>
+            !option.label ||
+            option.label.trim().length === 0 ||
+            option.label.trim().length > 200
+        )
+      ) {
         return {
           isValid: false,
           error: {
