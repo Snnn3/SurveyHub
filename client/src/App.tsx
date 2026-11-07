@@ -34,11 +34,16 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function LoginPage() {
+interface PlaceholderCardProps {
+  title: string;
+  description: string;
+}
+
+function PlaceholderCard({ title, description }: PlaceholderCardProps) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center">
-      <h2 className="text-xl font-bold text-slate-900 mb-2">Login</h2>
-      <p className="text-sm text-slate-600 mb-4">Sprint 1 Feature F-01: Authentication, session and RBAC.</p>
+      <h2 className="text-xl font-bold text-slate-900 mb-2">{title}</h2>
+      <p className="text-sm text-slate-600 mb-4">{description}</p>
       <Link to="/" className="text-sm font-semibold text-indigo-600 hover:text-indigo-800">
         Return to Home
       </Link>
@@ -46,27 +51,25 @@ function LoginPage() {
   );
 }
 
+function LoginPage() {
+  return <PlaceholderCard title="Login" description="Sprint 1 Feature F-01: Authentication, session and RBAC." />;
+}
+
 function SurveysPage() {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center">
-      <h2 className="text-xl font-bold text-slate-900 mb-2">Survey Catalogue</h2>
-      <p className="text-sm text-slate-600 mb-4">Sprint 1 Feature F-03: Respondent survey taking and response rules.</p>
-      <Link to="/" className="text-sm font-semibold text-indigo-600 hover:text-indigo-800">
-        Return to Home
-      </Link>
-    </div>
+    <PlaceholderCard
+      title="Survey Catalogue"
+      description="Sprint 1 Feature F-03: Respondent survey taking and response rules."
+    />
   );
 }
 
 function OwnerSurveysPage() {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center">
-      <h2 className="text-xl font-bold text-slate-900 mb-2">Owner Dashboard</h2>
-      <p className="text-sm text-slate-600 mb-4">Sprint 1 Feature F-02: Survey lifecycle and authoring.</p>
-      <Link to="/" className="text-sm font-semibold text-indigo-600 hover:text-indigo-800">
-        Return to Home
-      </Link>
-    </div>
+    <PlaceholderCard
+      title="Owner Dashboard"
+      description="Sprint 1 Feature F-02: Survey lifecycle and authoring."
+    />
   );
 }
 
@@ -166,15 +169,7 @@ function ScaffoldHome() {
 }
 
 function NotFound() {
-  return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center">
-      <h2 className="text-xl font-bold text-slate-900 mb-2">Page Not Found</h2>
-      <p className="text-sm text-slate-600 mb-4">The requested page does not exist.</p>
-      <Link to="/" className="text-sm font-semibold text-indigo-600 hover:text-indigo-800">
-        Return to Home
-      </Link>
-    </div>
-  );
+  return <PlaceholderCard title="Page Not Found" description="The requested page does not exist." />;
 }
 
 export default function App() {

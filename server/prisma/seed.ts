@@ -12,6 +12,7 @@ const SEED_Q1_ID = '00000000-0000-4000-a000-000000000011';
 const SEED_Q2_ID = '00000000-0000-4000-a000-000000000012';
 const SEED_Q3_ID = '00000000-0000-4000-a000-000000000021';
 const SEED_Q4_ID = '00000000-0000-4000-a000-000000000031';
+const PREV_Q4_RATING_ID = '00000000-0000-4000-a000-000000000032';
 
 const SEED_OPT_1_1_ID = '00000000-0000-4000-a000-000000000101';
 const SEED_OPT_1_2_ID = '00000000-0000-4000-a000-000000000102';
@@ -226,7 +227,34 @@ async function main() {
     });
 
     // Reconcile Survey 3 questions and options to ensure exactly 1 Rating question per SDS §2.5:
-    // 1. Upsert canonical SEED_Q4_ID as RATING question for Survey 3
+    // 1. Clean up temporary Q4 ID (...032) if created in an earlier seed run and preserve any answers
+    const prevQ4 = await tx.question.findUnique({
+      where: { id: PREV_Q4_RATING_ID },
+      include: { _count: { select: { answers: true } } },
+    });
+    if (prevQ4) {
+      if (prevQ4._count.answers > 0) {
+        await tx.answer.updateMany({
+          where: { questionId: PREV_Q4_RATING_ID },
+          data: { questionId: SEED_Q4_ID },
+        });
+      }
+      await tx.question.delete({ where: { id: PREV_Q4_RATING_ID } });
+    }
+
+    // 2. Safely clean up previous choice options on SEED_Q4_ID (...031) only if no answers reference them
+    const legacyOptionsInUse = await tx.answerOption.count({
+      where: {
+        option: { questionId: SEED_Q4_ID },
+      },
+    });
+    if (legacyOptionsInUse === 0) {
+      await tx.option.deleteMany({
+        where: { questionId: SEED_Q4_ID },
+      });
+    }
+
+    // 3. Upsert canonical SEED_Q4_ID as RATING question for Survey 3
     const q4Payload = {
       surveyId: survey3.id,
       prompt: 'Overall, how would you rate this course so far (1 to 5)?',
