@@ -181,7 +181,12 @@ export async function deleteSurvey(id: string, ownerId: string) {
     throw new HttpError(400, 'SURVEY_NOT_EDITABLE', 'Only draft surveys can be deleted.');
   }
 
-  await prisma.survey.delete({ where: { id: existing.id } });
+  const deleted = await prisma.survey.deleteMany({
+    where: { id: existing.id, ownerId, status: SurveyStatus.DRAFT },
+  });
+  if (deleted.count === 0) {
+    throw new HttpError(400, 'SURVEY_NOT_EDITABLE', 'Only draft surveys can be deleted.');
+  }
 }
 
 export async function publishSurvey(id: string, ownerId: string) {
@@ -213,13 +218,26 @@ export async function publishSurvey(id: string, ownerId: string) {
     );
   }
 
-  return prisma.survey.update({
-    where: { id: existing.id },
-    data: {
-      status: SurveyStatus.PUBLISHED,
-      publishedAt: new Date(),
-    },
-    include: surveyDetailInclude,
+  return prisma.$transaction(async (tx) => {
+    const current = await tx.survey.findUnique({
+      where: { id: existing.id },
+      select: { id: true, ownerId: true, status: true },
+    });
+    if (!current || current.ownerId !== ownerId) {
+      throw new HttpError(403, 'FORBIDDEN_OWNERSHIP', 'You do not own this survey.');
+    }
+    if (current.status !== SurveyStatus.DRAFT) {
+      throw new HttpError(400, 'INVALID_STATE_TRANSITION', 'Only draft surveys can be published.');
+    }
+
+    return tx.survey.update({
+      where: { id: existing.id },
+      data: {
+        status: SurveyStatus.PUBLISHED,
+        publishedAt: new Date(),
+      },
+      include: surveyDetailInclude,
+    });
   });
 }
 
@@ -230,12 +248,25 @@ export async function closeSurvey(id: string, ownerId: string) {
     throw new HttpError(400, 'INVALID_STATE_TRANSITION', 'Only published surveys can be closed.');
   }
 
-  return prisma.survey.update({
-    where: { id: existing.id },
-    data: {
-      status: SurveyStatus.CLOSED,
-      closedAt: new Date(),
-    },
-    include: surveyDetailInclude,
+  return prisma.$transaction(async (tx) => {
+    const current = await tx.survey.findUnique({
+      where: { id: existing.id },
+      select: { id: true, ownerId: true, status: true },
+    });
+    if (!current || current.ownerId !== ownerId) {
+      throw new HttpError(403, 'FORBIDDEN_OWNERSHIP', 'You do not own this survey.');
+    }
+    if (current.status !== SurveyStatus.PUBLISHED) {
+      throw new HttpError(400, 'INVALID_STATE_TRANSITION', 'Only published surveys can be closed.');
+    }
+
+    return tx.survey.update({
+      where: { id: existing.id },
+      data: {
+        status: SurveyStatus.CLOSED,
+        closedAt: new Date(),
+      },
+      include: surveyDetailInclude,
+    });
   });
 }
