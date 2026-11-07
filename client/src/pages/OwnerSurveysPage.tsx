@@ -1,9 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import axios from 'axios';
 import api, { getApiErrorMessage } from '../api';
 
 export type SurveyStatus = 'DRAFT' | 'PUBLISHED' | 'CLOSED';
 export type SurveyMode = 'IDENTIFIED' | 'ANONYMOUS';
+
+export interface ActionErrorState {
+  message: string;
+  details?: string[];
+}
 
 export interface SurveyListItem {
   id: string;
@@ -21,7 +27,7 @@ export function OwnerSurveysPage() {
   const [surveys, setSurveys] = useState<SurveyListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<ActionErrorState | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [confirmCloseSurvey, setConfirmCloseSurvey] = useState<SurveyListItem | null>(null);
   const [confirmDeleteSurvey, setConfirmDeleteSurvey] = useState<SurveyListItem | null>(null);
@@ -59,7 +65,21 @@ export function OwnerSurveysPage() {
       setSuccessMessage('Survey published successfully.');
       await fetchSurveys();
     } catch (err: unknown) {
-      setActionError(getApiErrorMessage(err, 'Failed to publish survey'));
+      if (axios.isAxiosError(err) && err.response?.data?.error) {
+        const errObj = err.response.data.error;
+        const details: string[] = [];
+        if (Array.isArray(errObj.details)) {
+          errObj.details.forEach((d: { message?: string }) => {
+            if (d.message) details.push(d.message);
+          });
+        }
+        setActionError({
+          message: errObj.message || 'Failed to publish survey',
+          details: details.length > 0 ? details : undefined,
+        });
+      } else {
+        setActionError({ message: getApiErrorMessage(err, 'Failed to publish survey') });
+      }
     } finally {
       setProcessingId(null);
     }
@@ -76,7 +96,7 @@ export function OwnerSurveysPage() {
       setSuccessMessage('Survey closed successfully.');
       await fetchSurveys();
     } catch (err: unknown) {
-      setActionError(getApiErrorMessage(err, 'Failed to close survey'));
+      setActionError({ message: getApiErrorMessage(err, 'Failed to close survey') });
     } finally {
       setProcessingId(null);
     }
@@ -93,7 +113,7 @@ export function OwnerSurveysPage() {
       setSurveys((prev) => prev.filter((survey) => survey.id !== surveyId));
       setSuccessMessage('Survey draft deleted successfully.');
     } catch (err: unknown) {
-      setActionError(getApiErrorMessage(err, 'Failed to delete survey'));
+      setActionError({ message: getApiErrorMessage(err, 'Failed to delete survey') });
     } finally {
       setProcessingId(null);
     }
@@ -160,17 +180,26 @@ export function OwnerSurveysPage() {
         <div
           role="alert"
           aria-live="polite"
-          className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 flex justify-between items-center"
+          className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 space-y-1"
         >
-          <span>{actionError}</span>
-          <button
-            type="button"
-            aria-label="Dismiss action error"
-            onClick={() => setActionError(null)}
-            className="text-red-500 hover:text-red-800 font-bold ml-4"
-          >
-            ×
-          </button>
+          <div className="flex justify-between items-center">
+            <span className="font-semibold">{actionError.message}</span>
+            <button
+              type="button"
+              aria-label="Dismiss action error"
+              onClick={() => setActionError(null)}
+              className="text-red-500 hover:text-red-800 font-bold ml-4"
+            >
+              ×
+            </button>
+          </div>
+          {actionError.details && actionError.details.length > 0 && (
+            <ul className="list-disc pl-5 text-xs space-y-0.5">
+              {actionError.details.map((detail, idx) => (
+                <li key={idx}>{detail}</li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
 

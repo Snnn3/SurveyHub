@@ -46,6 +46,18 @@ const surveyInputSchema = z.object({
   questions: z.array(questionInputSchema).optional().default([]),
 });
 
+function formatZodDetails(error: z.ZodError): Array<{ field: string; message: string }> {
+  return error.issues.map((issue) => ({
+    field: issue.path.join('.'),
+    message: issue.message,
+  }));
+}
+
+function parseSurveyInput(body: unknown) {
+  const normalized = body && typeof body === 'object' && !Array.isArray(body) ? body : {};
+  return surveyInputSchema.safeParse(normalized);
+}
+
 const surveyDetailInclude = {
   questions: {
     orderBy: [{ orderIndex: 'asc' as const }, { id: 'asc' as const }],
@@ -161,8 +173,7 @@ export async function listOwnerSurveys(req: Request, res: Response, next: NextFu
 }
 
 export async function createSurvey(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
-  const parsed = surveyInputSchema.safeParse(body);
+  const parsed = parseSurveyInput(req.body);
 
   if (!parsed.success) {
     next(
@@ -170,7 +181,7 @@ export async function createSurvey(req: Request, res: Response, next: NextFuncti
         400,
         'VALIDATION_ERROR',
         'Invalid survey data.',
-        parsed.error.flatten().fieldErrors
+        formatZodDetails(parsed.error)
       )
     );
     return;
@@ -219,8 +230,7 @@ export async function updateSurvey(req: Request, res: Response, next: NextFuncti
       return;
     }
 
-    const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
-    const parsed = surveyInputSchema.safeParse(body);
+    const parsed = parseSurveyInput(req.body);
 
     if (!parsed.success) {
       next(
@@ -228,7 +238,7 @@ export async function updateSurvey(req: Request, res: Response, next: NextFuncti
           400,
           'VALIDATION_ERROR',
           'Invalid survey structure.',
-          parsed.error.flatten().fieldErrors
+          formatZodDetails(parsed.error)
         )
       );
       return;

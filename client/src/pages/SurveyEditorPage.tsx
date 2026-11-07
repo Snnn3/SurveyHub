@@ -237,9 +237,25 @@ export function SurveyEditorPage() {
     );
   }
 
+  function moveOption(questionIndex: number, optionIndex: number, direction: 'up' | 'down') {
+    setQuestions((prev) =>
+      prev.map((q, i) => {
+        if (i !== questionIndex) return q;
+        const targetIndex = direction === 'up' ? optionIndex - 1 : optionIndex + 1;
+        if (targetIndex < 0 || targetIndex >= q.options.length) return q;
+        const copy = [...q.options];
+        const temp = copy[optionIndex];
+        copy[optionIndex] = copy[targetIndex];
+        copy[targetIndex] = temp;
+        return { ...q, options: copy };
+      })
+    );
+  }
+
   async function handleSaveDraft(): Promise<string | null> {
     if (!title.trim()) {
-      setError('Title is required.');
+      setFieldErrors({ 'survey-title': 'Survey title is required.' });
+      document.getElementById('survey-title')?.focus();
       return null;
     }
 
@@ -351,8 +367,13 @@ export function SurveyEditorPage() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl border border-slate-200 p-8 shadow-sm text-center" role="status">
-        <p className="text-sm text-slate-600">Loading survey editor...</p>
+      <div
+        className="bg-white rounded-xl border border-slate-200 p-8 shadow-sm text-center max-w-3xl mx-auto space-y-4"
+        role="status"
+        aria-live="polite"
+      >
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent" />
+        <p className="text-sm font-medium text-slate-600">Loading survey editor...</p>
       </div>
     );
   }
@@ -649,16 +670,38 @@ export function SurveyEditorPage() {
                           placeholder={`Option ${optIndex + 1}`}
                           className="flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs outline-none focus:border-indigo-500"
                         />
-                        {question.options.length > 2 && (
+                        <div className="flex items-center gap-0.5">
                           <button
                             type="button"
-                            aria-label={`Remove option ${optIndex + 1}`}
-                            onClick={() => removeOption(qIndex, optIndex)}
-                            className="text-slate-400 hover:text-red-600 text-xs px-2 py-1"
+                            title="Move option up"
+                            aria-label={`Move Question ${qIndex + 1} Option ${optIndex + 1} up`}
+                            disabled={optIndex === 0}
+                            onClick={() => moveOption(qIndex, optIndex, 'up')}
+                            className="p-1 text-slate-400 hover:text-slate-700 disabled:opacity-20 text-xs"
                           >
-                            ✕
+                            ↑
                           </button>
-                        )}
+                          <button
+                            type="button"
+                            title="Move option down"
+                            aria-label={`Move Question ${qIndex + 1} Option ${optIndex + 1} down`}
+                            disabled={optIndex === question.options.length - 1}
+                            onClick={() => moveOption(qIndex, optIndex, 'down')}
+                            className="p-1 text-slate-400 hover:text-slate-700 disabled:opacity-20 text-xs"
+                          >
+                            ↓
+                          </button>
+                          {question.options.length > 2 && (
+                            <button
+                              type="button"
+                              aria-label={`Remove option ${optIndex + 1}`}
+                              onClick={() => removeOption(qIndex, optIndex)}
+                              className="text-slate-400 hover:text-red-600 text-xs p-1 ml-0.5"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
                       </div>
                       {fieldErrors[`option-${qIndex}-${optIndex}`] && (
                         <p
