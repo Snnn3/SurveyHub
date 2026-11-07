@@ -37,35 +37,35 @@ function mapQuestionsToCreate(questions: NonNullable<SurveyInput['questions']>) 
 }
 
 export async function getAuthorizedSurvey(
-  paramId: string,
+  surveyId: string,
   ownerId: string,
   includeDetails: true,
   tx?: Prisma.TransactionClient
 ): Promise<Prisma.SurveyGetPayload<{ include: typeof surveyDetailInclude }>>;
 export async function getAuthorizedSurvey(
-  paramId: string,
+  surveyId: string,
   ownerId: string,
   includeDetails?: false,
   tx?: Prisma.TransactionClient
 ): Promise<{ id: string; ownerId: string; status: SurveyStatus }>;
 export async function getAuthorizedSurvey(
-  paramId: string,
+  surveyId: string,
   ownerId: string,
   includeDetails = false,
   tx: Prisma.TransactionClient = prisma
 ) {
-  const surveyId = parseSurveyId(paramId);
-  if (!surveyId) {
+  const validId = parseSurveyId(surveyId);
+  if (!validId) {
     throw new NotFoundError('Survey not found.');
   }
 
   const survey = includeDetails
     ? await tx.survey.findUnique({
-        where: { id: surveyId },
+        where: { id: validId },
         include: surveyDetailInclude,
       })
     : await tx.survey.findUnique({
-        where: { id: surveyId },
+        where: { id: validId },
         select: { id: true, ownerId: true, status: true },
       });
 
@@ -80,10 +80,15 @@ export async function getAuthorizedSurvey(
   return survey;
 }
 
-export async function assertSurveyEditable(id: string, ownerId: string) {
-  const existing = await getAuthorizedSurvey(id, ownerId);
+export async function assertSurveyEditable(
+  surveyId: string,
+  ownerId: string,
+  tx?: Prisma.TransactionClient,
+  customMessage = 'Only draft surveys can be edited.'
+) {
+  const existing = await getAuthorizedSurvey(surveyId, ownerId, false, tx);
   if (existing.status !== SurveyStatus.DRAFT) {
-    throw new HttpError(400, 'SURVEY_NOT_EDITABLE', 'Only draft surveys can be edited.');
+    throw new HttpError(400, 'SURVEY_NOT_EDITABLE', customMessage);
   }
   return existing;
 }
@@ -137,19 +142,16 @@ export async function createSurvey(ownerId: string, input: SurveyInput) {
   });
 }
 
-export async function getSurveyById(id: string, ownerId: string) {
-  return getAuthorizedSurvey(id, ownerId, true);
+export async function getSurveyById(surveyId: string, ownerId: string) {
+  return getAuthorizedSurvey(surveyId, ownerId, true);
 }
 
-export async function updateSurvey(id: string, ownerId: string, input: SurveyInput) {
+export async function updateSurvey(surveyId: string, ownerId: string, input: SurveyInput) {
   const { title, description, questions } = input;
 
   return prisma.$transaction(async (tx) => {
     // Atomically verify owner and DRAFT status inside transaction per SDS §1.3 & F-02 §3.4
-    const existing = await getAuthorizedSurvey(id, ownerId, false, tx);
-    if (existing.status !== SurveyStatus.DRAFT) {
-      throw new HttpError(400, 'SURVEY_NOT_EDITABLE', 'Only draft surveys can be edited.');
-    }
+    const existing = await assertSurveyEditable(surveyId, ownerId, tx);
 
     await tx.question.deleteMany({ where: { surveyId: existing.id } });
 
@@ -167,19 +169,21 @@ export async function updateSurvey(id: string, ownerId: string, input: SurveyInp
   });
 }
 
-export async function deleteSurvey(id: string, ownerId: string) {
+export async function deleteSurvey(surveyId: string, ownerId: string) {
   return prisma.$transaction(async (tx) => {
-    const existing = await getAuthorizedSurvey(id, ownerId, false, tx);
-    if (existing.status !== SurveyStatus.DRAFT) {
-      throw new HttpError(400, 'SURVEY_NOT_EDITABLE', 'Only draft surveys can be deleted.');
-    }
+    const existing = await assertSurveyEditable(
+      surveyId,
+      ownerId,
+      tx,
+      'Only draft surveys can be deleted.'
+    );
     await tx.survey.delete({ where: { id: existing.id } });
   });
 }
 
-export async function publishSurvey(id: string, ownerId: string) {
+export async function publishSurvey(surveyId: string, ownerId: string) {
   return prisma.$transaction(async (tx) => {
-    const existing = await getAuthorizedSurvey(id, ownerId, true, tx);
+    const existing = await getAuthorizedSurvey(surveyId, ownerId, true, tx);
     if (existing.status !== SurveyStatus.DRAFT) {
       throw new HttpError(400, 'INVALID_STATE_TRANSITION', 'Only draft surveys can be published.');
     }
@@ -194,6 +198,7 @@ export async function publishSurvey(id: string, ownerId: string) {
                   ? `questions.${validation.error.questionIndex}`
                   : 'questions',
               message: validation.error.message,
+              code: validation.error.code,
             },
           ]
         : undefined;
@@ -217,9 +222,9 @@ export async function publishSurvey(id: string, ownerId: string) {
   });
 }
 
-export async function closeSurvey(id: string, ownerId: string) {
+export async function closeSurvey(surveyId: string, ownerId: string) {
   return prisma.$transaction(async (tx) => {
-    const existing = await getAuthorizedSurvey(id, ownerId, false, tx);
+    const existing = await getAuthorizedSurvey(surveyId, ownerId, false, tx);
     if (existing.status !== SurveyStatus.PUBLISHED) {
       throw new HttpError(400, 'INVALID_STATE_TRANSITION', 'Only published surveys can be closed.');
     }

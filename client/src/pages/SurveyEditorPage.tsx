@@ -55,7 +55,10 @@ function applyServerValidationErrors(
         const qIdx = Number(parts[1]);
         if (!isNaN(qIdx)) {
           if (parts.length === 2) {
-            domField = d.message.toLowerCase().includes('option')
+            const isOptionError = d.code
+              ? d.code.includes('OPTION')
+              : d.message.toLowerCase().includes('option');
+            domField = isOptionError
               ? fieldKey.options(qIdx)
               : fieldKey.prompt(qIdx);
           } else if (parts[2] === 'prompt') {
@@ -794,7 +797,7 @@ export function SurveyEditorPage() {
           message="Are you sure you want to exit? Any unsaved changes will be lost."
           cancelLabel="Keep Editing"
           confirmLabel="Discard & Close"
-          confirmButtonClass="bg-slate-800 text-white hover:bg-slate-900"
+          variant="neutral"
           onCancel={() => setShowCloseConfirm(false)}
           onConfirm={() => navigate('/owner/surveys')}
         />
@@ -806,7 +809,7 @@ export function SurveyEditorPage() {
           title="Remove Question"
           message={`Are you sure you want to remove Question ${questionIndexToDelete + 1}? This action cannot be undone.`}
           confirmLabel="Remove"
-          confirmButtonClass="bg-red-600 text-white hover:bg-red-700"
+          variant="danger"
           onCancel={() => setQuestionIndexToDelete(null)}
           onConfirm={() => removeQuestion(questionIndexToDelete)}
         />

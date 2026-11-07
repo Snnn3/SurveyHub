@@ -1,9 +1,11 @@
 import { QuestionType } from '@prisma/client';
 import { z } from 'zod';
 
-export const questionOptionInputSchema = z.object({
-  label: z.string().trim().min(1, 'Option label is required').max(200, 'Option label must be at most 200 characters'),
-});
+export const questionOptionInputSchema = z
+  .object({
+    label: z.string().trim().min(1, 'Option label is required').max(200, 'Option label must be at most 200 characters'),
+  })
+  .strict();
 
 export const questionInputSchema = z
   .object({
@@ -14,6 +16,7 @@ export const questionInputSchema = z
     isRequired: z.boolean().optional().default(true),
     options: z.array(questionOptionInputSchema).optional().default([]),
   })
+  .strict()
   .refine(
     (question) => {
       if (question.questionType === QuestionType.SHORT_TEXT && question.options && question.options.length > 0) {
@@ -34,11 +37,13 @@ export const questionInputSchema = z
     { message: 'Option labels must be unique within each question.', path: ['options'] }
   );
 
-export const surveyInputSchema = z.object({
-  title: z.string().trim().min(1, 'Title is required').max(120, 'Title must be at most 120 characters'),
-  description: z.string().trim().max(2000, 'Description must be at most 2,000 characters').optional().nullable(),
-  questions: z.array(questionInputSchema).optional().default([]),
-});
+export const surveyInputSchema = z
+  .object({
+    title: z.string().trim().min(1, 'Title is required').max(120, 'Title must be at most 120 characters'),
+    description: z.string().trim().max(2000, 'Description must be at most 2,000 characters').optional().nullable(),
+    questions: z.array(questionInputSchema).optional().default([]),
+  })
+  .strict();
 
 export type SurveyInput = z.infer<typeof surveyInputSchema>;
 

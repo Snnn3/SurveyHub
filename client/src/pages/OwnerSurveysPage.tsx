@@ -317,7 +317,7 @@ export function OwnerSurveysPage() {
           title="Close Survey"
           message={`Are you sure you want to close "${confirmCloseSurvey.title}"? Once closed, respondents can no longer submit responses and this survey cannot be reopened.`}
           confirmLabel="Close Survey"
-          confirmButtonClass="bg-amber-600 hover:bg-amber-700"
+          variant="warning"
           processing={processingId === confirmCloseSurvey.id}
           onCancel={() => setConfirmCloseSurvey(null)}
           onConfirm={handleConfirmClose}
@@ -330,7 +330,7 @@ export function OwnerSurveysPage() {
           title="Delete Draft Survey"
           message={`Are you sure you want to delete "${confirmDeleteSurvey.title}"? All associated questions and options will be permanently deleted.`}
           confirmLabel="Delete"
-          confirmButtonClass="bg-red-600 hover:bg-red-700"
+          variant="danger"
           processing={processingId === confirmDeleteSurvey.id}
           onCancel={() => setConfirmDeleteSurvey(null)}
           onConfirm={handleConfirmDelete}

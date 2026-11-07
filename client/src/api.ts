@@ -42,6 +42,7 @@ export function getApiErrorStatus(err: unknown): number | undefined {
 export interface ApiErrorDetail {
   field?: string;
   message: string;
+  code?: string;
 }
 
 export interface ApiErrorInfo {
@@ -59,11 +60,12 @@ export function parseApiError(err: unknown, fallback: string): ApiErrorInfo {
     if (Array.isArray(errorObj.details)) {
       errorObj.details.forEach((d: unknown) => {
         if (d && typeof d === 'object') {
-          const detail = d as { field?: unknown; message?: unknown };
+          const detail = d as { field?: unknown; message?: unknown; code?: unknown };
           if (typeof detail.message === 'string') {
             details.push({
               field: typeof detail.field === 'string' ? detail.field : undefined,
               message: detail.message,
+              code: typeof detail.code === 'string' ? detail.code : undefined,
             });
           }
         }

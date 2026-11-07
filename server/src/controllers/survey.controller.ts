@@ -1,15 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { HttpError, NotFoundError } from '../utils/errors';
-import { parseSurveyInput, parseSurveyId, formatZodDetails } from '../validators/survey.validator';
+import { HttpError } from '../utils/errors';
+import { parseSurveyInput, formatZodDetails } from '../validators/survey.validator';
 import * as surveyService from '../services/survey.service';
-
-function getValidSurveyId(paramId: string): string {
-  const id = parseSurveyId(paramId);
-  if (!id) {
-    throw new NotFoundError('Survey not found.');
-  }
-  return id;
-}
 
 export async function listOwnerSurveys(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -46,9 +38,8 @@ export async function createSurvey(req: Request, res: Response, next: NextFuncti
 
 export async function getSurveyById(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const id = getValidSurveyId(req.params.id);
     const ownerId = req.auth!.id;
-    const survey = await surveyService.getSurveyById(id, ownerId);
+    const survey = await surveyService.getSurveyById(req.params.id, ownerId);
     res.status(200).json({ success: true, data: survey });
   } catch (error) {
     next(error);
@@ -57,11 +48,13 @@ export async function getSurveyById(req: Request, res: Response, next: NextFunct
 
 export async function updateSurvey(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const id = getValidSurveyId(req.params.id);
+    const surveyId = req.params.id;
     const ownerId = req.auth!.id;
 
-    // Ownership & draft status verified by service before body validation per STS-F02-09 & BR-04
-    await surveyService.assertSurveyEditable(id, ownerId);
+    // In accordance with SDS §1.1 Monolith Layering (Auth -> Guard -> Controller -> Service)
+    // and STS-F02-09 / BR-04, ownership and editability guards precede body schema parsing
+    // to prevent unauthorized callers from probing survey structures.
+    await surveyService.assertSurveyEditable(surveyId, ownerId);
 
     const parsed = parseSurveyInput(req.body);
     if (!parsed.success) {
@@ -76,7 +69,7 @@ export async function updateSurvey(req: Request, res: Response, next: NextFuncti
       return;
     }
 
-    const updated = await surveyService.updateSurvey(id, ownerId, parsed.data);
+    const updated = await surveyService.updateSurvey(surveyId, ownerId, parsed.data);
     res.status(200).json({ success: true, data: updated });
   } catch (error) {
     next(error);
@@ -85,9 +78,8 @@ export async function updateSurvey(req: Request, res: Response, next: NextFuncti
 
 export async function deleteSurvey(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const id = getValidSurveyId(req.params.id);
     const ownerId = req.auth!.id;
-    await surveyService.deleteSurvey(id, ownerId);
+    await surveyService.deleteSurvey(req.params.id, ownerId);
     res.status(204).send();
   } catch (error) {
     next(error);
@@ -96,9 +88,8 @@ export async function deleteSurvey(req: Request, res: Response, next: NextFuncti
 
 export async function publishSurvey(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const id = getValidSurveyId(req.params.id);
     const ownerId = req.auth!.id;
-    const published = await surveyService.publishSurvey(id, ownerId);
+    const published = await surveyService.publishSurvey(req.params.id, ownerId);
     res.status(200).json({ success: true, data: published });
   } catch (error) {
     next(error);
@@ -107,9 +98,8 @@ export async function publishSurvey(req: Request, res: Response, next: NextFunct
 
 export async function closeSurvey(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const id = getValidSurveyId(req.params.id);
     const ownerId = req.auth!.id;
-    const closed = await surveyService.closeSurvey(id, ownerId);
+    const closed = await surveyService.closeSurvey(req.params.id, ownerId);
     res.status(200).json({ success: true, data: closed });
   } catch (error) {
     next(error);
