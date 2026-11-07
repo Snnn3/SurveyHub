@@ -203,48 +203,37 @@ export function SurveyEditorPage() {
     );
   }
 
-  function addOption(questionIndex: number) {
+  function updateQuestionOptions(
+    questionIndex: number,
+    updater: (options: FormOption[]) => FormOption[]
+  ) {
     setQuestions((prev) =>
-      prev.map((q, i) => {
-        if (i !== questionIndex) return q;
-        if (q.options.length >= 20) return q;
-        return {
-          ...q,
-          options: [...q.options, { label: '' }],
-        };
-      })
+      prev.map((q, i) => (i === questionIndex ? { ...q, options: updater(q.options) } : q))
+    );
+  }
+
+  function addOption(questionIndex: number) {
+    updateQuestionOptions(questionIndex, (options) =>
+      options.length >= 20 ? options : [...options, { label: '' }]
     );
   }
 
   function removeOption(questionIndex: number, optionIndex: number) {
-    setQuestions((prev) =>
-      prev.map((q, i) => {
-        if (i !== questionIndex) return q;
-        return {
-          ...q,
-          options: q.options.filter((_, optIdx) => optIdx !== optionIndex),
-        };
-      })
+    updateQuestionOptions(questionIndex, (options) =>
+      options.filter((_, optIdx) => optIdx !== optionIndex)
     );
   }
 
   function updateOption(questionIndex: number, optionIndex: number, label: string) {
-    setQuestions((prev) =>
-      prev.map((q, i) => {
-        if (i !== questionIndex) return q;
-        const options = [...q.options];
-        options[optionIndex] = { label };
-        return { ...q, options };
-      })
-    );
+    updateQuestionOptions(questionIndex, (options) => {
+      const copy = [...options];
+      copy[optionIndex] = { label };
+      return copy;
+    });
   }
 
   function moveOption(questionIndex: number, optionIndex: number, direction: 'up' | 'down') {
-    setQuestions((prev) =>
-      prev.map((q, i) =>
-        i === questionIndex ? { ...q, options: swapItems(q.options, optionIndex, direction) } : q
-      )
-    );
+    updateQuestionOptions(questionIndex, (options) => swapItems(options, optionIndex, direction));
   }
 
   async function handleSaveDraft(): Promise<string | null> {
@@ -622,7 +611,13 @@ export function SurveyEditorPage() {
 
               {/* Single Choice Options */}
               {question.questionType === 'SINGLE_CHOICE' && (
-                <div className="space-y-2 pt-2 border-t border-slate-100">
+                <div
+                  id={`options-${qIndex}`}
+                  tabIndex={-1}
+                  aria-invalid={Boolean(fieldErrors[`options-${qIndex}`])}
+                  aria-describedby={fieldErrors[`options-${qIndex}`] ? `options-${qIndex}-error` : undefined}
+                  className="space-y-2 pt-2 border-t border-slate-100 outline-none"
+                >
                   <label className="block text-xs font-semibold text-slate-700">
                     Options (2–20 required for publish)
                   </label>
@@ -636,9 +631,9 @@ export function SurveyEditorPage() {
                       <div className="flex items-center gap-2">
                         <label
                           htmlFor={`option-${qIndex}-${optIndex}`}
-                          className="text-xs text-slate-400 w-5 text-right cursor-pointer"
+                          className="text-xs font-medium text-slate-500 whitespace-nowrap cursor-pointer"
                         >
-                          {optIndex + 1}.
+                          Option {optIndex + 1}:
                         </label>
                         <input
                           id={`option-${qIndex}-${optIndex}`}
@@ -755,59 +750,74 @@ export function SurveyEditorPage() {
 
       {/* Confirmation Dialog for Closing Editor */}
       {showCloseConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-          <div className="bg-white rounded-xl max-w-sm w-full p-6 shadow-xl border border-slate-200">
-            <h3 className="text-base font-bold text-slate-900 mb-2">Close Survey Editor</h3>
-            <p className="text-sm text-slate-600 mb-6">
-              Are you sure you want to exit? Any unsaved changes will be lost.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setShowCloseConfirm(false)}
-                className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50"
-              >
-                Keep Editing
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/owner/surveys')}
-                className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 text-white hover:bg-slate-900"
-              >
-                Discard & Close
-              </button>
-            </div>
-          </div>
-        </div>
+        <EditorModal
+          title="Close Survey Editor"
+          message="Are you sure you want to exit? Any unsaved changes will be lost."
+          cancelLabel="Keep Editing"
+          confirmLabel="Discard & Close"
+          confirmButtonClass="bg-slate-800 text-white hover:bg-slate-900"
+          onCancel={() => setShowCloseConfirm(false)}
+          onConfirm={() => navigate('/owner/surveys')}
+        />
       )}
 
       {/* Confirmation Dialog for Question Removal */}
       {questionIndexToDelete !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-          <div className="bg-white rounded-xl max-w-sm w-full p-6 shadow-xl border border-slate-200">
-            <h3 className="text-base font-bold text-slate-900 mb-2">Remove Question</h3>
-            <p className="text-sm text-slate-600 mb-6">
-              Are you sure you want to remove Question {questionIndexToDelete + 1}? This action cannot be undone.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setQuestionIndexToDelete(null)}
-                className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => removeQuestion(questionIndexToDelete)}
-                className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700"
-              >
-                Remove
-              </button>
-            </div>
-          </div>
-        </div>
+        <EditorModal
+          title="Remove Question"
+          message={`Are you sure you want to remove Question ${questionIndexToDelete + 1}? This action cannot be undone.`}
+          cancelLabel="Cancel"
+          confirmLabel="Remove"
+          confirmButtonClass="bg-red-600 text-white hover:bg-red-700"
+          onCancel={() => setQuestionIndexToDelete(null)}
+          onConfirm={() => removeQuestion(questionIndexToDelete)}
+        />
       )}
+    </div>
+  );
+}
+
+interface EditorModalProps {
+  title: string;
+  message: string;
+  cancelLabel: string;
+  confirmLabel: string;
+  confirmButtonClass: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+}
+
+function EditorModal({
+  title,
+  message,
+  cancelLabel,
+  confirmLabel,
+  confirmButtonClass,
+  onCancel,
+  onConfirm,
+}: EditorModalProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+      <div className="bg-white rounded-xl max-w-sm w-full p-6 shadow-xl border border-slate-200">
+        <h3 className="text-base font-bold text-slate-900 mb-2">{title}</h3>
+        <p className="text-sm text-slate-600 mb-6">{message}</p>
+        <div className="flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50"
+          >
+            {cancelLabel}
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-lg ${confirmButtonClass}`}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
