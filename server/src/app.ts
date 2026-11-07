@@ -26,7 +26,6 @@ export function createApp(): Express {
   );
 
   app.use(express.json({ limit: '100kb' }));
-  app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
   // Mount API router
   app.use('/api', apiRoutes);

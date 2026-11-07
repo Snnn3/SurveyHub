@@ -64,65 +64,26 @@ async function main() {
   // Execute all seed upserts within a single atomic transaction
   await prisma.$transaction(async (tx) => {
     // 1. Seed Users (idempotent upsert by email)
-    const owner1 = await tx.user.upsert({
-      where: { email: 'owner1@survey.local' },
-      update: {
-        passwordHash,
-        fullName: 'Dr. Owner One',
-        role: Role.SURVEY_OWNER,
-      },
-      create: {
-        email: 'owner1@survey.local',
-        passwordHash,
-        fullName: 'Dr. Owner One',
-        role: Role.SURVEY_OWNER,
-      },
-    });
+    const userFixtures = [
+      { email: 'owner1@survey.local', fullName: 'Dr. Owner One', role: Role.SURVEY_OWNER },
+      { email: 'owner2@survey.local', fullName: 'Prof. Owner Two', role: Role.SURVEY_OWNER },
+      { email: 'resp1@survey.local', fullName: 'Student Respondent One', role: Role.RESPONDENT },
+      { email: 'resp2@survey.local', fullName: 'Student Respondent Two', role: Role.RESPONDENT },
+    ];
 
-    const owner2 = await tx.user.upsert({
-      where: { email: 'owner2@survey.local' },
-      update: {
-        passwordHash,
-        fullName: 'Prof. Owner Two',
-        role: Role.SURVEY_OWNER,
-      },
-      create: {
-        email: 'owner2@survey.local',
-        passwordHash,
-        fullName: 'Prof. Owner Two',
-        role: Role.SURVEY_OWNER,
-      },
-    });
+    const users: Record<string, Awaited<ReturnType<typeof tx.user.upsert>>> = {};
+    for (const u of userFixtures) {
+      users[u.email] = await tx.user.upsert({
+        where: { email: u.email },
+        update: { passwordHash, fullName: u.fullName, role: u.role },
+        create: { email: u.email, passwordHash, fullName: u.fullName, role: u.role },
+      });
+    }
 
-    const resp1 = await tx.user.upsert({
-      where: { email: 'resp1@survey.local' },
-      update: {
-        passwordHash,
-        fullName: 'Student Respondent One',
-        role: Role.RESPONDENT,
-      },
-      create: {
-        email: 'resp1@survey.local',
-        passwordHash,
-        fullName: 'Student Respondent One',
-        role: Role.RESPONDENT,
-      },
-    });
-
-    const resp2 = await tx.user.upsert({
-      where: { email: 'resp2@survey.local' },
-      update: {
-        passwordHash,
-        fullName: 'Student Respondent Two',
-        role: Role.RESPONDENT,
-      },
-      create: {
-        email: 'resp2@survey.local',
-        passwordHash,
-        fullName: 'Student Respondent Two',
-        role: Role.RESPONDENT,
-      },
-    });
+    const owner1 = users['owner1@survey.local'];
+    const owner2 = users['owner2@survey.local'];
+    const resp1 = users['resp1@survey.local'];
+    const resp2 = users['resp2@survey.local'];
 
     console.log(`Seeded users: ${owner1.email}, ${owner2.email}, ${resp1.email}, ${resp2.email}`);
 
@@ -265,49 +226,62 @@ async function main() {
       },
     });
 
-    // Reconcile Survey 3 questions to prevent duplicate questions upon re-seeding:
-    // 1. Clean up temporary Q4 ID (...032) if created in an earlier seed run without answers
+    // Reconcile Survey 3 questions and options to ensure exactly 1 Rating question per SDS §2.5:
+    // 1. Upsert canonical SEED_Q4_ID as RATING question for Survey 3
+    const q4Payload = {
+      surveyId: survey3.id,
+      prompt: 'Overall, how would you rate this course so far (1 to 5)?',
+      questionType: QuestionType.RATING,
+      isRequired: true,
+      orderIndex: 0,
+      numberMin: 1,
+      numberMax: 5,
+    };
+
+    await tx.question.upsert({
+      where: { id: SEED_Q4_ID },
+      update: q4Payload,
+      create: {
+        id: SEED_Q4_ID,
+        ...q4Payload,
+      },
+    });
+
+    // 2. If temporary Q4 ID (...032) exists from a previous seed run, reassign any answers to SEED_Q4_ID and remove it
     const tempQ4 = await tx.question.findUnique({
       where: { id: PREV_Q4_RATING_ID },
-      include: { _count: { select: { answers: true } } },
     });
-    if (tempQ4 && tempQ4._count.answers === 0) {
-      await tx.question.delete({ where: { id: PREV_Q4_RATING_ID } });
+    if (tempQ4) {
+      await tx.answer.updateMany({
+        where: { questionId: PREV_Q4_RATING_ID },
+        data: { questionId: SEED_Q4_ID },
+      });
+      await tx.option.deleteMany({
+        where: { questionId: PREV_Q4_RATING_ID },
+      });
+      await tx.question.delete({
+        where: { id: PREV_Q4_RATING_ID },
+      });
     }
 
-    // 2. Safely clean up previous choice options on SEED_Q4_ID (...031) only if no answers reference them
-    const legacyOptionsInUse = await tx.answerOption.count({
+    // 3. Clean up any stale choice options and associations on SEED_Q4_ID (since it is now RATING)
+    await tx.answerOption.deleteMany({
       where: {
         option: { questionId: SEED_Q4_ID },
       },
     });
-    if (legacyOptionsInUse === 0) {
-      await tx.option.deleteMany({
-        where: { questionId: SEED_Q4_ID },
-      });
-    }
+    await tx.option.deleteMany({
+      where: { questionId: SEED_Q4_ID },
+    });
 
-    // 3. Upsert canonical SEED_Q4_ID as RATING question for Survey 3 (idempotent)
-    await tx.question.upsert({
-      where: { id: SEED_Q4_ID },
-      update: {
-        surveyId: survey3.id,
-        prompt: 'Overall, how would you rate this course so far (1 to 5)?',
-        questionType: QuestionType.RATING,
-        isRequired: true,
-        orderIndex: 0,
-        numberMin: 1,
-        numberMax: 5,
+    // 4. If any legacy answers on SEED_Q4_ID lack numberValue, set a valid default rating
+    await tx.answer.updateMany({
+      where: {
+        questionId: SEED_Q4_ID,
+        numberValue: null,
       },
-      create: {
-        id: SEED_Q4_ID,
-        surveyId: survey3.id,
-        prompt: 'Overall, how would you rate this course so far (1 to 5)?',
-        questionType: QuestionType.RATING,
-        isRequired: true,
-        orderIndex: 0,
-        numberMin: 1,
-        numberMax: 5,
+      data: {
+        numberValue: 5,
       },
     });
 

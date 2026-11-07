@@ -13,33 +13,9 @@ export class HttpError extends Error {
   }
 }
 
-export class BadRequestError extends HttpError {
-  constructor(message = 'Bad Request', code = 'VALIDATION_ERROR', details?: unknown) {
-    super(400, code, message, details);
-  }
-}
-
-export class UnauthorizedError extends HttpError {
-  constructor(message = 'Authentication required', code = 'TOKEN_REQUIRED', details?: unknown) {
-    super(401, code, message, details);
-  }
-}
-
-export class ForbiddenError extends HttpError {
-  constructor(message = 'Access forbidden', code = 'FORBIDDEN_ROLE', details?: unknown) {
-    super(403, code, message, details);
-  }
-}
-
 export class NotFoundError extends HttpError {
   constructor(message = 'Resource not found', code = 'NOT_FOUND', details?: unknown) {
     super(404, code, message, details);
-  }
-}
-
-export class ConflictError extends HttpError {
-  constructor(message = 'Resource conflict', code = 'DUPLICATE_SUBMISSION', details?: unknown) {
-    super(409, code, message, details);
   }
 }
 

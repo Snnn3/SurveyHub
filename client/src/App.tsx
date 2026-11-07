@@ -7,6 +7,16 @@ interface HealthData {
   database: string;
 }
 
+function getErrorMessage(err: unknown): string {
+  if (axios.isAxiosError(err)) {
+    return err.response?.data?.error?.message || err.message;
+  }
+  if (err instanceof Error) {
+    return err.message;
+  }
+  return 'Failed to connect to API';
+}
+
 export default function App() {
   const [health, setHealth] = useState<HealthData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -22,8 +32,8 @@ export default function App() {
         } else {
           setError('Unexpected health response format');
         }
-      } catch (err: any) {
-        setError(err.response?.data?.error?.message || err.message || 'Failed to connect to API');
+      } catch (err: unknown) {
+        setError(getErrorMessage(err));
       } finally {
         setLoading(false);
       }
