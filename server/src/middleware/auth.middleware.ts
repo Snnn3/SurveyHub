@@ -2,7 +2,7 @@ import { Role, User } from '@prisma/client';
 import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/environment';
-import { HttpError } from '../utils/errors';
+import { HttpError, tokenRequiredError } from '../utils/errors';
 import { prisma } from '../utils/prisma';
 
 type AuthenticatedUser = Pick<User, 'id' | 'email' | 'fullName' | 'role' | 'tokenVersion'>;
@@ -24,7 +24,7 @@ export async function authenticateJWT(
 ): Promise<void> {
   const authorization = req.get('Authorization');
   if (!authorization) {
-    next(new HttpError(401, 'TOKEN_REQUIRED', 'Authentication token is required.'));
+    next(tokenRequiredError());
     return;
   }
 
@@ -71,7 +71,7 @@ export async function authenticateJWT(
 export function requireRole(...allowedRoles: Role[]) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     if (!req.auth) {
-      next(new HttpError(401, 'TOKEN_REQUIRED', 'Authentication token is required.'));
+      next(tokenRequiredError());
       return;
     }
     if (!allowedRoles.includes(req.auth.role)) {

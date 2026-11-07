@@ -3,7 +3,7 @@ import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import jwt, { type SignOptions } from 'jsonwebtoken';
 import { env } from '../config/environment';
-import { HttpError } from '../utils/errors';
+import { HttpError, tokenRequiredError } from '../utils/errors';
 import { prisma } from '../utils/prisma';
 
 const loginSchema = z.object({
@@ -60,7 +60,7 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
 
 export function getCurrentUser(req: Request, res: Response, next: NextFunction): void {
   if (!req.auth) {
-    next(new HttpError(401, 'TOKEN_REQUIRED', 'Authentication token is required.'));
+    next(tokenRequiredError());
     return;
   }
 
@@ -70,7 +70,7 @@ export function getCurrentUser(req: Request, res: Response, next: NextFunction):
 
 export async function logout(req: Request, res: Response, next: NextFunction): Promise<void> {
   if (!req.auth) {
-    next(new HttpError(401, 'TOKEN_REQUIRED', 'Authentication token is required.'));
+    next(tokenRequiredError());
     return;
   }
 

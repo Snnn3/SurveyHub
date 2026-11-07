@@ -6,7 +6,7 @@ import app from '../src/app';
 import { errorHandler } from '../src/middleware/error.middleware';
 import { authenticateJWT, requireRole } from '../src/middleware/auth.middleware';
 import { prisma } from '../src/utils/prisma';
-import { hashSeedPassword } from '../prisma/password';
+import { seedUsers } from '../prisma/seed-users';
 import { truncateTestDatabase } from './setup';
 
 const password = 'Password123!';
@@ -17,27 +17,9 @@ describe('F-01 authentication and roles', () => {
 
   beforeEach(async () => {
     await truncateTestDatabase();
-    const passwordHash = await hashSeedPassword(password);
-    const [owner, respondent] = await Promise.all([
-      prisma.user.create({
-        data: {
-          email: 'owner1@survey.local',
-          passwordHash,
-          fullName: 'Course Coordinator',
-          role: Role.SURVEY_OWNER,
-        },
-      }),
-      prisma.user.create({
-        data: {
-          email: 'resp1@survey.local',
-          passwordHash,
-          fullName: 'Student One',
-          role: Role.RESPONDENT,
-        },
-      }),
-    ]);
-    ownerId = owner.id;
-    respondentId = respondent.id;
+    const users = await prisma.$transaction(seedUsers);
+    ownerId = users['owner1@survey.local'].id;
+    respondentId = users['resp1@survey.local'].id;
   });
 
   it('logs in with a normalized email and returns a signed token without the password hash', async () => {
@@ -50,7 +32,7 @@ describe('F-01 authentication and roles', () => {
     expect(response.body.data.user).toEqual({
       id: ownerId,
       email: 'owner1@survey.local',
-      fullName: 'Course Coordinator',
+      fullName: 'Dr. Owner One',
       role: 'SURVEY_OWNER',
     });
     expect(JSON.stringify(response.body)).not.toContain('passwordHash');
@@ -105,7 +87,7 @@ describe('F-01 authentication and roles', () => {
     expect(response.body.data).toEqual({
       id: respondentId,
       email: 'resp1@survey.local',
-      fullName: 'Student One',
+      fullName: 'Student Respondent One',
       role: 'RESPONDENT',
     });
     expect(JSON.stringify(response.body)).not.toContain('passwordHash');
@@ -163,10 +145,11 @@ describe('F-01 authentication and roles', () => {
     expect(respondentAccess.body.error.code).toBe('FORBIDDEN_ROLE');
   });
 
-  it('hashes passwords with bcrypt cost 10 and the required 2b prefix', async () => {
-    const hash = await hashSeedPassword(password);
+  it('seeds every account with bcrypt cost 10 and the required 2b prefix', async () => {
+    const users = await prisma.user.findMany({ select: { passwordHash: true } });
 
-    expect(hash).toMatch(/^\$2b\$10\$/);
-    expect(await bcrypt.compare(password, hash)).toBe(true);
+    expect(users).toHaveLength(4);
+    expect(users.every(({ passwordHash }) => /^\$2b\$10\$/.test(passwordHash))).toBe(true);
+    expect(await bcrypt.compare(password, users[0].passwordHash)).toBe(true);
   });
 });

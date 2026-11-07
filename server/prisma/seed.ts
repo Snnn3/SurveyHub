@@ -5,8 +5,8 @@ import path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-import { PrismaClient, Role, SurveyStatus, SurveyMode, QuestionType } from '@prisma/client';
-import { hashSeedPassword } from './password';
+import { PrismaClient, SurveyStatus, SurveyMode, QuestionType } from '@prisma/client';
+import { seedUsers } from './seed-users';
 
 const prisma = new PrismaClient();
 
@@ -66,26 +66,9 @@ async function upsertQuestionOptions(
 async function main() {
   console.log('Seeding database with reproducible synthetic test data...');
 
-  const passwordHash = await hashSeedPassword('Password123!');
-
   // Execute all seed upserts within a single atomic transaction
   await prisma.$transaction(async (tx) => {
-    // 1. Seed Users (idempotent upsert by email)
-    const userFixtures = [
-      { email: 'owner1@survey.local', fullName: 'Dr. Owner One', role: Role.SURVEY_OWNER },
-      { email: 'owner2@survey.local', fullName: 'Prof. Owner Two', role: Role.SURVEY_OWNER },
-      { email: 'resp1@survey.local', fullName: 'Student Respondent One', role: Role.RESPONDENT },
-      { email: 'resp2@survey.local', fullName: 'Student Respondent Two', role: Role.RESPONDENT },
-    ];
-
-    const users: Record<string, Awaited<ReturnType<typeof tx.user.upsert>>> = {};
-    for (const u of userFixtures) {
-      users[u.email] = await tx.user.upsert({
-        where: { email: u.email },
-        update: { passwordHash, fullName: u.fullName, role: u.role },
-        create: { email: u.email, passwordHash, fullName: u.fullName, role: u.role },
-      });
-    }
+    const users = await seedUsers(tx);
 
     const owner1 = users['owner1@survey.local'];
     const owner2 = users['owner2@survey.local'];
