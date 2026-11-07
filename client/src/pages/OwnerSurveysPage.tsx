@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import axios from 'axios';
-import api, { getApiErrorMessage } from '../api';
+import api, { getApiErrorMessage, parseApiError } from '../api';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 
 export type SurveyStatus = 'DRAFT' | 'PUBLISHED' | 'CLOSED';
@@ -66,21 +65,12 @@ export function OwnerSurveysPage() {
       setSuccessMessage('Survey published successfully.');
       await fetchSurveys();
     } catch (err: unknown) {
-      if (axios.isAxiosError(err) && err.response?.data?.error) {
-        const errObj = err.response.data.error;
-        const details: string[] = [];
-        if (Array.isArray(errObj.details)) {
-          errObj.details.forEach((d: { message?: string }) => {
-            if (d.message) details.push(d.message);
-          });
-        }
-        setActionError({
-          message: errObj.message || 'Failed to publish survey',
-          details: details.length > 0 ? details : undefined,
-        });
-      } else {
-        setActionError({ message: getApiErrorMessage(err, 'Failed to publish survey') });
-      }
+      const errInfo = parseApiError(err, 'Failed to publish survey');
+      const details = errInfo.details.map((d) => d.message);
+      setActionError({
+        message: errInfo.message,
+        details: details.length > 0 ? details : undefined,
+      });
     } finally {
       setProcessingId(null);
     }

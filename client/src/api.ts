@@ -32,4 +32,49 @@ export function getApiErrorMessage(err: unknown, fallback: string): string {
   return fallback;
 }
 
+export function getApiErrorStatus(err: unknown): number | undefined {
+  if (axios.isAxiosError(err)) {
+    return err.response?.status;
+  }
+  return undefined;
+}
+
+export interface ApiErrorDetail {
+  field?: string;
+  message: string;
+}
+
+export interface ApiErrorInfo {
+  message: string;
+  code?: string;
+  details: ApiErrorDetail[];
+}
+
+export function parseApiError(err: unknown, fallback: string): ApiErrorInfo {
+  if (axios.isAxiosError(err) && err.response?.data?.error) {
+    const errorObj = err.response.data.error;
+    const message = errorObj.message || fallback;
+    const code = errorObj.code;
+    const details: ApiErrorDetail[] = [];
+    if (Array.isArray(errorObj.details)) {
+      errorObj.details.forEach((d: unknown) => {
+        if (d && typeof d === 'object') {
+          const detail = d as { field?: unknown; message?: unknown };
+          if (typeof detail.message === 'string') {
+            details.push({
+              field: typeof detail.field === 'string' ? detail.field : undefined,
+              message: detail.message,
+            });
+          }
+        }
+      });
+    }
+    return { message, code, details };
+  }
+  return {
+    message: getApiErrorMessage(err, fallback),
+    details: [],
+  };
+}
+
 export default api;

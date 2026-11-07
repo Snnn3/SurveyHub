@@ -1,4 +1,58 @@
 import { QuestionType } from '@prisma/client';
+import { z } from 'zod';
+
+export const questionOptionInputSchema = z.object({
+  label: z.string().trim().min(1, 'Option label is required').max(200, 'Option label must be at most 200 characters'),
+});
+
+export const questionInputSchema = z
+  .object({
+    prompt: z.string().trim().min(1, 'Question prompt is required').max(500, 'Question prompt must be at most 500 characters'),
+    questionType: z.enum([QuestionType.SINGLE_CHOICE, QuestionType.SHORT_TEXT], {
+      errorMap: () => ({ message: 'Invalid question type. Sprint 1 supports SINGLE_CHOICE and SHORT_TEXT.' }),
+    }),
+    isRequired: z.boolean().optional().default(true),
+    options: z.array(questionOptionInputSchema).optional().default([]),
+  })
+  .refine(
+    (question) => {
+      if (question.questionType === QuestionType.SHORT_TEXT && question.options && question.options.length > 0) {
+        return false;
+      }
+      return true;
+    },
+    { message: 'Short text questions cannot have options.', path: ['options'] }
+  )
+  .refine(
+    (question) => {
+      if (question.questionType === QuestionType.SINGLE_CHOICE && question.options.length > 0) {
+        const labels = question.options.map((option) => option.label.trim().toLowerCase());
+        return new Set(labels).size === labels.length;
+      }
+      return true;
+    },
+    { message: 'Option labels must be unique within each question.', path: ['options'] }
+  );
+
+export const surveyInputSchema = z.object({
+  title: z.string().trim().min(1, 'Title is required').max(120, 'Title must be at most 120 characters'),
+  description: z.string().trim().max(2000, 'Description must be at most 2,000 characters').optional().nullable(),
+  questions: z.array(questionInputSchema).optional().default([]),
+});
+
+export type SurveyInput = z.infer<typeof surveyInputSchema>;
+
+export function formatZodDetails(error: z.ZodError): Array<{ field: string; message: string }> {
+  return error.issues.map((issue) => ({
+    field: issue.path.join('.'),
+    message: issue.message,
+  }));
+}
+
+export function parseSurveyInput(body: unknown) {
+  const normalized = body && typeof body === 'object' && !Array.isArray(body) ? body : {};
+  return surveyInputSchema.safeParse(normalized);
+}
 
 export interface OptionValidationInput {
   label?: string | null;

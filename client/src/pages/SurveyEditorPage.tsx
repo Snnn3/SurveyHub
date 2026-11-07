@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
-import api, { getApiErrorMessage } from '../api';
+import api, { getApiErrorMessage, getApiErrorStatus, parseApiError, type ApiErrorDetail } from '../api';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 
 export type QuestionType = 'SINGLE_CHOICE' | 'SHORT_TEXT';
@@ -34,6 +33,51 @@ function swapItems<T>(items: T[], index: number, direction: 'up' | 'down'): T[] 
   copy[index] = copy[targetIndex];
   copy[targetIndex] = temp;
   return copy;
+}
+
+function applyServerValidationErrors(
+  details: ApiErrorDetail[],
+  setFieldErrors: React.Dispatch<React.SetStateAction<Record<string, string>>>,
+  setValidationErrors: React.Dispatch<React.SetStateAction<string[]>>
+) {
+  if (details.length === 0) return;
+  const newFieldErrors: Record<string, string> = {};
+  const detailMessages: string[] = [];
+
+  details.forEach((d) => {
+    detailMessages.push(d.message);
+    if (d.field) {
+      let domField = d.field;
+      if (domField === 'title') domField = fieldKey.title;
+      else if (domField === 'description') domField = fieldKey.description;
+      else if (domField.startsWith('questions.')) {
+        const parts = domField.split('.');
+        const qIdx = Number(parts[1]);
+        if (!isNaN(qIdx)) {
+          if (parts.length === 2 || parts[2] === 'prompt') {
+            domField = fieldKey.prompt(qIdx);
+          } else if (parts[2] === 'options') {
+            if (parts[3] !== undefined) {
+              const optIdx = Number(parts[3]);
+              domField = !isNaN(optIdx) ? fieldKey.option(qIdx, optIdx) : fieldKey.options(qIdx);
+            } else {
+              domField = fieldKey.options(qIdx);
+            }
+          }
+        }
+      }
+      newFieldErrors[domField] = d.message;
+    }
+  });
+
+  if (detailMessages.length > 0) {
+    setValidationErrors(detailMessages);
+  }
+  if (Object.keys(newFieldErrors).length > 0) {
+    setFieldErrors(newFieldErrors);
+    const firstId = Object.keys(newFieldErrors)[0];
+    document.getElementById(firstId)?.focus();
+  }
 }
 
 export function SurveyEditorPage() {
@@ -95,15 +139,10 @@ export function SurveyEditorPage() {
         );
       } catch (err: unknown) {
         if (!active) return;
-        if (axios.isAxiosError(err)) {
-          if (err.response?.status === 404) {
-            setLoadErrorCode(404);
-            return;
-          }
-          if (err.response?.status === 403) {
-            setLoadErrorCode(403);
-            return;
-          }
+        const status = getApiErrorStatus(err);
+        if (status === 404 || status === 403) {
+          setLoadErrorCode(status);
+          return;
         }
         setError(getApiErrorMessage(err, 'Failed to load survey.'));
       } finally {
@@ -281,43 +320,9 @@ export function SurveyEditorPage() {
         return newId;
       }
     } catch (err: unknown) {
-      if (axios.isAxiosError(err) && err.response?.data?.error) {
-        const errObj = err.response.data.error;
-        if (Array.isArray(errObj.details) && errObj.details.length > 0) {
-          const newFieldErrors: Record<string, string> = {};
-          const detailMessages: string[] = [];
-          errObj.details.forEach((d: { field?: string; message?: string }) => {
-            if (d.message) detailMessages.push(d.message);
-            if (d.field && d.message) {
-              let domField = d.field;
-              if (domField === 'title') domField = fieldKey.title;
-              else if (domField === 'description') domField = fieldKey.description;
-              else {
-                const qPromptMatch = domField.match(/^questions\.(\d+)\.prompt$/);
-                const qOptionsMatch = domField.match(/^questions\.(\d+)\.options$/);
-                const qOptionLabelMatch = domField.match(/^questions\.(\d+)\.options\.(\d+)(?:\.label)?$/);
-                if (qPromptMatch) domField = fieldKey.prompt(Number(qPromptMatch[1]));
-                else if (qOptionLabelMatch) domField = fieldKey.option(Number(qOptionLabelMatch[1]), Number(qOptionLabelMatch[2]));
-                else if (qOptionsMatch) domField = fieldKey.options(Number(qOptionsMatch[1]));
-              }
-              newFieldErrors[domField] = d.message;
-            }
-          });
-          if (Object.keys(newFieldErrors).length > 0) {
-            setFieldErrors(newFieldErrors);
-            const firstId = Object.keys(newFieldErrors)[0];
-            document.getElementById(firstId)?.focus();
-          }
-          setError(errObj.message || 'Failed to save survey.');
-          if (detailMessages.length > 0) {
-            setValidationErrors(detailMessages);
-          }
-        } else {
-          setError(errObj.message || 'Failed to save survey.');
-        }
-      } else {
-        setError(getApiErrorMessage(err, 'Failed to save survey.'));
-      }
+      const errInfo = parseApiError(err, 'Failed to save survey.');
+      setError(errInfo.message);
+      applyServerValidationErrors(errInfo.details, setFieldErrors, setValidationErrors);
       return null;
     } finally {
       setSaving(false);
@@ -359,32 +364,26 @@ export function SurveyEditorPage() {
       await api.patch(`/surveys/${savedId}/publish`);
       navigate('/owner/surveys', { state: { successMessage: 'Survey published successfully.' } });
     } catch (err: unknown) {
-      setError(getApiErrorMessage(err, 'Publishing failed.'));
+      const errInfo = parseApiError(err, 'Publishing failed.');
+      setError(errInfo.message);
+      applyServerValidationErrors(errInfo.details, setFieldErrors, setValidationErrors);
     } finally {
       setSaving(false);
     }
   }
 
-  if (loadErrorCode === 404) {
+  if (loadErrorCode === 404 || loadErrorCode === 403) {
+    const isNotFound = loadErrorCode === 404;
     return (
       <div className="bg-white rounded-xl border border-slate-200 p-8 shadow-sm text-center max-w-lg mx-auto space-y-4">
-        <h2 className="text-xl font-bold text-slate-900">404 - Survey Not Found</h2>
-        <p className="text-sm text-slate-600">The survey you are looking for does not exist or has been removed.</p>
-        <Link
-          to="/owner/surveys"
-          className="inline-block rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
-        >
-          Return to My Surveys
-        </Link>
-      </div>
-    );
-  }
-
-  if (loadErrorCode === 403) {
-    return (
-      <div className="bg-white rounded-xl border border-slate-200 p-8 shadow-sm text-center max-w-lg mx-auto space-y-4">
-        <h2 className="text-xl font-bold text-slate-900">403 - Access Denied</h2>
-        <p className="text-sm text-slate-600">You do not have permission to view or edit this survey.</p>
+        <h2 className="text-xl font-bold text-slate-900">
+          {isNotFound ? '404 - Survey Not Found' : '403 - Access Denied'}
+        </h2>
+        <p className="text-sm text-slate-600">
+          {isNotFound
+            ? 'The survey you are looking for does not exist or has been removed.'
+            : 'You do not have permission to view or edit this survey.'}
+        </p>
         <Link
           to="/owner/surveys"
           className="inline-block rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
