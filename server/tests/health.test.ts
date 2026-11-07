@@ -1,5 +1,9 @@
 import request from 'supertest';
+import express from 'express';
+import { PrismaClient } from '@prisma/client';
 import app from '../src/app';
+import { getHealthCheck } from '../src/controllers/health.controller';
+import { errorHandler } from '../src/middleware/error.middleware';
 
 describe('GET /api/health (Scaffold Health & Database Connectivity)', () => {
   it('should return 200 and report status ok with database up', async () => {
@@ -14,6 +18,35 @@ describe('GET /api/health (Scaffold Health & Database Connectivity)', () => {
         database: 'up',
       },
     });
+  });
+
+  it('should return 503 SERVICE_UNAVAILABLE when database connectivity check fails', async () => {
+    const unreachablePrisma = new PrismaClient({
+      datasources: {
+        db: {
+          url: 'postgresql://postgres:postgres@127.0.0.1:54399/nonexistent?connect_timeout=1',
+        },
+      },
+    });
+
+    const testApp = express();
+    testApp.use(express.json());
+    testApp.get('/api/health', (req, res, next) => getHealthCheck(req, res, next, unreachablePrisma));
+    testApp.use(errorHandler);
+
+    const res = await request(testApp).get('/api/health');
+
+    expect(res.status).toBe(503);
+    expect(res.headers['content-type']).toMatch(/json/);
+    expect(res.body).toEqual({
+      success: false,
+      error: {
+        code: 'SERVICE_UNAVAILABLE',
+        message: 'Database connection failed.',
+      },
+    });
+
+    await unreachablePrisma.$disconnect();
   });
 
   it('should return 404 with standard error envelope for undefined API routes (both /api and /api/*)', async () => {

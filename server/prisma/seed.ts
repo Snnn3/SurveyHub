@@ -12,7 +12,6 @@ const SEED_Q1_ID = '00000000-0000-4000-a000-000000000011';
 const SEED_Q2_ID = '00000000-0000-4000-a000-000000000012';
 const SEED_Q3_ID = '00000000-0000-4000-a000-000000000021';
 const SEED_Q4_ID = '00000000-0000-4000-a000-000000000031';
-const PREV_Q4_RATING_ID = '00000000-0000-4000-a000-000000000032';
 
 const SEED_OPT_1_1_ID = '00000000-0000-4000-a000-000000000101';
 const SEED_OPT_1_2_ID = '00000000-0000-4000-a000-000000000102';
@@ -246,29 +245,6 @@ async function main() {
         ...q4Payload,
       },
     });
-
-    // shortcut: reconcile transient Q4 review fixture ID and stale options, safe to remove in Sprint 2
-    const prevQ4 = await tx.question.findUnique({
-      where: { id: PREV_Q4_RATING_ID },
-    });
-    if (prevQ4) {
-      await tx.answer.updateMany({
-        where: { questionId: PREV_Q4_RATING_ID },
-        data: { questionId: SEED_Q4_ID },
-      });
-      await tx.question.delete({
-        where: { id: PREV_Q4_RATING_ID },
-      });
-    }
-
-    const staleOptionsCount = await tx.option.count({
-      where: { questionId: SEED_Q4_ID },
-    });
-    if (staleOptionsCount > 0) {
-      await tx.option.deleteMany({
-        where: { questionId: SEED_Q4_ID },
-      });
-    }
 
     console.log('Seeded surveys, questions, and options successfully via idempotent upsert.');
   });
