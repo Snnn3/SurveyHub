@@ -13,6 +13,10 @@ export class HttpError extends Error {
   }
 }
 
+export function tokenRequiredError(): HttpError {
+  return new HttpError(401, 'TOKEN_REQUIRED', 'Authentication token is required.');
+}
+
 export class NotFoundError extends HttpError {
   constructor(message = 'Resource not found', code = 'NOT_FOUND', details?: unknown) {
     super(404, code, message, details);
