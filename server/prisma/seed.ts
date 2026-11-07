@@ -309,14 +309,23 @@ async function main() {
 
           if (existingCanonicalAnswer) {
             // Both IDs have an answer row for this response.
-            // Preserve the numeric rating value from ans if existingCanonicalAnswer lacks it.
+            // Only merge/delete equivalent answers; abort if conflicting non-null ratings exist
             if (existingCanonicalAnswer.numberValue === null && ans.numberValue !== null) {
               await tx.answer.update({
                 where: { id: existingCanonicalAnswer.id },
                 data: { numberValue: ans.numberValue },
               });
+              await tx.answer.delete({ where: { id: ans.id } });
+            } else if (
+              existingCanonicalAnswer.numberValue === ans.numberValue ||
+              ans.numberValue === null
+            ) {
+              await tx.answer.delete({ where: { id: ans.id } });
+            } else {
+              throw new Error(
+                `[Seed] Conflicting Q4 rating answers detected for response ${ans.responseId} (${existingCanonicalAnswer.numberValue} vs ${ans.numberValue}). Aborting seed to prevent discarding submitted response data.`
+              );
             }
-            await tx.answer.delete({ where: { id: ans.id } });
           } else {
             // Safe to reassign to canonical SEED_Q4_ID
             await tx.answer.update({
