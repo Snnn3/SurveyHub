@@ -10,11 +10,20 @@ const loginSchema = z.object({
   email: z.string().trim().email().transform((email) => email.toLowerCase()),
   password: z.string().min(1),
 });
+const DUMMY_PASSWORD_HASH = '$2b$10$RB3vZsul2m7mI.7ZAgIfB.AaRO2xiOrOQFG9RGURIdi0X58LYvEkC';
 
 export async function login(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const input = loginSchema.safeParse(req.body);
+  const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body)
+    ? req.body
+    : {};
+  const input = loginSchema.safeParse(body);
   if (!input.success) {
-    next(new HttpError(400, 'VALIDATION_ERROR', 'A valid email and password are required.'));
+    next(new HttpError(
+      400,
+      'VALIDATION_ERROR',
+      'A valid email and password are required.',
+      input.error.flatten().fieldErrors
+    ));
     return;
   }
 
@@ -31,7 +40,11 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
       },
     });
 
-    if (!user || !(await bcrypt.compare(input.data.password, user.passwordHash))) {
+    const passwordMatches = await bcrypt.compare(
+      input.data.password,
+      user?.passwordHash ?? DUMMY_PASSWORD_HASH
+    );
+    if (!user || !passwordMatches) {
       next(new HttpError(401, 'INVALID_CREDENTIALS', 'Invalid email or password.'));
       return;
     }

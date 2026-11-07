@@ -40,11 +40,15 @@ describe('F-01 authentication and roles', () => {
   });
 
   it('returns the same credentials error for an unknown email and a wrong password', async () => {
+    const compareSpy = jest.spyOn(bcrypt, 'compare');
     const [wrongPassword, unknownEmail] = await Promise.all([
       request(app).post('/api/auth/login').send({ email: 'owner1@survey.local', password: 'wrong' }),
       request(app).post('/api/auth/login').send({ email: 'missing@survey.local', password }),
     ]);
+    const compareCount = compareSpy.mock.calls.length;
+    compareSpy.mockRestore();
 
+    expect(compareCount).toBe(2);
     expect(wrongPassword.status).toBe(401);
     expect(unknownEmail.status).toBe(401);
     expect(wrongPassword.body.error).toEqual({
@@ -57,10 +61,23 @@ describe('F-01 authentication and roles', () => {
   });
 
   it('rejects malformed login input', async () => {
-    const response = await request(app).post('/api/auth/login').send({ email: 'bad', password: '' });
+    const [response, missingBody, arrayBody] = await Promise.all([
+      request(app)
+        .post('/api/auth/login')
+        .send({ email: 'bad', password: 'secret' }),
+      request(app).post('/api/auth/login'),
+      request(app).post('/api/auth/login').send(['bad']),
+    ]);
 
     expect(response.status).toBe(400);
     expect(response.body.error.code).toBe('VALIDATION_ERROR');
+    expect(response.body.error.details).toHaveProperty('email');
+    expect(JSON.stringify(response.body)).not.toContain('secret');
+    expect(missingBody.body.error.details).toEqual({
+      email: expect.any(Array),
+      password: expect.any(Array),
+    });
+    expect(arrayBody.body.error.details).toEqual(missingBody.body.error.details);
   });
 
   it('requires a token for current-user and logout requests', async () => {
