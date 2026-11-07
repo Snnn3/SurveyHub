@@ -1,3 +1,10 @@
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Load environment variables for local seed executions
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+
 import { PrismaClient, Role, SurveyStatus, SurveyMode, QuestionType } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
@@ -227,52 +234,79 @@ async function main() {
     });
 
     // Reconcile Survey 3 questions and options to ensure exactly 1 Rating question per SDS §2.5:
-    // 1. Clean up temporary Q4 ID (...032) if created in an earlier seed run and preserve any answers
+    // 1. Clean up temporary Q4 ID (...032) without unique constraint collisions on Answer(responseId, questionId)
     const prevQ4 = await tx.question.findUnique({
       where: { id: PREV_Q4_RATING_ID },
-      include: { _count: { select: { answers: true } } },
+      include: {
+        answers: {
+          select: { id: true, responseId: true },
+        },
+      },
     });
+
     if (prevQ4) {
-      if (prevQ4._count.answers > 0) {
-        await tx.answer.updateMany({
-          where: { questionId: PREV_Q4_RATING_ID },
-          data: { questionId: SEED_Q4_ID },
+      for (const ans of prevQ4.answers) {
+        const existingCanonicalAnswer = await tx.answer.findUnique({
+          where: {
+            responseId_questionId: {
+              responseId: ans.responseId,
+              questionId: SEED_Q4_ID,
+            },
+          },
         });
+
+        if (existingCanonicalAnswer) {
+          // If response already contains an answer for canonical SEED_Q4_ID, remove the legacy duplicate
+          await tx.answer.delete({ where: { id: ans.id } });
+        } else {
+          // Otherwise, safely reassign to canonical SEED_Q4_ID
+          await tx.answer.update({
+            where: { id: ans.id },
+            data: { questionId: SEED_Q4_ID },
+          });
+        }
       }
+
       await tx.question.delete({ where: { id: PREV_Q4_RATING_ID } });
     }
 
-    // 2. Safely clean up previous choice options on SEED_Q4_ID (...031) only if no answers reference them
+    // 2. Reconcile question type and options:
+    // Only transition to RATING if no existing answers reference options on SEED_Q4_ID (...031).
+    // If choice options are in use by existing answers, preserve legacy question type to prevent corrupting answer meaning.
     const legacyOptionsInUse = await tx.answerOption.count({
       where: {
         option: { questionId: SEED_Q4_ID },
       },
     });
-    if (legacyOptionsInUse === 0) {
+
+    if (legacyOptionsInUse > 0) {
+      console.warn(
+        `[Seed] Warning: Existing responses reference choice options for SEED_Q4_ID (${SEED_Q4_ID}). Keeping legacy choice question type intact to preserve response integrity.`
+      );
+    } else {
       await tx.option.deleteMany({
         where: { questionId: SEED_Q4_ID },
       });
+
+      const q4Payload = {
+        surveyId: survey3.id,
+        prompt: 'Overall, how would you rate this course so far (1 to 5)?',
+        questionType: QuestionType.RATING,
+        isRequired: true,
+        orderIndex: 0,
+        numberMin: 1,
+        numberMax: 5,
+      };
+
+      await tx.question.upsert({
+        where: { id: SEED_Q4_ID },
+        update: q4Payload,
+        create: {
+          id: SEED_Q4_ID,
+          ...q4Payload,
+        },
+      });
     }
-
-    // 3. Upsert canonical SEED_Q4_ID as RATING question for Survey 3
-    const q4Payload = {
-      surveyId: survey3.id,
-      prompt: 'Overall, how would you rate this course so far (1 to 5)?',
-      questionType: QuestionType.RATING,
-      isRequired: true,
-      orderIndex: 0,
-      numberMin: 1,
-      numberMax: 5,
-    };
-
-    await tx.question.upsert({
-      where: { id: SEED_Q4_ID },
-      update: q4Payload,
-      create: {
-        id: SEED_Q4_ID,
-        ...q4Payload,
-      },
-    });
 
     console.log('Seeded surveys, questions, and options successfully via idempotent upsert.');
   });

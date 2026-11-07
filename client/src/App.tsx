@@ -24,13 +24,46 @@ function getErrorMessage(err: unknown): string {
   return 'Failed to connect to API';
 }
 
-// Protected route guard per SDS §3.1 (checks authentication for client navigation)
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const location = useLocation();
+// Parse JWT payload safely to extract role per SDS §5.2 without external libraries
+function getAuthUser(): { token: string; role?: string } | null {
   const token = localStorage.getItem('token');
-  if (!token) {
+  if (!token) return null;
+  try {
+    const payloadPart = token.split('.')[1];
+    if (!payloadPart) return { token };
+    const base64 = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    const decoded = JSON.parse(jsonPayload);
+    return { token, role: decoded.role };
+  } catch {
+    return { token };
+  }
+}
+
+// Protected route guard per SDS §3.1 (checks authentication and role on the client for navigation)
+function ProtectedRoute({
+  children,
+  allowedRole,
+}: {
+  children: React.ReactNode;
+  allowedRole?: 'SURVEY_OWNER' | 'RESPONDENT';
+}) {
+  const location = useLocation();
+  const auth = getAuthUser();
+
+  if (!auth) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
+
+  if (allowedRole && auth.role && auth.role !== allowedRole) {
+    return <Navigate to="/" replace />;
+  }
+
   return <>{children}</>;
 }
 
@@ -210,7 +243,7 @@ export default function App() {
           <Route
             path="/surveys"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRole="RESPONDENT">
                 <SurveysPage />
               </ProtectedRoute>
             }
@@ -218,7 +251,7 @@ export default function App() {
           <Route
             path="/owner/surveys"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRole="SURVEY_OWNER">
                 <OwnerSurveysPage />
               </ProtectedRoute>
             }

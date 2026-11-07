@@ -1,6 +1,17 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const dotenv = require('dotenv');
+
+// Load environment variables for local seed executions
+const serverEnvPath = path.resolve(__dirname, '../.env');
+const rootEnvPath = path.resolve(__dirname, '../../.env');
+if (fs.existsSync(serverEnvPath)) {
+  dotenv.config({ path: serverEnvPath });
+}
+if (fs.existsSync(rootEnvPath)) {
+  dotenv.config({ path: rootEnvPath });
+}
 
 const tsSeed = path.resolve(__dirname, 'seed.ts');
 const compiled = path.resolve(__dirname, '../dist/prisma/seed.js');

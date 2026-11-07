@@ -53,11 +53,9 @@ describe('GET /api/health (Scaffold Health & Database Connectivity)', () => {
   });
 
   it('should return 503 SERVICE_UNAVAILABLE when database connectivity check fails', async () => {
-    try {
-      await prisma.$queryRawUnsafe('SELECT pg_terminate_backend(pg_backend_pid())');
-    } catch {
-      // Expected disconnection error from terminating current PostgreSQL backend connection
-    }
+    const queryRawSpy = jest
+      .spyOn(prisma, '$queryRaw')
+      .mockRejectedValueOnce(new Error('Database connectivity check failed.'));
 
     const res = await request(app).get('/api/health');
 
@@ -71,8 +69,6 @@ describe('GET /api/health (Scaffold Health & Database Connectivity)', () => {
       },
     });
 
-    // Re-establish clean connection for subsequent operations
-    await prisma.$disconnect();
-    await prisma.$connect();
+    queryRawSpy.mockRestore();
   });
 });
