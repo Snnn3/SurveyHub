@@ -6,7 +6,7 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 import { PrismaClient, Role, SurveyStatus, SurveyMode, QuestionType } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import { hashSeedPassword } from './password';
 
 const prisma = new PrismaClient();
 
@@ -66,7 +66,7 @@ async function upsertQuestionOptions(
 async function main() {
   console.log('Seeding database with reproducible synthetic test data...');
 
-  const passwordHash = await bcrypt.hash('Password123!', 10);
+  const passwordHash = await hashSeedPassword('Password123!');
 
   // Execute all seed upserts within a single atomic transaction
   await prisma.$transaction(async (tx) => {

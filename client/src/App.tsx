@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import api, { SESSION_EXPIRED_EVENT } from './api';
 import {
   LayersIcon,
   ServerIcon,
@@ -14,6 +15,24 @@ interface HealthData {
   database: string;
 }
 
+type UserRole = 'SURVEY_OWNER' | 'RESPONDENT';
+
+interface AuthUser {
+  id: string;
+  email: string;
+  fullName: string;
+  role: UserRole;
+}
+
+interface ApiEnvelope<T> {
+  success: boolean;
+  data: T;
+}
+
+function homeForRole(role: UserRole): string {
+  return role === 'SURVEY_OWNER' ? '/owner/surveys' : '/surveys';
+}
+
 function getErrorMessage(err: unknown): string {
   if (axios.isAxiosError(err)) {
     return err.response?.data?.error?.message || err.message;
@@ -24,46 +43,25 @@ function getErrorMessage(err: unknown): string {
   return 'Failed to connect to API';
 }
 
-// Parse JWT payload safely to extract role per SDS §5.2 without external libraries
-function getAuthUser(): { token: string; role?: string } | null {
-  const token = localStorage.getItem('token');
-  if (!token) return null;
-  try {
-    const payloadPart = token.split('.')[1];
-    if (!payloadPart) return null;
-    const base64 = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
-    );
-    const decoded = JSON.parse(jsonPayload);
-    if (!decoded || typeof decoded !== 'object') return null;
-    return { token, role: typeof decoded.role === 'string' ? decoded.role : undefined };
-  } catch {
-    return null;
-  }
-}
-
-// Protected route guard per SDS §3.1 (checks authentication and role on the client for navigation)
 function ProtectedRoute({
   children,
+  user,
+  loading,
   allowedRole,
 }: {
   children: React.ReactNode;
-  allowedRole?: 'SURVEY_OWNER' | 'RESPONDENT';
+  user: AuthUser | null;
+  loading: boolean;
+  allowedRole: UserRole;
 }) {
-  const location = useLocation();
-  const auth = getAuthUser();
-
-  if (!auth) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+  if (loading) {
+    return <div role="status" className="text-center text-slate-600">Loading your account...</div>;
   }
-
-  // Fail closed when allowedRole is set: reject missing or mismatched roles per SDS §3.1
-  if (allowedRole && auth.role !== allowedRole) {
-    return <Navigate to="/" replace />;
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  if (user.role !== allowedRole) {
+    return <Navigate to={homeForRole(user.role)} replace />;
   }
 
   return <>{children}</>;
@@ -86,8 +84,68 @@ function PlaceholderCard({ title, description }: PlaceholderCardProps) {
   );
 }
 
-function LoginPage() {
-  return <PlaceholderCard title="Login" description="Sprint 1 Feature F-01: Authentication, session and RBAC." />;
+function LoginPage({ onLogin }: { onLogin: (email: string, password: string) => Promise<void> }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    setPending(true);
+    try {
+      await onLogin(email, password);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <section className="max-w-md mx-auto bg-white rounded-xl shadow-sm border border-slate-200 p-8">
+      <h2 className="text-2xl font-bold text-slate-900 mb-2">Sign in to SurveyHub</h2>
+      <p className="text-sm text-slate-600 mb-6">Use your assigned account to continue.</p>
+      {error && <div role="alert" aria-live="polite" className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+      <form onSubmit={submit} className="space-y-5">
+        <div>
+          <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="username"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          />
+        </div>
+        <div>
+          <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={pending}
+          className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-70"
+        >
+          {pending && <span aria-hidden="true" className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-b-white align-[-3px]" />}
+          {pending ? 'Signing in...' : 'Sign in'}
+        </button>
+      </form>
+    </section>
+  );
 }
 
 function SurveysPage() {
@@ -208,6 +266,57 @@ function NotFound() {
 }
 
 export default function App() {
+  const navigate = useNavigate();
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [authLoading, setAuthLoading] = useState(() => Boolean(localStorage.getItem('token')));
+
+  useEffect(() => {
+    function clearSession() {
+      setUser(null);
+      setAuthLoading(false);
+      navigate('/login', { replace: true });
+    }
+
+    window.addEventListener(SESSION_EXPIRED_EVENT, clearSession);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, clearSession);
+  }, [navigate]);
+
+  useEffect(() => {
+    if (!localStorage.getItem('token')) return;
+
+    let active = true;
+    api.get<ApiEnvelope<AuthUser>>('/auth/me')
+      .then(({ data }) => {
+        if (active) setUser(data.data);
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (active) setAuthLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function handleLogin(email: string, password: string): Promise<void> {
+    const { data: loginResponse } = await api.post<ApiEnvelope<{ token: string }>>('/auth/login', {
+      email,
+      password,
+    });
+    localStorage.setItem('token', loginResponse.data.token);
+    const { data: currentUserResponse } = await api.get<ApiEnvelope<AuthUser>>('/auth/me');
+    setUser(currentUserResponse.data);
+    navigate(homeForRole(currentUserResponse.data.role), { replace: true });
+  }
+
+  async function handleLogout(): Promise<void> {
+    await api.post('/auth/logout').catch(() => undefined);
+    localStorage.removeItem('token');
+    setUser(null);
+    navigate('/login', { replace: true });
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
       {/* Top Navigation */}
@@ -226,13 +335,22 @@ export default function App() {
           <div className="flex items-center space-x-4 text-xs font-medium">
             <nav className="hidden sm:flex items-center space-x-3 text-slate-600">
               <Link to="/" className="hover:text-indigo-600">Home</Link>
-              <Link to="/login" className="hover:text-indigo-600">Login</Link>
-              <Link to="/surveys" className="hover:text-indigo-600">Surveys</Link>
-              <Link to="/owner/surveys" className="hover:text-indigo-600">Owner</Link>
+              {user ? (
+                <Link to={homeForRole(user.role)} className="hover:text-indigo-600">
+                  {user.role === 'SURVEY_OWNER' ? 'Owner' : 'Surveys'}
+                </Link>
+              ) : (
+                <Link to="/login" className="hover:text-indigo-600">Login</Link>
+              )}
             </nav>
-            <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100">
-              Sprint 1 Scaffold
-            </span>
+            {user && (
+              <>
+                <span className="text-slate-600">{user.fullName} · {user.role}</span>
+                <button type="button" onClick={handleLogout} className="font-semibold text-indigo-600 hover:text-indigo-800">
+                  Log out
+                </button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -241,11 +359,14 @@ export default function App() {
       <main className="max-w-4xl mx-auto px-4 py-12 flex-1 w-full">
         <Routes>
           <Route path="/" element={<ScaffoldHome />} />
-          <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="/login"
+            element={authLoading ? <div role="status" className="text-center text-slate-600">Loading your account...</div> : user ? <Navigate to={homeForRole(user.role)} replace /> : <LoginPage onLogin={handleLogin} />}
+          />
           <Route
             path="/surveys"
             element={
-              <ProtectedRoute allowedRole="RESPONDENT">
+              <ProtectedRoute user={user} loading={authLoading} allowedRole="RESPONDENT">
                 <SurveysPage />
               </ProtectedRoute>
             }
@@ -253,7 +374,7 @@ export default function App() {
           <Route
             path="/owner/surveys"
             element={
-              <ProtectedRoute allowedRole="SURVEY_OWNER">
+              <ProtectedRoute user={user} loading={authLoading} allowedRole="SURVEY_OWNER">
                 <OwnerSurveysPage />
               </ProtectedRoute>
             }
