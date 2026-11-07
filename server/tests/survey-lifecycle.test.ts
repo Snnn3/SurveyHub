@@ -424,11 +424,11 @@ describe('F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11)', () =>
     expect(getRes.status).toBe(403);
     expect(getRes.body.error.code).toBe('FORBIDDEN_OWNERSHIP');
 
-    // Owner B attempts PUT
+    // Owner B attempts PUT with invalid payload (ownership checked before validation)
     const putRes = await request(app)
       .put(`/api/surveys/${survey.id}`)
       .set('Authorization', `Bearer ${ownerBToken}`)
-      .send({ title: 'Hacked', questions: [] });
+      .send({ title: '', questions: 'invalid' });
     expect(putRes.status).toBe(403);
     expect(putRes.body.error.code).toBe('FORBIDDEN_OWNERSHIP');
 
@@ -620,6 +620,25 @@ describe('F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11)', () =>
           {
             prompt: 'Rate 1 to 5',
             questionType: 'RATING',
+          },
+        ],
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('rejects SHORT_TEXT questions with options with 400 VALIDATION_ERROR', async () => {
+    const res = await request(app)
+      .post('/api/surveys')
+      .set('Authorization', `Bearer ${ownerAToken}`)
+      .send({
+        title: 'Short Text With Options',
+        questions: [
+          {
+            prompt: 'Explain why',
+            questionType: 'SHORT_TEXT',
+            options: [{ label: 'Option 1' }],
           },
         ],
       });

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import api from '../api';
+import api, { getApiErrorMessage } from '../api';
 
 export type QuestionType = 'SINGLE_CHOICE' | 'SHORT_TEXT';
 
@@ -16,30 +16,23 @@ export interface FormQuestion {
   options: FormOption[];
 }
 
-function getApiErrorMessage(err: unknown, fallback: string): string {
-  if (axios.isAxiosError(err)) {
-    return err.response?.data?.error?.message || err.message;
-  }
-  if (err instanceof Error) {
-    return err.message;
-  }
-  return fallback;
-}
-
 export function SurveyEditorPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const isEditing = Boolean(id);
+  const [surveyId, setSurveyId] = useState<string | undefined>(id);
+  const isEditing = Boolean(surveyId);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [questions, setQuestions] = useState<FormQuestion[]>([]);
 
-  const [loading, setLoading] = useState(isEditing);
+  const [loading, setLoading] = useState(Boolean(id));
+  const [loadErrorCode, setLoadErrorCode] = useState<403 | 404 | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
-  const [questionToDelete, setQuestionToDelete] = useState<number | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [questionIndexToDelete, setQuestionIndexToDelete] = useState<number | null>(null);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 
   useEffect(() => {
@@ -82,6 +75,16 @@ export function SurveyEditorPage() {
         );
       } catch (err: unknown) {
         if (!active) return;
+        if (axios.isAxiosError(err)) {
+          if (err.response?.status === 404) {
+            setLoadErrorCode(404);
+            return;
+          }
+          if (err.response?.status === 403) {
+            setLoadErrorCode(403);
+            return;
+          }
+        }
         setError(getApiErrorMessage(err, 'Failed to load survey.'));
       } finally {
         if (active) setLoading(false);
@@ -94,43 +97,73 @@ export function SurveyEditorPage() {
     };
   }, [id]);
 
-  function validateForPublish(): string[] {
+  function validateForPublish(): { errors: string[]; fieldErrors: Record<string, string> } {
     const errors: string[] = [];
-    if (!title.trim()) errors.push('Survey title is required.');
-    if (title.length > 120) errors.push('Survey title must be at most 120 characters.');
-    if (description.length > 2000) errors.push('Description must be at most 2,000 characters.');
+    const fields: Record<string, string> = {};
+
+    if (!title.trim()) {
+      errors.push('Survey title is required.');
+      fields['survey-title'] = 'Survey title is required.';
+    } else if (title.length > 120) {
+      errors.push('Survey title must be at most 120 characters.');
+      fields['survey-title'] = 'Survey title must be at most 120 characters.';
+    }
+
+    if (description.length > 2000) {
+      errors.push('Description must be at most 2,000 characters.');
+      fields['survey-desc'] = 'Description must be at most 2,000 characters.';
+    }
 
     if (questions.length === 0) {
       errors.push('Survey must contain at least one question to be published.');
-      return errors;
+      fields['add-question-btn'] = 'Survey must contain at least one question.';
+      return { errors, fieldErrors: fields };
     }
 
     questions.forEach((question, qIndex) => {
       const qNum = qIndex + 1;
+      const promptKey = `prompt-${qIndex}`;
+
       if (!question.prompt.trim()) {
         errors.push(`Question ${qNum}: Prompt cannot be empty.`);
+        fields[promptKey] = 'Prompt cannot be empty.';
       } else if (question.prompt.length > 500) {
         errors.push(`Question ${qNum}: Prompt must be at most 500 characters.`);
+        fields[promptKey] = 'Prompt must be at most 500 characters.';
       }
 
       if (question.questionType === 'SINGLE_CHOICE') {
+        const optionsKey = `options-${qIndex}`;
         if (question.options.length < 2) {
           errors.push(`Question ${qNum}: Single-choice questions must have at least 2 options.`);
+          fields[optionsKey] = 'Single-choice questions must have at least 2 options.';
         } else if (question.options.length > 20) {
           errors.push(`Question ${qNum}: Single-choice questions cannot exceed 20 options.`);
+          fields[optionsKey] = 'Single-choice questions cannot exceed 20 options.';
         }
 
-        const labels = question.options.map((option) => option.label.trim().toLowerCase());
-        if (labels.some((l) => l.length === 0)) {
-          errors.push(`Question ${qNum}: All option labels must be filled in.`);
-        }
-        if (new Set(labels).size !== labels.length) {
+        const labels: string[] = [];
+        question.options.forEach((opt, optIndex) => {
+          const optKey = `option-${qIndex}-${optIndex}`;
+          const trimmed = opt.label.trim();
+          if (!trimmed) {
+            errors.push(`Question ${qNum}: Option ${optIndex + 1} cannot be empty.`);
+            fields[optKey] = 'Option label cannot be empty.';
+          } else if (trimmed.length > 200) {
+            errors.push(`Question ${qNum}: Option ${optIndex + 1} must be at most 200 characters.`);
+            fields[optKey] = 'Option label must be at most 200 characters.';
+          }
+          labels.push(trimmed.toLowerCase());
+        });
+
+        if (new Set(labels).size !== labels.length && !fields[optionsKey]) {
           errors.push(`Question ${qNum}: Option labels must be unique.`);
+          fields[optionsKey] = 'Option labels must be unique within each question.';
         }
       }
     });
 
-    return errors;
+    return { errors, fieldErrors: fields };
   }
 
   function addQuestion(type: QuestionType = 'SINGLE_CHOICE') {
@@ -147,7 +180,7 @@ export function SurveyEditorPage() {
 
   function removeQuestion(index: number) {
     setQuestions((prev) => prev.filter((_, i) => i !== index));
-    setQuestionToDelete(null);
+    setQuestionIndexToDelete(null);
   }
 
   function moveQuestion(index: number, direction: 'up' | 'down') {
@@ -210,24 +243,10 @@ export function SurveyEditorPage() {
       return null;
     }
 
-    for (let i = 0; i < questions.length; i++) {
-      if (!questions[i].prompt.trim()) {
-        setError(`Question ${i + 1}: Prompt is required.`);
-        return null;
-      }
-      if (questions[i].questionType === 'SINGLE_CHOICE') {
-        for (let j = 0; j < questions[i].options.length; j++) {
-          if (!questions[i].options[j].label.trim()) {
-            setError(`Question ${i + 1}, Option ${j + 1}: Label is required.`);
-            return null;
-          }
-        }
-      }
-    }
-
     setSaving(true);
     setError(null);
     setValidationErrors([]);
+    setFieldErrors({});
 
     const payload = {
       title: title.trim(),
@@ -241,12 +260,15 @@ export function SurveyEditorPage() {
     };
 
     try {
-      if (isEditing) {
-        await api.put(`/surveys/${id}`, payload);
-        return id!;
+      if (surveyId) {
+        await api.put(`/surveys/${surveyId}`, payload);
+        return surveyId;
       } else {
         const res = await api.post<{ success: boolean; data: { id: string } }>('/surveys', payload);
-        return res.data.data.id;
+        const newId = res.data.data.id;
+        setSurveyId(newId);
+        navigate(`/owner/surveys/${newId}/edit`, { replace: true });
+        return newId;
       }
     } catch (err: unknown) {
       setError(getApiErrorMessage(err, 'Failed to save survey.'));
@@ -259,31 +281,72 @@ export function SurveyEditorPage() {
   async function onSaveDraftClick() {
     const savedId = await handleSaveDraft();
     if (savedId) {
-      navigate('/owner/surveys');
+      navigate('/owner/surveys', { state: { successMessage: 'Draft survey saved successfully.' } });
     }
   }
 
   async function onPublishClick() {
-    const errors = validateForPublish();
+    const { errors, fieldErrors: validationFieldErrors } = validateForPublish();
     if (errors.length > 0) {
       setValidationErrors(errors);
+      setFieldErrors(validationFieldErrors);
+
+      const firstFieldId = Object.keys(validationFieldErrors)[0];
+      if (firstFieldId) {
+        const el = document.getElementById(firstFieldId);
+        if (el) {
+          el.focus();
+          return;
+        }
+      }
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
     setValidationErrors([]);
+    setFieldErrors({});
     const savedId = await handleSaveDraft();
     if (!savedId) return;
 
     setSaving(true);
     try {
       await api.patch(`/surveys/${savedId}/publish`);
-      navigate('/owner/surveys');
+      navigate('/owner/surveys', { state: { successMessage: 'Survey published successfully.' } });
     } catch (err: unknown) {
       setError(getApiErrorMessage(err, 'Publishing failed.'));
     } finally {
       setSaving(false);
     }
+  }
+
+  if (loadErrorCode === 404) {
+    return (
+      <div className="bg-white rounded-xl border border-slate-200 p-8 shadow-sm text-center max-w-lg mx-auto space-y-4">
+        <h2 className="text-xl font-bold text-slate-900">404 - Survey Not Found</h2>
+        <p className="text-sm text-slate-600">The survey you are looking for does not exist or has been removed.</p>
+        <Link
+          to="/owner/surveys"
+          className="inline-block rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+        >
+          Return to My Surveys
+        </Link>
+      </div>
+    );
+  }
+
+  if (loadErrorCode === 403) {
+    return (
+      <div className="bg-white rounded-xl border border-slate-200 p-8 shadow-sm text-center max-w-lg mx-auto space-y-4">
+        <h2 className="text-xl font-bold text-slate-900">403 - Access Denied</h2>
+        <p className="text-sm text-slate-600">You do not have permission to view or edit this survey.</p>
+        <Link
+          to="/owner/surveys"
+          className="inline-block rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+        >
+          Return to My Surveys
+        </Link>
+      </div>
+    );
   }
 
   if (loading) {
@@ -349,12 +412,27 @@ export function SurveyEditorPage() {
             type="text"
             required
             maxLength={120}
-            aria-invalid={!title.trim() && validationErrors.length > 0}
+            aria-invalid={Boolean(fieldErrors['survey-title'])}
+            aria-describedby={fieldErrors['survey-title'] ? 'survey-title-error' : undefined}
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              if (fieldErrors['survey-title']) {
+                setFieldErrors((prev) => {
+                  const copy = { ...prev };
+                  delete copy['survey-title'];
+                  return copy;
+                });
+              }
+            }}
             placeholder="e.g., CPE 334 Midterm Feedback"
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
           />
+          {fieldErrors['survey-title'] && (
+            <p id="survey-title-error" role="alert" className="text-xs text-red-600 mt-1">
+              {fieldErrors['survey-title']}
+            </p>
+          )}
           <p className="text-xs text-slate-400 mt-1 text-right">{title.length} / 120 characters</p>
         </div>
 
@@ -366,11 +444,27 @@ export function SurveyEditorPage() {
             id="survey-desc"
             rows={3}
             maxLength={2000}
+            aria-invalid={Boolean(fieldErrors['survey-desc'])}
+            aria-describedby={fieldErrors['survey-desc'] ? 'survey-desc-error' : undefined}
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={(e) => {
+              setDescription(e.target.value);
+              if (fieldErrors['survey-desc']) {
+                setFieldErrors((prev) => {
+                  const copy = { ...prev };
+                  delete copy['survey-desc'];
+                  return copy;
+                });
+              }
+            }}
             placeholder="Provide context or instructions for respondents..."
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
           />
+          {fieldErrors['survey-desc'] && (
+            <p id="survey-desc-error" role="alert" className="text-xs text-red-600 mt-1">
+              {fieldErrors['survey-desc']}
+            </p>
+          )}
           <p className="text-xs text-slate-400 mt-1 text-right">{description.length} / 2,000 characters</p>
         </div>
       </section>
@@ -381,6 +475,7 @@ export function SurveyEditorPage() {
           <h3 className="text-lg font-bold text-slate-900">Questions ({questions.length})</h3>
           <div className="flex items-center gap-2">
             <button
+              id="add-question-btn"
               type="button"
               onClick={() => addQuestion('SINGLE_CHOICE')}
               className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition"
@@ -434,7 +529,7 @@ export function SurveyEditorPage() {
                     type="button"
                     title="Remove question"
                     aria-label={`Remove Question ${qIndex + 1}`}
-                    onClick={() => setQuestionToDelete(qIndex)}
+                    onClick={() => setQuestionIndexToDelete(qIndex)}
                     className="p-1 text-red-400 hover:text-red-700 ml-2"
                   >
                     ✕
@@ -454,12 +549,27 @@ export function SurveyEditorPage() {
                   id={`prompt-${qIndex}`}
                   type="text"
                   maxLength={500}
-                  aria-invalid={!question.prompt.trim() && validationErrors.length > 0}
+                  aria-invalid={Boolean(fieldErrors[`prompt-${qIndex}`])}
+                  aria-describedby={fieldErrors[`prompt-${qIndex}`] ? `prompt-${qIndex}-error` : undefined}
                   value={question.prompt}
-                  onChange={(e) => updateQuestion(qIndex, { prompt: e.target.value })}
+                  onChange={(e) => {
+                    updateQuestion(qIndex, { prompt: e.target.value });
+                    if (fieldErrors[`prompt-${qIndex}`]) {
+                      setFieldErrors((prev) => {
+                        const copy = { ...prev };
+                        delete copy[`prompt-${qIndex}`];
+                        return copy;
+                      });
+                    }
+                  }}
                   placeholder="e.g. How satisfied are you with the course?"
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
                 />
+                {fieldErrors[`prompt-${qIndex}`] && (
+                  <p id={`prompt-${qIndex}-error`} role="alert" className="text-xs text-red-600 mt-1">
+                    {fieldErrors[`prompt-${qIndex}`]}
+                  </p>
+                )}
               </div>
 
               {/* Type and Required Toggle */}
@@ -500,33 +610,64 @@ export function SurveyEditorPage() {
                   <label className="block text-xs font-semibold text-slate-700">
                     Options (2–20 required for publish)
                   </label>
+                  {fieldErrors[`options-${qIndex}`] && (
+                    <p id={`options-${qIndex}-error`} role="alert" className="text-xs text-red-600">
+                      {fieldErrors[`options-${qIndex}`]}
+                    </p>
+                  )}
                   {question.options.map((option, optIndex) => (
-                    <div key={optIndex} className="flex items-center gap-2">
-                      <label
-                        htmlFor={`option-${qIndex}-${optIndex}`}
-                        className="text-xs text-slate-400 w-5 text-right cursor-pointer"
-                      >
-                        {optIndex + 1}.
-                      </label>
-                      <input
-                        id={`option-${qIndex}-${optIndex}`}
-                        aria-label={`Question ${qIndex + 1} Option ${optIndex + 1}`}
-                        type="text"
-                        maxLength={200}
-                        value={option.label}
-                        onChange={(e) => updateOption(qIndex, optIndex, e.target.value)}
-                        placeholder={`Option ${optIndex + 1}`}
-                        className="flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs outline-none focus:border-indigo-500"
-                      />
-                      {question.options.length > 2 && (
-                        <button
-                          type="button"
-                          aria-label={`Remove option ${optIndex + 1}`}
-                          onClick={() => removeOption(qIndex, optIndex)}
-                          className="text-slate-400 hover:text-red-600 text-xs px-2 py-1"
+                    <div key={optIndex} className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <label
+                          htmlFor={`option-${qIndex}-${optIndex}`}
+                          className="text-xs text-slate-400 w-5 text-right cursor-pointer"
                         >
-                          ✕
-                        </button>
+                          {optIndex + 1}.
+                        </label>
+                        <input
+                          id={`option-${qIndex}-${optIndex}`}
+                          aria-label={`Question ${qIndex + 1} Option ${optIndex + 1}`}
+                          type="text"
+                          maxLength={200}
+                          aria-invalid={Boolean(fieldErrors[`option-${qIndex}-${optIndex}`])}
+                          aria-describedby={
+                            fieldErrors[`option-${qIndex}-${optIndex}`]
+                              ? `option-${qIndex}-${optIndex}-error`
+                              : undefined
+                          }
+                          value={option.label}
+                          onChange={(e) => {
+                            updateOption(qIndex, optIndex, e.target.value);
+                            if (fieldErrors[`option-${qIndex}-${optIndex}`]) {
+                              setFieldErrors((prev) => {
+                                const copy = { ...prev };
+                                delete copy[`option-${qIndex}-${optIndex}`];
+                                return copy;
+                              });
+                            }
+                          }}
+                          placeholder={`Option ${optIndex + 1}`}
+                          className="flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs outline-none focus:border-indigo-500"
+                        />
+                        {question.options.length > 2 && (
+                          <button
+                            type="button"
+                            aria-label={`Remove option ${optIndex + 1}`}
+                            onClick={() => removeOption(qIndex, optIndex)}
+                            className="text-slate-400 hover:text-red-600 text-xs px-2 py-1"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                      {fieldErrors[`option-${qIndex}-${optIndex}`] && (
+                        <p
+                          id={`option-${qIndex}-${optIndex}-error`}
+                          role="alert"
+                          className="text-xs text-red-600 pl-7"
+                        >
+                          {fieldErrors[`option-${qIndex}-${optIndex}`]}
+                        </p>
                       )}
                     </div>
                   ))}
@@ -603,24 +744,24 @@ export function SurveyEditorPage() {
       )}
 
       {/* Confirmation Dialog for Question Removal */}
-      {questionToDelete !== null && (
+      {questionIndexToDelete !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
           <div className="bg-white rounded-xl max-w-sm w-full p-6 shadow-xl border border-slate-200">
             <h3 className="text-base font-bold text-slate-900 mb-2">Remove Question</h3>
             <p className="text-sm text-slate-600 mb-6">
-              Are you sure you want to remove Question {questionToDelete + 1}? This action cannot be undone.
+              Are you sure you want to remove Question {questionIndexToDelete + 1}? This action cannot be undone.
             </p>
             <div className="flex justify-end gap-3">
               <button
                 type="button"
-                onClick={() => setQuestionToDelete(null)}
+                onClick={() => setQuestionIndexToDelete(null)}
                 className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50"
               >
                 Cancel
               </button>
               <button
                 type="button"
-                onClick={() => removeQuestion(questionToDelete)}
+                onClick={() => removeQuestion(questionIndexToDelete)}
                 className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700"
               >
                 Remove

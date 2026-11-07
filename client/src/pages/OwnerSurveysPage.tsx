@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import axios from 'axios';
-import api from '../api';
+import { Link, useLocation } from 'react-router-dom';
+import api, { getApiErrorMessage } from '../api';
 
 export type SurveyStatus = 'DRAFT' | 'PUBLISHED' | 'CLOSED';
 export type SurveyMode = 'IDENTIFIED' | 'ANONYMOUS';
@@ -17,24 +16,23 @@ export interface SurveyListItem {
   updatedAt: string;
 }
 
-function getApiErrorMessage(err: unknown, fallback: string): string {
-  if (axios.isAxiosError(err)) {
-    return err.response?.data?.error?.message || err.message;
-  }
-  if (err instanceof Error) {
-    return err.message;
-  }
-  return fallback;
-}
-
 export function OwnerSurveysPage() {
+  const location = useLocation();
   const [surveys, setSurveys] = useState<SurveyListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [confirmCloseSurvey, setConfirmCloseSurvey] = useState<SurveyListItem | null>(null);
   const [confirmDeleteSurvey, setConfirmDeleteSurvey] = useState<SurveyListItem | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (location.state && typeof location.state === 'object' && 'successMessage' in location.state) {
+      setSuccessMessage(String((location.state as Record<string, unknown>).successMessage));
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
 
   async function fetchSurveys() {
     setLoading(true);
@@ -58,6 +56,7 @@ export function OwnerSurveysPage() {
     setProcessingId(surveyId);
     try {
       await api.patch(`/surveys/${surveyId}/publish`);
+      setSuccessMessage('Survey published successfully.');
       await fetchSurveys();
     } catch (err: unknown) {
       setActionError(getApiErrorMessage(err, 'Failed to publish survey'));
@@ -74,6 +73,7 @@ export function OwnerSurveysPage() {
     try {
       await api.patch(`/surveys/${surveyId}/close`);
       setConfirmCloseSurvey(null);
+      setSuccessMessage('Survey closed successfully.');
       await fetchSurveys();
     } catch (err: unknown) {
       setActionError(getApiErrorMessage(err, 'Failed to close survey'));
@@ -91,6 +91,7 @@ export function OwnerSurveysPage() {
       await api.delete(`/surveys/${surveyId}`);
       setConfirmDeleteSurvey(null);
       setSurveys((prev) => prev.filter((survey) => survey.id !== surveyId));
+      setSuccessMessage('Survey draft deleted successfully.');
     } catch (err: unknown) {
       setActionError(getApiErrorMessage(err, 'Failed to delete survey'));
     } finally {
@@ -136,6 +137,24 @@ export function OwnerSurveysPage() {
           + New Survey
         </Link>
       </div>
+
+      {successMessage && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 flex justify-between items-center"
+        >
+          <span>{successMessage}</span>
+          <button
+            type="button"
+            aria-label="Dismiss message"
+            onClick={() => setSuccessMessage(null)}
+            className="text-emerald-600 hover:text-emerald-900 font-bold ml-4"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {actionError && (
         <div

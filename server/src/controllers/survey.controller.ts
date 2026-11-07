@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { QuestionType, SurveyStatus } from '@prisma/client';
+import { Prisma, QuestionType, SurveyStatus } from '@prisma/client';
 import { prisma } from '../utils/prisma';
 import { HttpError, NotFoundError } from '../utils/errors';
 import { validateSurveyStructure } from '../validators/survey.validator';
@@ -20,6 +20,15 @@ const questionInputSchema = z
     isRequired: z.boolean().optional().default(true),
     options: z.array(questionOptionInputSchema).optional().default([]),
   })
+  .refine(
+    (question) => {
+      if (question.questionType === QuestionType.SHORT_TEXT && question.options && question.options.length > 0) {
+        return false;
+      }
+      return true;
+    },
+    { message: 'Short text questions cannot have options.', path: ['options'] }
+  )
   .refine(
     (question) => {
       if (question.questionType === QuestionType.SINGLE_CHOICE && question.options.length > 0) {
@@ -55,10 +64,13 @@ function mapQuestionsToCreate(questions: z.infer<typeof questionInputSchema>[]) 
     isRequired: question.isRequired,
     orderIndex: questionIndex,
     options: {
-      create: (question.options || []).map((option, optionIndex) => ({
-        label: option.label,
-        orderIndex: optionIndex,
-      })),
+      create:
+        question.questionType === QuestionType.SINGLE_CHOICE
+          ? (question.options || []).map((option, optionIndex) => ({
+              label: option.label,
+              orderIndex: optionIndex,
+            }))
+          : [],
     },
   }));
 }
@@ -66,6 +78,47 @@ function mapQuestionsToCreate(questions: z.infer<typeof questionInputSchema>[]) 
 function parseSurveyId(paramId: string): string | null {
   const result = idParamSchema.safeParse(paramId);
   return result.success ? result.data : null;
+}
+
+async function getAuthorizedSurvey(
+  paramId: string,
+  ownerId: string,
+  includeDetails: true
+): Promise<Prisma.SurveyGetPayload<{ include: typeof surveyDetailInclude }>>;
+async function getAuthorizedSurvey(
+  paramId: string,
+  ownerId: string,
+  includeDetails?: false
+): Promise<{ id: string; ownerId: string; status: SurveyStatus }>;
+async function getAuthorizedSurvey(
+  paramId: string,
+  ownerId: string,
+  includeDetails = false
+) {
+  const surveyId = parseSurveyId(paramId);
+  if (!surveyId) {
+    throw new NotFoundError('Survey not found.');
+  }
+
+  const survey = includeDetails
+    ? await prisma.survey.findUnique({
+        where: { id: surveyId },
+        include: surveyDetailInclude,
+      })
+    : await prisma.survey.findUnique({
+        where: { id: surveyId },
+        select: { id: true, ownerId: true, status: true },
+      });
+
+  if (!survey) {
+    throw new NotFoundError('Survey not found.');
+  }
+
+  if (survey.ownerId !== ownerId) {
+    throw new HttpError(403, 'FORBIDDEN_OWNERSHIP', 'You do not own this survey.');
+  }
+
+  return survey;
 }
 
 export async function listOwnerSurveys(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -148,29 +201,8 @@ export async function createSurvey(req: Request, res: Response, next: NextFuncti
 
 export async function getSurveyById(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const surveyId = parseSurveyId(req.params.id);
-    if (!surveyId) {
-      next(new NotFoundError('Survey not found.'));
-      return;
-    }
-
     const ownerId = req.auth!.id;
-
-    const survey = await prisma.survey.findUnique({
-      where: { id: surveyId },
-      include: surveyDetailInclude,
-    });
-
-    if (!survey) {
-      next(new NotFoundError('Survey not found.'));
-      return;
-    }
-
-    if (survey.ownerId !== ownerId) {
-      next(new HttpError(403, 'FORBIDDEN_OWNERSHIP', 'You do not own this survey.'));
-      return;
-    }
-
+    const survey = await getAuthorizedSurvey(req.params.id, ownerId, true);
     res.status(200).json({ success: true, data: survey });
   } catch (error) {
     next(error);
@@ -178,47 +210,27 @@ export async function getSurveyById(req: Request, res: Response, next: NextFunct
 }
 
 export async function updateSurvey(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const surveyId = parseSurveyId(req.params.id);
-  if (!surveyId) {
-    next(new NotFoundError('Survey not found.'));
-    return;
-  }
-
-  const ownerId = req.auth!.id;
-
-  const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
-  const parsed = surveyInputSchema.safeParse(body);
-
-  if (!parsed.success) {
-    next(
-      new HttpError(
-        400,
-        'VALIDATION_ERROR',
-        'Invalid survey structure.',
-        parsed.error.flatten().fieldErrors
-      )
-    );
-    return;
-  }
-
   try {
-    const existing = await prisma.survey.findUnique({
-      where: { id: surveyId },
-      select: { id: true, ownerId: true, status: true },
-    });
-
-    if (!existing) {
-      next(new NotFoundError('Survey not found.'));
-      return;
-    }
-
-    if (existing.ownerId !== ownerId) {
-      next(new HttpError(403, 'FORBIDDEN_OWNERSHIP', 'You do not own this survey.'));
-      return;
-    }
+    const ownerId = req.auth!.id;
+    const existing = await getAuthorizedSurvey(req.params.id, ownerId);
 
     if (existing.status !== SurveyStatus.DRAFT) {
       next(new HttpError(400, 'SURVEY_NOT_EDITABLE', 'Only draft surveys can be edited.'));
+      return;
+    }
+
+    const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
+    const parsed = surveyInputSchema.safeParse(body);
+
+    if (!parsed.success) {
+      next(
+        new HttpError(
+          400,
+          'VALIDATION_ERROR',
+          'Invalid survey structure.',
+          parsed.error.flatten().fieldErrors
+        )
+      );
       return;
     }
 
@@ -226,10 +238,10 @@ export async function updateSurvey(req: Request, res: Response, next: NextFuncti
 
     const updated = await prisma.$transaction(async (tx) => {
       // Cascade delete existing questions and recreate atomically
-      await tx.question.deleteMany({ where: { surveyId } });
+      await tx.question.deleteMany({ where: { surveyId: existing.id } });
 
       return tx.survey.update({
-        where: { id: surveyId },
+        where: { id: existing.id },
         data: {
           title,
           description: description || null,
@@ -249,35 +261,15 @@ export async function updateSurvey(req: Request, res: Response, next: NextFuncti
 
 export async function deleteSurvey(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const surveyId = parseSurveyId(req.params.id);
-    if (!surveyId) {
-      next(new NotFoundError('Survey not found.'));
-      return;
-    }
-
     const ownerId = req.auth!.id;
-
-    const existing = await prisma.survey.findUnique({
-      where: { id: surveyId },
-      select: { id: true, ownerId: true, status: true },
-    });
-
-    if (!existing) {
-      next(new NotFoundError('Survey not found.'));
-      return;
-    }
-
-    if (existing.ownerId !== ownerId) {
-      next(new HttpError(403, 'FORBIDDEN_OWNERSHIP', 'You do not own this survey.'));
-      return;
-    }
+    const existing = await getAuthorizedSurvey(req.params.id, ownerId);
 
     if (existing.status !== SurveyStatus.DRAFT) {
       next(new HttpError(400, 'SURVEY_NOT_EDITABLE', 'Only draft surveys can be deleted.'));
       return;
     }
 
-    await prisma.survey.delete({ where: { id: surveyId } });
+    await prisma.survey.delete({ where: { id: existing.id } });
 
     res.status(204).send();
   } catch (error) {
@@ -287,34 +279,8 @@ export async function deleteSurvey(req: Request, res: Response, next: NextFuncti
 
 export async function publishSurvey(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const surveyId = parseSurveyId(req.params.id);
-    if (!surveyId) {
-      next(new NotFoundError('Survey not found.'));
-      return;
-    }
-
     const ownerId = req.auth!.id;
-
-    const existing = await prisma.survey.findUnique({
-      where: { id: surveyId },
-      include: {
-        questions: {
-          include: {
-            options: true,
-          },
-        },
-      },
-    });
-
-    if (!existing) {
-      next(new NotFoundError('Survey not found.'));
-      return;
-    }
-
-    if (existing.ownerId !== ownerId) {
-      next(new HttpError(403, 'FORBIDDEN_OWNERSHIP', 'You do not own this survey.'));
-      return;
-    }
+    const existing = await getAuthorizedSurvey(req.params.id, ownerId, true);
 
     if (existing.status !== SurveyStatus.DRAFT) {
       next(
@@ -342,7 +308,7 @@ export async function publishSurvey(req: Request, res: Response, next: NextFunct
     }
 
     const published = await prisma.survey.update({
-      where: { id: surveyId },
+      where: { id: existing.id },
       data: {
         status: SurveyStatus.PUBLISHED,
         publishedAt: new Date(),
@@ -358,28 +324,8 @@ export async function publishSurvey(req: Request, res: Response, next: NextFunct
 
 export async function closeSurvey(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const surveyId = parseSurveyId(req.params.id);
-    if (!surveyId) {
-      next(new NotFoundError('Survey not found.'));
-      return;
-    }
-
     const ownerId = req.auth!.id;
-
-    const existing = await prisma.survey.findUnique({
-      where: { id: surveyId },
-      select: { id: true, ownerId: true, status: true },
-    });
-
-    if (!existing) {
-      next(new NotFoundError('Survey not found.'));
-      return;
-    }
-
-    if (existing.ownerId !== ownerId) {
-      next(new HttpError(403, 'FORBIDDEN_OWNERSHIP', 'You do not own this survey.'));
-      return;
-    }
+    const existing = await getAuthorizedSurvey(req.params.id, ownerId);
 
     if (existing.status !== SurveyStatus.PUBLISHED) {
       next(
@@ -393,7 +339,7 @@ export async function closeSurvey(req: Request, res: Response, next: NextFunctio
     }
 
     const closed = await prisma.survey.update({
-      where: { id: surveyId },
+      where: { id: existing.id },
       data: {
         status: SurveyStatus.CLOSED,
         closedAt: new Date(),
