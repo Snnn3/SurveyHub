@@ -33,14 +33,7 @@ export function SurveyEditorPage() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [questions, setQuestions] = useState<FormQuestion[]>([
-    {
-      prompt: '',
-      questionType: 'SINGLE_CHOICE',
-      isRequired: true,
-      options: [{ label: '' }, { label: '' }],
-    },
-  ]);
+  const [questions, setQuestions] = useState<FormQuestion[]>([]);
 
   const [loading, setLoading] = useState(isEditing);
   const [saving, setSaving] = useState(false);
@@ -215,6 +208,21 @@ export function SurveyEditorPage() {
     if (!title.trim()) {
       setError('Title is required.');
       return null;
+    }
+
+    for (let i = 0; i < questions.length; i++) {
+      if (!questions[i].prompt.trim()) {
+        setError(`Question ${i + 1}: Prompt is required.`);
+        return null;
+      }
+      if (questions[i].questionType === 'SINGLE_CHOICE') {
+        for (let j = 0; j < questions[i].options.length; j++) {
+          if (!questions[i].options[j].label.trim()) {
+            setError(`Question ${i + 1}, Option ${j + 1}: Label is required.`);
+            return null;
+          }
+        }
+      }
     }
 
     setSaving(true);
