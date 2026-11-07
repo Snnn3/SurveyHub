@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import api, { SESSION_EXPIRED_EVENT } from './api';
+import api, { SESSION_EXPIRED_EVENT, getApiErrorMessage } from './api';
 import { LayersIcon } from './components/Icons';
 import { OwnerSurveysPage } from './pages/OwnerSurveysPage';
 import { SurveyEditorPage } from './pages/SurveyEditorPage';
@@ -32,13 +32,7 @@ function homeForRole(role: UserRole): string {
 }
 
 function getErrorMessage(err: unknown): string {
-  if (axios.isAxiosError(err)) {
-    return err.response?.data?.error?.message || err.message;
-  }
-  if (err instanceof Error) {
-    return err.message;
-  }
-  return 'Failed to connect to API';
+  return getApiErrorMessage(err, 'Failed to connect to API');
 }
 
 function ProtectedRoute({

@@ -139,19 +139,29 @@ export async function getSurveyById(id: string, ownerId: string) {
 }
 
 export async function updateSurvey(id: string, ownerId: string, input: SurveyInput) {
-  // 1. Verify owner and DRAFT status per SDS §1.3 & F-02 §3.4
-  const existing = await getAuthorizedSurvey(id, ownerId);
-  if (existing.status !== SurveyStatus.DRAFT) {
-    throw new HttpError(400, 'SURVEY_NOT_EDITABLE', 'Only draft surveys can be edited.');
-  }
-
   const { title, description, questions } = input;
 
   return prisma.$transaction(async (tx) => {
-    await tx.question.deleteMany({ where: { surveyId: existing.id } });
+    // Atomically verify owner and DRAFT status inside transaction per F-02 §3.4
+    const existing = await tx.survey.findUnique({
+      where: { id },
+      select: { id: true, ownerId: true, status: true },
+    });
+
+    if (!existing) {
+      throw new NotFoundError('Survey not found.');
+    }
+    if (existing.ownerId !== ownerId) {
+      throw new HttpError(403, 'FORBIDDEN_OWNERSHIP', 'You do not own this survey.');
+    }
+    if (existing.status !== SurveyStatus.DRAFT) {
+      throw new HttpError(400, 'SURVEY_NOT_EDITABLE', 'Only draft surveys can be edited.');
+    }
+
+    await tx.question.deleteMany({ where: { surveyId: id } });
 
     return tx.survey.update({
-      where: { id: existing.id },
+      where: { id },
       data: {
         title,
         description: description || null,

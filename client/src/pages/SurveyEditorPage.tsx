@@ -387,13 +387,13 @@ export function SurveyEditorPage() {
   }
 
   if (loadErrorCode) {
-    let title = '400 - Survey Not Editable';
+    let title = 'Survey Not Editable';
     let msg = 'Only draft surveys can be edited.';
     if (loadErrorCode === 404) {
-      title = '404 - Survey Not Found';
+      title = 'Survey Not Found';
       msg = 'The survey you are looking for does not exist or has been removed.';
     } else if (loadErrorCode === 403) {
-      title = '403 - Access Denied';
+      title = 'Access Denied';
       msg = 'You do not have permission to view or edit this survey.';
     }
     return (
