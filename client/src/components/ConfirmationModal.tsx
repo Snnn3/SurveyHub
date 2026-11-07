@@ -31,9 +31,14 @@ export function ConfirmationModal({
   const buttonColorClass = variantClasses[variant] || variantClasses.primary;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirmation-modal-title"
+    >
       <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl border border-slate-200">
-        <h3 className="text-base font-bold text-slate-900 mb-2">{title}</h3>
+        <h3 id="confirmation-modal-title" className="text-base font-bold text-slate-900 mb-2">{title}</h3>
         <p className="text-sm text-slate-600 mb-6">{message}</p>
         <div className="flex justify-end gap-3">
           <button
