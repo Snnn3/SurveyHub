@@ -306,12 +306,24 @@ export async function publishSurvey(req: Request, res: Response, next: NextFunct
     // Structure Validation per BR-06 & SDS §3.5
     const validation = validateSurveyStructure(existing);
     if (!validation.isValid) {
+      const details = validation.error
+        ? [
+            {
+              field:
+                validation.error.questionIndex !== undefined
+                  ? `questions.${validation.error.questionIndex}`
+                  : 'questions',
+              message: validation.error.message,
+            },
+          ]
+        : undefined;
+
       next(
         new HttpError(
           400,
           'INVALID_QUESTION_STRUCTURE',
           validation.error?.message || 'Invalid survey structure.',
-          validation.error
+          details
         )
       );
       return;

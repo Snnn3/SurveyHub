@@ -338,6 +338,8 @@ describe('F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11)', () =>
 
     expect(res1.status).toBe(400);
     expect(res1.body.error.code).toBe('INVALID_QUESTION_STRUCTURE');
+    expect(Array.isArray(res1.body.error.details)).toBe(true);
+    expect(res1.body.error.details[0].field).toBe('questions');
 
     const dbEmpty = await prisma.survey.findUnique({ where: { id: emptySurvey.id } });
     expect(dbEmpty?.status).toBe('DRAFT');
@@ -368,6 +370,8 @@ describe('F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11)', () =>
 
     expect(res2.status).toBe(400);
     expect(res2.body.error.code).toBe('INVALID_QUESTION_STRUCTURE');
+    expect(Array.isArray(res2.body.error.details)).toBe(true);
+    expect(res2.body.error.details[0].field).toBe('questions.0');
 
     const dbOneOpt = await prisma.survey.findUnique({ where: { id: oneOptSurvey.id } });
     expect(dbOneOpt?.status).toBe('DRAFT');

@@ -322,63 +322,75 @@ export function OwnerSurveysPage() {
 
       {/* Confirmation Modal for Closing a Survey */}
       {confirmCloseSurvey && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl border border-slate-200">
-            <h3 className="text-lg font-bold text-slate-900 mb-2">Close Survey</h3>
-            <p className="text-sm text-slate-600 mb-6">
-              Are you sure you want to close &quot;{confirmCloseSurvey.title}&quot;? Once closed, respondents can no
-              longer submit responses and this survey cannot be reopened.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setConfirmCloseSurvey(null)}
-                className="px-4 py-2 text-sm font-semibold rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={processingId === confirmCloseSurvey.id}
-                onClick={handleConfirmClose}
-                className="px-4 py-2 text-sm font-semibold rounded-lg bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50"
-              >
-                {processingId === confirmCloseSurvey.id ? 'Closing...' : 'Close Survey'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmationModal
+          title="Close Survey"
+          message={`Are you sure you want to close "${confirmCloseSurvey.title}"? Once closed, respondents can no longer submit responses and this survey cannot be reopened.`}
+          confirmLabel="Close Survey"
+          confirmButtonClass="bg-amber-600 hover:bg-amber-700"
+          processing={processingId === confirmCloseSurvey.id}
+          onCancel={() => setConfirmCloseSurvey(null)}
+          onConfirm={handleConfirmClose}
+        />
       )}
 
       {/* Confirmation Modal for Deleting a Survey */}
       {confirmDeleteSurvey && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl border border-slate-200">
-            <h3 className="text-lg font-bold text-slate-900 mb-2">Delete Draft Survey</h3>
-            <p className="text-sm text-slate-600 mb-6">
-              Are you sure you want to delete &quot;{confirmDeleteSurvey.title}&quot;? All associated questions and
-              options will be permanently deleted.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setConfirmDeleteSurvey(null)}
-                className="px-4 py-2 text-sm font-semibold rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={processingId === confirmDeleteSurvey.id}
-                onClick={handleConfirmDelete}
-                className="px-4 py-2 text-sm font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
-              >
-                {processingId === confirmDeleteSurvey.id ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmationModal
+          title="Delete Draft Survey"
+          message={`Are you sure you want to delete "${confirmDeleteSurvey.title}"? All associated questions and options will be permanently deleted.`}
+          confirmLabel="Delete"
+          confirmButtonClass="bg-red-600 hover:bg-red-700"
+          processing={processingId === confirmDeleteSurvey.id}
+          onCancel={() => setConfirmDeleteSurvey(null)}
+          onConfirm={handleConfirmDelete}
+        />
       )}
+    </div>
+  );
+}
+
+interface ConfirmationModalProps {
+  title: string;
+  message: string;
+  confirmLabel: string;
+  confirmButtonClass: string;
+  processing: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}
+
+function ConfirmationModal({
+  title,
+  message,
+  confirmLabel,
+  confirmButtonClass,
+  processing,
+  onCancel,
+  onConfirm,
+}: ConfirmationModalProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+      <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl border border-slate-200">
+        <h3 className="text-lg font-bold text-slate-900 mb-2">{title}</h3>
+        <p className="text-sm text-slate-600 mb-6">{message}</p>
+        <div className="flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 text-sm font-semibold rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={processing}
+            onClick={onConfirm}
+            className={`px-4 py-2 text-sm font-semibold rounded-lg text-white disabled:opacity-50 ${confirmButtonClass}`}
+          >
+            {processing ? 'Processing...' : confirmLabel}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

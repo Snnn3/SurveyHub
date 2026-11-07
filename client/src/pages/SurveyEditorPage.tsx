@@ -16,6 +16,16 @@ export interface FormQuestion {
   options: FormOption[];
 }
 
+function swapItems<T>(items: T[], index: number, direction: 'up' | 'down'): T[] {
+  const targetIndex = direction === 'up' ? index - 1 : index + 1;
+  if (targetIndex < 0 || targetIndex >= items.length) return items;
+  const copy = [...items];
+  const temp = copy[index];
+  copy[index] = copy[targetIndex];
+  copy[targetIndex] = temp;
+  return copy;
+}
+
 export function SurveyEditorPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -184,15 +194,7 @@ export function SurveyEditorPage() {
   }
 
   function moveQuestion(index: number, direction: 'up' | 'down') {
-    setQuestions((prev) => {
-      const targetIndex = direction === 'up' ? index - 1 : index + 1;
-      if (targetIndex < 0 || targetIndex >= prev.length) return prev;
-      const copy = [...prev];
-      const temp = copy[index];
-      copy[index] = copy[targetIndex];
-      copy[targetIndex] = temp;
-      return copy;
-    });
+    setQuestions((prev) => swapItems(prev, index, direction));
   }
 
   function updateQuestion(index: number, patch: Partial<FormQuestion>) {
@@ -239,16 +241,9 @@ export function SurveyEditorPage() {
 
   function moveOption(questionIndex: number, optionIndex: number, direction: 'up' | 'down') {
     setQuestions((prev) =>
-      prev.map((q, i) => {
-        if (i !== questionIndex) return q;
-        const targetIndex = direction === 'up' ? optionIndex - 1 : optionIndex + 1;
-        if (targetIndex < 0 || targetIndex >= q.options.length) return q;
-        const copy = [...q.options];
-        const temp = copy[optionIndex];
-        copy[optionIndex] = copy[targetIndex];
-        copy[targetIndex] = temp;
-        return { ...q, options: copy };
-      })
+      prev.map((q, i) =>
+        i === questionIndex ? { ...q, options: swapItems(q.options, optionIndex, direction) } : q
+      )
     );
   }
 
