@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 export type ConfirmationModalVariant = 'danger' | 'warning' | 'primary' | 'neutral';
 
@@ -31,19 +31,62 @@ export function ConfirmationModal({
   onConfirm,
 }: ConfirmationModalProps) {
   const buttonColorClass = variantClasses[variant] || variantClasses.primary;
+  const modalRef = useRef<HTMLDivElement>(null);
+  const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
+    previouslyFocusedElementRef.current = document.activeElement as HTMLElement | null;
+
+    // Focus the first focusable element inside the modal on open
+    const focusableElements = modalRef.current?.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusableElements && focusableElements.length > 0) {
+      focusableElements[0].focus();
+    }
+
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape' && !processing) {
+        event.preventDefault();
         onCancel();
+        return;
+      }
+
+      if (event.key === 'Tab' && modalRef.current) {
+        const elements = modalRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (!elements || elements.length === 0) return;
+
+        const firstElement = elements[0];
+        const lastElement = elements[elements.length - 1];
+
+        if (event.shiftKey) {
+          if (document.activeElement === firstElement || !modalRef.current.contains(document.activeElement)) {
+            event.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement || !modalRef.current.contains(document.activeElement)) {
+            event.preventDefault();
+            firstElement.focus();
+          }
+        }
       }
     }
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      if (previouslyFocusedElementRef.current && typeof previouslyFocusedElementRef.current.focus === 'function') {
+        previouslyFocusedElementRef.current.focus();
+      }
+    };
   }, [onCancel, processing]);
 
   return (
     <div
+      ref={modalRef}
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
       role="dialog"
       aria-modal="true"

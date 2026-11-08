@@ -154,6 +154,9 @@ export async function updateSurvey(surveyId: string, ownerId: string, input: Sur
   const { title, description, questions } = input;
 
   return prisma.$transaction(async (tx) => {
+    // Acquire row-level exclusive lock to serialize lifecycle operations and prevent concurrent state bypass
+    await tx.$queryRaw`SELECT id FROM surveys WHERE id = ${surveyId} FOR UPDATE`;
+
     // Atomically verify owner and DRAFT status inside transaction per SDS §1.3 & F-02 §3.4
     const existing = await assertSurveyEditable(surveyId, ownerId, tx);
 
@@ -175,6 +178,9 @@ export async function updateSurvey(surveyId: string, ownerId: string, input: Sur
 
 export async function deleteSurvey(surveyId: string, ownerId: string) {
   return prisma.$transaction(async (tx) => {
+    // Acquire row-level exclusive lock to serialize lifecycle operations
+    await tx.$queryRaw`SELECT id FROM surveys WHERE id = ${surveyId} FOR UPDATE`;
+
     const existing = await assertSurveyEditable(
       surveyId,
       ownerId,
@@ -187,6 +193,9 @@ export async function deleteSurvey(surveyId: string, ownerId: string) {
 
 export async function publishSurvey(surveyId: string, ownerId: string) {
   return prisma.$transaction(async (tx) => {
+    // Acquire row-level exclusive lock to serialize lifecycle operations
+    await tx.$queryRaw`SELECT id FROM surveys WHERE id = ${surveyId} FOR UPDATE`;
+
     const existing = await getAuthorizedSurvey(surveyId, ownerId, true, tx);
     if (existing.status !== SurveyStatus.DRAFT) {
       throw new HttpError(400, 'INVALID_STATE_TRANSITION', 'Only draft surveys can be published.');
@@ -228,6 +237,9 @@ export async function publishSurvey(surveyId: string, ownerId: string) {
 
 export async function closeSurvey(surveyId: string, ownerId: string) {
   return prisma.$transaction(async (tx) => {
+    // Acquire row-level exclusive lock to serialize lifecycle operations
+    await tx.$queryRaw`SELECT id FROM surveys WHERE id = ${surveyId} FOR UPDATE`;
+
     const existing = await getAuthorizedSurvey(surveyId, ownerId, false, tx);
     if (existing.status !== SurveyStatus.PUBLISHED) {
       throw new HttpError(400, 'INVALID_STATE_TRANSITION', 'Only published surveys can be closed.');

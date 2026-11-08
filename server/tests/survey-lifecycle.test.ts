@@ -733,8 +733,13 @@ describe('F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11)', () =>
       expect(putRes.body.error.code).toBe('SURVEY_NOT_EDITABLE');
       expect(dbSurvey?.status).toBe('PUBLISHED');
       expect(dbSurvey?.title).toBe('Race Condition Test');
+      expect(dbSurvey?.questions).toHaveLength(1);
+      expect(dbSurvey?.questions[0].prompt).toBe('Original Question');
     } else if (publishRes.status === 200 && putRes.status === 200) {
       expect(dbSurvey?.status).toBe('PUBLISHED');
+      expect(dbSurvey?.title).toBe('Updated During Publish');
+      expect(dbSurvey?.questions).toHaveLength(1);
+      expect(dbSurvey?.questions[0].prompt).toBe('Updated Question');
     }
   });
 });
