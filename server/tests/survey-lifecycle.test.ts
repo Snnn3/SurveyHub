@@ -490,6 +490,14 @@ describe('F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11)', () =>
     expect(putPub.status).toBe(400);
     expect(putPub.body.error.code).toBe('SURVEY_NOT_EDITABLE');
 
+    // PUT published with invalid body (DRAFT status checked per Spec F-02 §3.4 before shape validation)
+    const putPubInvalid = await request(app)
+      .put(`/api/surveys/${published.id}`)
+      .set('Authorization', `Bearer ${ownerAToken}`)
+      .send({ title: '', questions: 'invalid' });
+    expect(putPubInvalid.status).toBe(400);
+    expect(putPubInvalid.body.error.code).toBe('SURVEY_NOT_EDITABLE');
+
     // DELETE published
     const delPub = await request(app)
       .delete(`/api/surveys/${published.id}`)

@@ -60,9 +60,9 @@ export async function updateSurvey(req: Request, res: Response, next: NextFuncti
     const surveyId = getValidSurveyId(req.params.id);
     const ownerId = req.auth!.id;
 
-    // Ownership guard per SDS §1.1 Architecture Layering & STS-F02-09
-    // verifies ownership before body shape parsing to prevent unauthorized callers from probing survey structures.
-    await surveyService.assertSurveyOwner(surveyId, ownerId);
+    // Guard ownership and draft status per Spec F-02 Section 3.4 (1. Verify owner and DRAFT)
+    // and STS-F02-10 before shape validation to reject edits on non-draft surveys regardless of payload shape.
+    await surveyService.assertSurveyEditable(surveyId, ownerId);
 
     const parsed = parseSurveyInput(req.body);
     if (!parsed.success) {
