@@ -69,6 +69,7 @@ export function SurveyTakePage() {
     setMissingIds(missing);
     if (missing.length) {
       setError('Please complete all required questions.');
+      document.getElementById(`${missing[0]}-input`)?.focus();
       return;
     }
 
@@ -92,8 +93,10 @@ export function SurveyTakePage() {
       } else if (apiError?.code === 'SURVEY_NOT_ACCEPTING_RESPONSES') {
         setError('This survey is no longer accepting responses.');
       } else if (apiError?.code === 'MISSING_REQUIRED_QUESTIONS') {
-        setMissingIds(apiError.details?.questionIds || []);
+        const questionIds = apiError.details?.questionIds || [];
+        setMissingIds(questionIds);
         setError('Please complete all required questions.');
+        document.getElementById(`${questionIds[0]}-input`)?.focus();
       } else {
         setError(getApiErrorMessage(err, 'Failed to submit your response.'));
       }
@@ -103,13 +106,13 @@ export function SurveyTakePage() {
   }
 
   if (loading) return <p role="status" className="text-sm text-slate-600">Loading survey…</p>;
-  if (error && !survey) return <p role="alert" className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</p>;
+  if (error && !survey) return <p role="alert" aria-live="polite" className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</p>;
   if (!survey) return null;
   if (survey.questions.some((question) => !supportsQuestionType(question.questionType))) {
     return (
       <section className="space-y-4" aria-labelledby="survey-title">
         <h2 id="survey-title" className="text-2xl font-bold text-slate-900">{survey.title}</h2>
-        <p role="alert" className="rounded-lg bg-amber-50 p-4 text-sm text-amber-900">
+        <p role="alert" aria-live="polite" className="rounded-lg bg-amber-50 p-4 text-sm text-amber-900">
           This survey includes a question type that is not available yet.
         </p>
         <Link to="/surveys" className="text-sm font-medium text-indigo-600 hover:text-indigo-800">← Available surveys</Link>
@@ -124,7 +127,7 @@ export function SurveyTakePage() {
         <h2 id="survey-title" className="mt-3 text-2xl font-bold text-slate-900">{survey.title}</h2>
         {survey.description && <p className="mt-1 text-sm text-slate-600">{survey.description}</p>}
       </div>
-      {error && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+      {error && <p role="alert" aria-live="polite" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
       <form noValidate onSubmit={submit} className="space-y-5">
         {survey.questions.map((question) => {
           const missing = missingIds.includes(question.id);
@@ -135,9 +138,10 @@ export function SurveyTakePage() {
               </legend>
               {question.questionType === 'SINGLE_CHOICE' ? (
                 <div className="mt-3 space-y-2">
-                  {question.options.map((option) => (
+                  {question.options.map((option, index) => (
                     <label key={option.id} className="flex items-center gap-3 text-sm text-slate-700">
                       <input
+                        id={index === 0 ? `${question.id}-input` : undefined}
                         type="radio"
                         name={question.id}
                         value={option.id}
@@ -153,7 +157,11 @@ export function SurveyTakePage() {
                 </div>
               ) : (
                 <div className="mt-3">
+                  <label htmlFor={`${question.id}-input`} className="mb-1 block text-sm font-medium text-slate-700">
+                    Your answer
+                  </label>
                   <textarea
+                    id={`${question.id}-input`}
                     value={answers[question.id] || ''}
                     maxLength={2000}
                     required={question.isRequired}
@@ -201,7 +209,7 @@ export function SurveyReceiptPage() {
   }, [id, responseId]);
 
   if (loading && !receipt) return <p role="status" className="text-sm text-slate-600">Loading your confirmation…</p>;
-  if (!receipt) return <p role="alert" className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error || 'Receipt not found.'}</p>;
+  if (!receipt) return <p role="alert" aria-live="polite" className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error || 'Receipt not found.'}</p>;
 
   return (
     <section aria-labelledby="confirmation-heading" className="rounded-xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm">
@@ -211,7 +219,7 @@ export function SurveyReceiptPage() {
         <div><dt className="inline font-semibold">Response ID: </dt><dd className="inline break-all">{receipt.responseId}</dd></div>
         <div><dt className="inline font-semibold">Submitted: </dt><dd className="inline"><time dateTime={receipt.submittedAt}>{new Date(receipt.submittedAt).toLocaleString()}</time></dd></div>
       </dl>
-      {error && <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>}
+      {error && <p role="alert" aria-live="polite" className="mt-4 text-sm text-red-700">{error}</p>}
       <button type="button" onClick={loadReceipt} disabled={loading} className="mt-5 rounded-lg border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-60">
         {loading ? 'Loading receipt…' : 'View receipt'}
       </button>

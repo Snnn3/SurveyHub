@@ -1,7 +1,7 @@
 import { Prisma, QuestionType, SurveyStatus } from '@prisma/client';
 import { HttpError, NotFoundError } from '../utils/errors';
 import { prisma } from '../utils/prisma';
-import { parseResponseInput, type ResponseInput } from '../validators/response.validator';
+import type { ResponseInput } from '../validators/response.validator';
 
 function invalidAnswer(): never {
   throw new HttpError(400, 'INVALID_ANSWER', 'One or more submitted answers are invalid.');
@@ -127,7 +127,7 @@ export async function getSurveyForm(surveyId: string) {
   return survey;
 }
 
-export async function submitSurveyResponse(surveyId: string, userId: string, body: unknown) {
+export async function submitSurveyResponse(surveyId: string, userId: string, input: ResponseInput) {
   return prisma.$transaction(async (tx) => {
     // Match F-02 lifecycle locks so a close cannot race a response submission.
     await tx.$queryRaw`SELECT id FROM surveys WHERE id = ${surveyId} FOR UPDATE`;
@@ -150,9 +150,7 @@ export async function submitSurveyResponse(surveyId: string, userId: string, bod
     if (!survey) throw new NotFoundError('Survey not found.');
     assertSurveyAcceptingResponses(survey.status);
 
-    const input = parseResponseInput(body);
-    if (!input.success) invalidAnswer();
-    const answers = normalizeAnswers(survey.questions, input.data.answers);
+    const answers = normalizeAnswers(survey.questions, input.answers);
 
     try {
       await tx.responseClaim.create({ data: { surveyId, userId } });

@@ -2,6 +2,7 @@ import { QuestionType, SurveyStatus } from '@prisma/client';
 import request from 'supertest';
 import app from '../src/app';
 import { prisma } from '../src/utils/prisma';
+import * as responseService from '../src/services/response.service';
 import { seedUsers } from '../prisma/seed-users';
 import { truncateTestDatabase } from './setup';
 
@@ -177,7 +178,7 @@ describe('F-03 survey submission and receipts (STS-F03-01 to STS-F03-10)', () =>
       const response = await request(app)
         .post(`/api/surveys/${survey.id}/responses`)
         .set('Authorization', `Bearer ${respondentToken}`)
-        .send({ answers: [{ questionId: 'invalid' }] });
+        .send({ answers: [] });
       expect(response.status).toBe(400);
       expect(response.body.error.code).toBe('SURVEY_NOT_ACCEPTING_RESPONSES');
     }
@@ -198,6 +199,20 @@ describe('F-03 survey submission and receipts (STS-F03-01 to STS-F03-10)', () =>
       .set('Authorization', `Bearer ${respondentToken}`)
       .send({ answers: [{ questionId: survey.questions[0].id, selectedOptionIds: [survey.questions[0].options[0].id] }] });
     expect(accepted.status).toBe(201);
+  });
+
+  it('rejects malformed response bodies before entering the submission service', async () => {
+    const survey = await createSurvey(ownerId);
+    const submit = jest.spyOn(responseService, 'submitSurveyResponse');
+    const response = await request(app)
+      .post(`/api/surveys/${survey.id}/responses`)
+      .set('Authorization', `Bearer ${respondentToken}`)
+      .send({ answers: 'invalid' });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe('INVALID_ANSWER');
+    expect(submit).not.toHaveBeenCalled();
+    submit.mockRestore();
   });
 
   it('STS-F03-07: rejects wrong types, foreign options, duplicate questions, mixed values, and long text', async () => {

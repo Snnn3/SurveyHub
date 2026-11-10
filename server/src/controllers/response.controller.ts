@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
-import { NotFoundError } from '../utils/errors';
-import { parseSurveyId } from '../validators/survey.validator';
+import { HttpError } from '../utils/errors';
+import { getValidUuid } from '../utils/uuid';
+import { parseResponseInput } from '../validators/response.validator';
 import * as responseService from '../services/response.service';
-import { getValidSurveyId } from './survey.controller';
 
 export async function listActiveSurveys(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -15,7 +15,7 @@ export async function listActiveSurveys(req: Request, res: Response, next: NextF
 
 export async function getSurveyForm(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const data = await responseService.getSurveyForm(getValidSurveyId(req.params.id));
+    const data = await responseService.getSurveyForm(getValidUuid(req.params.id, 'Survey'));
     res.status(200).json({ success: true, data });
   } catch (error) {
     next(error);
@@ -24,10 +24,16 @@ export async function getSurveyForm(req: Request, res: Response, next: NextFunct
 
 export async function submitSurveyResponse(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    const surveyId = getValidUuid(req.params.id, 'Survey');
+    const parsed = parseResponseInput(req.body);
+    if (!parsed.success) {
+      throw new HttpError(400, 'INVALID_ANSWER', 'One or more submitted answers are invalid.');
+    }
+
     const response = await responseService.submitSurveyResponse(
-      getValidSurveyId(req.params.id),
+      surveyId,
       req.auth!.id,
-      req.body
+      parsed.data
     );
     res.status(201).json({
       success: true,
@@ -45,9 +51,8 @@ export async function submitSurveyResponse(req: Request, res: Response, next: Ne
 
 export async function getSurveyReceipt(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const surveyId = getValidSurveyId(req.params.id);
-    const responseId = parseSurveyId(req.params.responseId);
-    if (!responseId) throw new NotFoundError('Response not found.');
+    const surveyId = getValidUuid(req.params.id, 'Survey');
+    const responseId = getValidUuid(req.params.responseId, 'Response');
     const data = await responseService.getSurveyReceipt(surveyId, responseId, req.auth!.id);
     res.status(200).json({ success: true, data });
   } catch (error) {

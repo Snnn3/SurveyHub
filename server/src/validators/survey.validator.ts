@@ -68,13 +68,6 @@ export function parseSurveyInput(body: unknown) {
   return surveyInputSchema.safeParse(normalized);
 }
 
-const idParamSchema = z.string().uuid();
-
-export function parseSurveyId(paramId: string): string | null {
-  const result = idParamSchema.safeParse(paramId);
-  return result.success ? result.data : null;
-}
-
 export interface OptionValidationInput {
   label?: string | null;
 }

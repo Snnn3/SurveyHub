@@ -37,7 +37,7 @@ export function RespondentSurveysPage() {
     );
   }
 
-  if (error) return <p role="alert" className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</p>;
+  if (error) return <p role="alert" aria-live="polite" className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</p>;
 
   return (
     <section className="space-y-6" aria-labelledby="surveys-heading">
@@ -63,14 +63,23 @@ export function RespondentSurveysPage() {
                   <p className="mt-2 text-xs text-slate-500">{survey.questionCount} questions</p>
                 </div>
                 {survey.hasSubmitted ? (
-                  survey.responseId && (
-                    <Link
-                      to={`/surveys/${survey.id}/confirmation/${survey.responseId}`}
-                      className="inline-flex justify-center rounded-lg border border-emerald-300 px-4 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-50"
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled
+                      className="inline-flex cursor-not-allowed justify-center rounded-lg bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-500"
                     >
-                      View receipt
-                    </Link>
-                  )
+                      Start survey
+                    </button>
+                    {survey.responseId && (
+                      <Link
+                        to={`/surveys/${survey.id}/confirmation/${survey.responseId}`}
+                        className="inline-flex justify-center rounded-lg border border-emerald-300 px-4 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-50"
+                      >
+                        View receipt
+                      </Link>
+                    )}
+                  </div>
                 ) : (
                   <Link
                     to={`/surveys/${survey.id}/take`}
