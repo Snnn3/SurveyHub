@@ -80,10 +80,6 @@ export async function getAuthorizedSurvey(
   return survey;
 }
 
-export async function assertSurveyOwner(surveyId: string, ownerId: string) {
-  return getAuthorizedSurvey(surveyId, ownerId, false);
-}
-
 export async function assertSurveyEditable(
   surveyId: string,
   ownerId: string,
