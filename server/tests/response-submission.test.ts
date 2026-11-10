@@ -105,13 +105,15 @@ describe('F-03 survey submission and receipts (STS-F03-01 to STS-F03-10)', () =>
     const response = await request(app)
       .get(`/api/surveys/${survey.id}/form`)
       .set('Authorization', `Bearer ${respondentToken}`);
+    const orderedQuestions = [...survey.questions].sort((left, right) => left.orderIndex - right.orderIndex);
+    const orderedOptions = [...orderedQuestions[0].options].sort((left, right) => left.orderIndex - right.orderIndex);
 
     expect(response.status).toBe(200);
     expect(response.body.data.questions.map((question: { id: string }) => question.id)).toEqual(
-      survey.questions.map((question) => question.id)
+      orderedQuestions.map((question) => question.id)
     );
     expect(response.body.data.questions[0].options.map((option: { id: string }) => option.id)).toEqual(
-      survey.questions[0].options.map((option) => option.id)
+      orderedOptions.map((option) => option.id)
     );
   });
 
