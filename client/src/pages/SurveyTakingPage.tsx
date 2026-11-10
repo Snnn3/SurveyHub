@@ -209,7 +209,12 @@ export function SurveyReceiptPage() {
   }, [id, responseId]);
 
   if (loading && !receipt) return <p role="status" className="text-sm text-slate-600">Loading your confirmation…</p>;
-  if (!receipt) return <p role="alert" aria-live="polite" className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error || 'Receipt not found.'}</p>;
+  if (!receipt) return (
+    <div className="space-y-4">
+      <p role="alert" aria-live="polite" className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error || 'Receipt not found.'}</p>
+      <Link to="/surveys" className="text-sm font-medium text-indigo-600 hover:text-indigo-800">Back to available surveys</Link>
+    </div>
+  );
 
   return (
     <section aria-labelledby="confirmation-heading" className="rounded-xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm">

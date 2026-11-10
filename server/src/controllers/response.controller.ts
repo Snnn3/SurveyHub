@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import { HttpError } from '../utils/errors';
 import { getValidUuid } from '../utils/uuid';
 import { parseResponseInput } from '../validators/response.validator';
+import { formatZodDetails } from '../validators/validation';
 import * as responseService from '../services/response.service';
 
 export async function listActiveSurveys(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -27,7 +28,12 @@ export async function submitSurveyResponse(req: Request, res: Response, next: Ne
     const surveyId = getValidUuid(req.params.id, 'Survey');
     const parsed = parseResponseInput(req.body);
     if (!parsed.success) {
-      throw new HttpError(400, 'INVALID_ANSWER', 'One or more submitted answers are invalid.');
+      throw new HttpError(
+        400,
+        'INVALID_ANSWER',
+        'One or more submitted answers are invalid.',
+        formatZodDetails(parsed.error)
+      );
     }
 
     const response = await responseService.submitSurveyResponse(

@@ -103,18 +103,26 @@ describe('F-03 survey submission and receipts (STS-F03-01 to STS-F03-10)', () =>
 
   it('STS-F03-02: returns ordered questions and options for a published survey', async () => {
     const survey = await createSurvey(ownerId);
+    const choiceQuestion = survey.questions.find((question) => question.questionType === QuestionType.SINGLE_CHOICE)!;
+    const textQuestion = survey.questions.find((question) => question.questionType === QuestionType.SHORT_TEXT)!;
+    const goodOption = choiceQuestion.options.find((option) => option.label === 'Good')!;
+    const badOption = choiceQuestion.options.find((option) => option.label === 'Bad')!;
+
+    await prisma.question.update({ where: { id: choiceQuestion.id }, data: { orderIndex: 1 } });
+    await prisma.question.update({ where: { id: textQuestion.id }, data: { orderIndex: 0 } });
+    await prisma.option.update({ where: { id: goodOption.id }, data: { orderIndex: 1 } });
+    await prisma.option.update({ where: { id: badOption.id }, data: { orderIndex: 0 } });
+
     const response = await request(app)
       .get(`/api/surveys/${survey.id}/form`)
       .set('Authorization', `Bearer ${respondentToken}`);
-    const orderedQuestions = [...survey.questions].sort((left, right) => left.orderIndex - right.orderIndex);
-    const orderedOptions = [...orderedQuestions[0].options].sort((left, right) => left.orderIndex - right.orderIndex);
 
     expect(response.status).toBe(200);
     expect(response.body.data.questions.map((question: { id: string }) => question.id)).toEqual(
-      orderedQuestions.map((question) => question.id)
+      [textQuestion.id, choiceQuestion.id]
     );
-    expect(response.body.data.questions[0].options.map((option: { id: string }) => option.id)).toEqual(
-      orderedOptions.map((option) => option.id)
+    expect(response.body.data.questions[1].options.map((option: { id: string }) => option.id)).toEqual(
+      [badOption.id, goodOption.id]
     );
   });
 
@@ -211,6 +219,9 @@ describe('F-03 survey submission and receipts (STS-F03-01 to STS-F03-10)', () =>
 
     expect(response.status).toBe(400);
     expect(response.body.error.code).toBe('INVALID_ANSWER');
+    expect(response.body.error.details).toEqual(expect.arrayContaining([
+      expect.objectContaining({ field: 'answers' }),
+    ]));
     expect(submit).not.toHaveBeenCalled();
     submit.mockRestore();
   });
@@ -240,6 +251,9 @@ describe('F-03 survey submission and receipts (STS-F03-01 to STS-F03-10)', () =>
         .send(payload);
       expect(response.status).toBe(400);
       expect(response.body.error.code).toBe('INVALID_ANSWER');
+      expect(response.body.error.details).toEqual(expect.arrayContaining([
+        expect.objectContaining({ field: expect.stringMatching(/^answers\./) }),
+      ]));
     }
     expect(await prisma.surveyResponse.count({ where: { surveyId: survey.id } })).toBe(0);
     expect(await prisma.responseClaim.count({ where: { surveyId: survey.id } })).toBe(0);

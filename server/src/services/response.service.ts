@@ -3,8 +3,9 @@ import { HttpError, NotFoundError } from '../utils/errors';
 import { prisma } from '../utils/prisma';
 import type { ResponseInput } from '../validators/response.validator';
 
-function invalidAnswer(): never {
-  throw new HttpError(400, 'INVALID_ANSWER', 'One or more submitted answers are invalid.');
+function invalidAnswer(field = 'answers'): never {
+  const message = 'One or more submitted answers are invalid.';
+  throw new HttpError(400, 'INVALID_ANSWER', message, [{ field, message }]);
 }
 
 function assertSurveyAcceptingResponses(status: SurveyStatus): void {
@@ -26,31 +27,29 @@ function normalizeAnswers(
   const seenQuestionIds = new Set<string>();
   const normalized: Array<{ questionId: string; textValue?: string; selectedOptionIds?: string[] }> = [];
 
-  for (const answer of answers) {
-    if (seenQuestionIds.has(answer.questionId)) invalidAnswer();
+  for (const [index, answer] of answers.entries()) {
+    const answerField = `answers.${index}`;
+    if (seenQuestionIds.has(answer.questionId)) invalidAnswer(`${answerField}.questionId`);
     seenQuestionIds.add(answer.questionId);
 
     const question = questionById.get(answer.questionId);
-    if (!question) invalidAnswer();
+    if (!question) invalidAnswer(`${answerField}.questionId`);
 
     if (question.questionType === QuestionType.SINGLE_CHOICE) {
       const selectedOptionIds = answer.selectedOptionIds;
-      if (
-        answer.textValue !== undefined ||
-        !selectedOptionIds ||
-        selectedOptionIds.length !== 1 ||
-        !question.options.some((option) => option.id === selectedOptionIds[0])
-      ) {
-        invalidAnswer();
+      if (answer.textValue !== undefined) invalidAnswer(`${answerField}.textValue`);
+      if (!selectedOptionIds || selectedOptionIds.length !== 1 ||
+        !question.options.some((option) => option.id === selectedOptionIds[0])) {
+        invalidAnswer(`${answerField}.selectedOptionIds`);
       }
       normalized.push({ questionId: answer.questionId, selectedOptionIds });
     } else if (question.questionType === QuestionType.SHORT_TEXT) {
-      if (answer.selectedOptionIds !== undefined) invalidAnswer();
+      if (answer.selectedOptionIds !== undefined) invalidAnswer(`${answerField}.selectedOptionIds`);
       const textValue = answer.textValue?.trim();
-      if (textValue && textValue.length > 2000) invalidAnswer();
+      if (textValue && textValue.length > 2000) invalidAnswer(`${answerField}.textValue`);
       if (textValue) normalized.push({ questionId: answer.questionId, textValue });
     } else {
-      invalidAnswer();
+      invalidAnswer(answerField);
     }
   }
 

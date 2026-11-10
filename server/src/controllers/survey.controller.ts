@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { HttpError } from '../utils/errors';
 import { getValidUuid } from '../utils/uuid';
-import { parseSurveyInput, formatZodDetails } from '../validators/survey.validator';
+import { formatZodDetails } from '../validators/validation';
+import { parseSurveyInput } from '../validators/survey.validator';
 import * as surveyService from '../services/survey.service';
 
 export async function listOwnerSurveys(req: Request, res: Response, next: NextFunction): Promise<void> {

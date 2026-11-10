@@ -56,13 +56,6 @@ export const surveyInputSchema = z
 
 export type SurveyInput = z.infer<typeof surveyInputSchema>;
 
-export function formatZodDetails(error: z.ZodError): Array<{ field: string; message: string }> {
-  return error.issues.map((issue) => ({
-    field: issue.path.join('.'),
-    message: issue.message,
-  }));
-}
-
 export function parseSurveyInput(body: unknown) {
   const normalized = body && typeof body === 'object' && !Array.isArray(body) ? body : {};
   return surveyInputSchema.safeParse(normalized);
