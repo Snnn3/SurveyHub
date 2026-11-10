@@ -34,7 +34,7 @@ interface SurveyReceipt {
 interface ApiErrorBody {
   error?: {
     code?: string;
-    details?: { questionIds?: string[] };
+    details?: { questionIds?: string[] } | Array<{ field: string; message: string }>;
   };
 }
 
@@ -48,6 +48,7 @@ export function SurveyTakePage() {
   const [survey, setSurvey] = useState<SurveyForm | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [missingIds, setMissingIds] = useState<string[]>([]);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +64,7 @@ export function SurveyTakePage() {
     event.preventDefault();
     if (!survey) return;
     setError(null);
+    setFieldErrors({});
     const missing = survey.questions
       .filter((question) => question.isRequired && !(answers[question.id] || '').trim())
       .map((question) => question.id);
@@ -93,10 +95,25 @@ export function SurveyTakePage() {
       } else if (apiError?.code === 'SURVEY_NOT_ACCEPTING_RESPONSES') {
         setError('This survey is no longer accepting responses.');
       } else if (apiError?.code === 'MISSING_REQUIRED_QUESTIONS') {
-        const questionIds = apiError.details?.questionIds || [];
+        const questionIds = Array.isArray(apiError.details) ? [] : apiError.details?.questionIds || [];
         setMissingIds(questionIds);
         setError('Please complete all required questions.');
         document.getElementById(`${questionIds[0]}-input`)?.focus();
+      } else if (apiError?.code === 'INVALID_ANSWER' && Array.isArray(apiError.details)) {
+        const errors: Record<string, string> = {};
+        for (const detail of apiError.details) {
+          const answerIndex = detail.field.match(/^answers\.(\d+)(?:\.|$)/)?.[1];
+          const questionId = answerIndex === undefined ? undefined : payload[Number(answerIndex)]?.questionId;
+          if (questionId) errors[questionId] = detail.message;
+        }
+        if (Object.keys(errors).length) {
+          setFieldErrors(errors);
+          setMissingIds([]);
+          setError('Please correct the highlighted answers.');
+          document.getElementById(`${Object.keys(errors)[0]}-input`)?.focus();
+        } else {
+          setError(getApiErrorMessage(err, 'Failed to submit your response.'));
+        }
       } else {
         setError(getApiErrorMessage(err, 'Failed to submit your response.'));
       }
@@ -131,8 +148,9 @@ export function SurveyTakePage() {
       <form noValidate onSubmit={submit} className="space-y-5">
         {survey.questions.map((question) => {
           const missing = missingIds.includes(question.id);
+          const validationError = missing ? 'This question is required.' : fieldErrors[question.id];
           return (
-            <fieldset key={question.id} aria-describedby={missing ? `${question.id}-error` : undefined} className={`rounded-xl border bg-white p-5 ${missing ? 'border-red-400' : 'border-slate-200'}`}>
+            <fieldset key={question.id} aria-describedby={validationError ? `${question.id}-error` : undefined} className={`rounded-xl border bg-white p-5 ${validationError ? 'border-red-400' : 'border-slate-200'}`}>
               <legend className="max-w-full px-1 text-sm font-semibold text-slate-900">
                 {question.prompt} {question.isRequired && <span className="text-red-600">Required</span>}
               </legend>
@@ -147,7 +165,7 @@ export function SurveyTakePage() {
                         value={option.id}
                         checked={answers[question.id] === option.id}
                         required={question.isRequired}
-                        aria-invalid={missing}
+                        aria-invalid={Boolean(validationError)}
                         onChange={() => setAnswers((current) => ({ ...current, [question.id]: option.id }))}
                         className="h-4 w-4 accent-indigo-600"
                       />
@@ -165,15 +183,15 @@ export function SurveyTakePage() {
                     value={answers[question.id] || ''}
                     maxLength={2000}
                     required={question.isRequired}
-                    aria-invalid={missing}
-                    aria-describedby={missing ? `${question.id}-error ${question.id}-counter` : `${question.id}-counter`}
+                    aria-invalid={Boolean(validationError)}
+                    aria-describedby={validationError ? `${question.id}-error ${question.id}-counter` : `${question.id}-counter`}
                     onChange={(event) => setAnswers((current) => ({ ...current, [question.id]: event.target.value }))}
                     className="min-h-28 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
                   />
                   <p id={`${question.id}-counter`} className="mt-1 text-right text-xs text-slate-500">{(answers[question.id] || '').length}/2,000</p>
                 </div>
               )}
-              {missing && <p id={`${question.id}-error`} className="mt-2 text-sm text-red-700">This question is required.</p>}
+              {validationError && <p id={`${question.id}-error`} className="mt-2 text-sm text-red-700">{validationError}</p>}
             </fieldset>
           );
         })}

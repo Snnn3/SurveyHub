@@ -3,9 +3,8 @@ import { HttpError, NotFoundError } from '../utils/errors';
 import { prisma } from '../utils/prisma';
 import type { ResponseInput } from '../validators/response.validator';
 
-function invalidAnswer(field = 'answers'): never {
-  const message = 'One or more submitted answers are invalid.';
-  throw new HttpError(400, 'INVALID_ANSWER', message, [{ field, message }]);
+function invalidAnswer(field: string, message: string): never {
+  throw new HttpError(400, 'INVALID_ANSWER', 'One or more submitted answers are invalid.', [{ field, message }]);
 }
 
 function assertSurveyAcceptingResponses(status: SurveyStatus): void {
@@ -29,27 +28,35 @@ function normalizeAnswers(
 
   for (const [index, answer] of answers.entries()) {
     const answerField = `answers.${index}`;
-    if (seenQuestionIds.has(answer.questionId)) invalidAnswer(`${answerField}.questionId`);
+    if (seenQuestionIds.has(answer.questionId)) {
+      invalidAnswer(`${answerField}.questionId`, 'This question was answered more than once.');
+    }
     seenQuestionIds.add(answer.questionId);
 
     const question = questionById.get(answer.questionId);
-    if (!question) invalidAnswer(`${answerField}.questionId`);
+    if (!question) invalidAnswer(`${answerField}.questionId`, 'This question is no longer available.');
 
     if (question.questionType === QuestionType.SINGLE_CHOICE) {
       const selectedOptionIds = answer.selectedOptionIds;
-      if (answer.textValue !== undefined) invalidAnswer(`${answerField}.textValue`);
+      if (answer.textValue !== undefined) {
+        invalidAnswer(`${answerField}.textValue`, 'This question accepts a choice, not text.');
+      }
       if (!selectedOptionIds || selectedOptionIds.length !== 1 ||
         !question.options.some((option) => option.id === selectedOptionIds[0])) {
-        invalidAnswer(`${answerField}.selectedOptionIds`);
+        invalidAnswer(`${answerField}.selectedOptionIds`, 'Select one available option.');
       }
       normalized.push({ questionId: answer.questionId, selectedOptionIds });
     } else if (question.questionType === QuestionType.SHORT_TEXT) {
-      if (answer.selectedOptionIds !== undefined) invalidAnswer(`${answerField}.selectedOptionIds`);
+      if (answer.selectedOptionIds !== undefined) {
+        invalidAnswer(`${answerField}.selectedOptionIds`, 'This question accepts text, not a choice.');
+      }
       const textValue = answer.textValue?.trim();
-      if (textValue && textValue.length > 2000) invalidAnswer(`${answerField}.textValue`);
+      if (textValue && textValue.length > 2000) {
+        invalidAnswer(`${answerField}.textValue`, 'Answer must be at most 2,000 characters.');
+      }
       if (textValue) normalized.push({ questionId: answer.questionId, textValue });
     } else {
-      invalidAnswer(answerField);
+      invalidAnswer(answerField, 'This question type cannot be answered yet.');
     }
   }
 
