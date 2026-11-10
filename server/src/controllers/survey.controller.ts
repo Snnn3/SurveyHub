@@ -3,7 +3,7 @@ import { HttpError, NotFoundError } from '../utils/errors';
 import { parseSurveyInput, parseSurveyId, formatZodDetails } from '../validators/survey.validator';
 import * as surveyService from '../services/survey.service';
 
-function getValidSurveyId(paramId: string): string {
+export function getValidSurveyId(paramId: string): string {
   const id = parseSurveyId(paramId);
   if (!id) {
     throw new NotFoundError('Survey not found.');

@@ -2,12 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import { NotFoundError } from '../utils/errors';
 import { parseSurveyId } from '../validators/survey.validator';
 import * as responseService from '../services/response.service';
-
-function getValidId(paramId: string): string {
-  const id = parseSurveyId(paramId);
-  if (!id) throw new NotFoundError('Survey not found.');
-  return id;
-}
+import { getValidSurveyId } from './survey.controller';
 
 export async function listActiveSurveys(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -20,7 +15,7 @@ export async function listActiveSurveys(req: Request, res: Response, next: NextF
 
 export async function getSurveyForm(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const data = await responseService.getSurveyForm(getValidId(req.params.id));
+    const data = await responseService.getSurveyForm(getValidSurveyId(req.params.id));
     res.status(200).json({ success: true, data });
   } catch (error) {
     next(error);
@@ -30,7 +25,7 @@ export async function getSurveyForm(req: Request, res: Response, next: NextFunct
 export async function submitSurveyResponse(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const response = await responseService.submitSurveyResponse(
-      getValidId(req.params.id),
+      getValidSurveyId(req.params.id),
       req.auth!.id,
       req.body
     );
@@ -50,7 +45,7 @@ export async function submitSurveyResponse(req: Request, res: Response, next: Ne
 
 export async function getSurveyReceipt(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const surveyId = getValidId(req.params.id);
+    const surveyId = getValidSurveyId(req.params.id);
     const responseId = parseSurveyId(req.params.responseId);
     if (!responseId) throw new NotFoundError('Response not found.');
     const data = await responseService.getSurveyReceipt(surveyId, responseId, req.auth!.id);

@@ -7,6 +7,12 @@ function invalidAnswer(): never {
   throw new HttpError(400, 'INVALID_ANSWER', 'One or more submitted answers are invalid.');
 }
 
+function assertSurveyAcceptingResponses(status: SurveyStatus): void {
+  if (status !== SurveyStatus.PUBLISHED) {
+    throw new HttpError(400, 'SURVEY_NOT_ACCEPTING_RESPONSES', 'This survey is no longer accepting responses.');
+  }
+}
+
 function normalizeAnswers(
   questions: Array<{
     id: string;
@@ -117,9 +123,7 @@ export async function getSurveyForm(surveyId: string) {
   });
 
   if (!survey) throw new NotFoundError('Survey not found.');
-  if (survey.status !== SurveyStatus.PUBLISHED) {
-    throw new HttpError(400, 'SURVEY_NOT_ACCEPTING_RESPONSES', 'This survey is no longer accepting responses.');
-  }
+  assertSurveyAcceptingResponses(survey.status);
   return survey;
 }
 
@@ -144,9 +148,7 @@ export async function submitSurveyResponse(surveyId: string, userId: string, bod
       },
     });
     if (!survey) throw new NotFoundError('Survey not found.');
-    if (survey.status !== SurveyStatus.PUBLISHED) {
-      throw new HttpError(400, 'SURVEY_NOT_ACCEPTING_RESPONSES', 'This survey is no longer accepting responses.');
-    }
+    assertSurveyAcceptingResponses(survey.status);
 
     const input = parseResponseInput(body);
     if (!input.success) invalidAnswer();
