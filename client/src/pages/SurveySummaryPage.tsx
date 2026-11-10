@@ -118,7 +118,19 @@ export function SurveySummaryPage() {
       }
     } catch (err: unknown) {
       if (activeIdRef.current === targetId) {
-        setRefreshError(getApiErrorMessage(err, 'Failed to refresh survey summary.'));
+        const status = getApiErrorStatus(err);
+        if (status === 403) {
+          // F-04 §5.3 requires access-denied view without survey data
+          setSummary(null);
+          setIsForbidden(true);
+        } else if (status === 404) {
+          // Survey was deleted or not found: clear summary data and transition to 404 view
+          setSummary(null);
+          setIsNotFound(true);
+        } else {
+          // Transient failure (network/server error): preserve existing summary and show alert for retry
+          setRefreshError(getApiErrorMessage(err, 'Failed to refresh survey summary.'));
+        }
       }
     } finally {
       if (activeIdRef.current === targetId) {
