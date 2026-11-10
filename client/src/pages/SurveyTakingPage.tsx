@@ -6,7 +6,7 @@ import api, { getApiErrorMessage } from '../api';
 interface SurveyQuestion {
   id: string;
   prompt: string;
-  questionType: 'SINGLE_CHOICE' | 'SHORT_TEXT';
+  questionType: string;
   isRequired: boolean;
   orderIndex: number;
   options: Array<{ id: string; label: string; orderIndex: number }>;
@@ -36,6 +36,10 @@ interface ApiErrorBody {
     code?: string;
     details?: { questionIds?: string[] };
   };
+}
+
+function supportsQuestionType(questionType: string): boolean {
+  return questionType === 'SINGLE_CHOICE' || questionType === 'SHORT_TEXT';
 }
 
 export function SurveyTakePage() {
@@ -101,6 +105,17 @@ export function SurveyTakePage() {
   if (loading) return <p role="status" className="text-sm text-slate-600">Loading survey…</p>;
   if (error && !survey) return <p role="alert" className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</p>;
   if (!survey) return null;
+  if (survey.questions.some((question) => !supportsQuestionType(question.questionType))) {
+    return (
+      <section className="space-y-4" aria-labelledby="survey-title">
+        <h2 id="survey-title" className="text-2xl font-bold text-slate-900">{survey.title}</h2>
+        <p role="alert" className="rounded-lg bg-amber-50 p-4 text-sm text-amber-900">
+          This survey includes a question type that is not available yet.
+        </p>
+        <Link to="/surveys" className="text-sm font-medium text-indigo-600 hover:text-indigo-800">← Available surveys</Link>
+      </section>
+    );
+  }
 
   return (
     <section className="space-y-6" aria-labelledby="survey-title">
