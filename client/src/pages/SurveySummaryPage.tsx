@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import api, { getApiErrorMessage, getApiErrorStatus } from '../api';
 
@@ -59,40 +59,73 @@ export function SurveySummaryPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [refreshError, setRefreshError] = useState<string | null>(null);
   const [isForbidden, setIsForbidden] = useState(false);
   const [isNotFound, setIsNotFound] = useState(false);
+  const activeIdRef = useRef(id);
 
-  const fetchSummary = async (isManual = false) => {
-    if (isManual) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
+  useEffect(() => {
+    activeIdRef.current = id;
+    let isCurrent = true;
+
+    // Reset state and clear previous summary to avoid stale data during route changes
+    setSummary(null);
+    setLoading(true);
+    setRefreshing(false);
     setError(null);
+    setRefreshError(null);
     setIsForbidden(false);
     setIsNotFound(false);
 
+    api.get<{ success: boolean; data: SurveySummary }>(`/surveys/${id}/summary`)
+      .then((res) => {
+        // Discard response if route id changed while request was in flight
+        if (isCurrent && activeIdRef.current === id) {
+          setSummary(res.data.data);
+        }
+      })
+      .catch((err: unknown) => {
+        if (!isCurrent || activeIdRef.current !== id) return;
+        const status = getApiErrorStatus(err);
+        if (status === 403) {
+          setIsForbidden(true);
+        } else if (status === 404) {
+          setIsNotFound(true);
+        } else {
+          setError(getApiErrorMessage(err, 'Failed to load survey summary.'));
+        }
+      })
+      .finally(() => {
+        if (isCurrent && activeIdRef.current === id) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [id]);
+
+  const handleRefresh = async () => {
+    const targetId = id;
+    setRefreshing(true);
+    setRefreshError(null);
+
     try {
-      const res = await api.get<{ success: boolean; data: SurveySummary }>(`/surveys/${id}/summary`);
-      setSummary(res.data.data);
+      const res = await api.get<{ success: boolean; data: SurveySummary }>(`/surveys/${targetId}/summary`);
+      if (activeIdRef.current === targetId) {
+        setSummary(res.data.data);
+      }
     } catch (err: unknown) {
-      const status = getApiErrorStatus(err);
-      if (status === 403) {
-        setIsForbidden(true);
-      } else if (status === 404) {
-        setIsNotFound(true);
-      } else {
-        setError(getApiErrorMessage(err, 'Failed to load survey summary.'));
+      if (activeIdRef.current === targetId) {
+        setRefreshError(getApiErrorMessage(err, 'Failed to refresh survey summary.'));
       }
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (activeIdRef.current === targetId) {
+        setRefreshing(false);
+      }
     }
   };
-
-  useEffect(() => {
-    fetchSummary();
-  }, [id]);
 
   if (loading && !summary) {
     return (
@@ -139,6 +172,7 @@ export function SurveySummaryPage() {
     );
   }
 
+  // Initial load error when no summary is available
   if (error || !summary) {
     return (
       <div className="space-y-4">
@@ -169,8 +203,8 @@ export function SurveySummaryPage() {
           </div>
           <button
             type="button"
-            onClick={() => fetchSummary(true)}
-            disabled={refreshing || loading}
+            onClick={handleRefresh}
+            disabled={refreshing}
             className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 transition"
           >
             {refreshing ? 'Refreshing…' : 'Refresh results'}
@@ -183,6 +217,24 @@ export function SurveySummaryPage() {
           Created on {new Date(summary.createdAt).toLocaleDateString()}
         </p>
       </div>
+
+      {/* Non-blocking refresh error banner when existing summary is preserved */}
+      {refreshError && (
+        <div
+          role="alert"
+          aria-live="polite"
+          className="flex items-center justify-between rounded-lg bg-red-50 p-4 text-sm text-red-700 shadow-sm border border-red-100"
+        >
+          <span>{refreshError}</span>
+          <button
+            type="button"
+            onClick={() => setRefreshError(null)}
+            className="ml-4 text-xs font-semibold text-red-800 underline hover:text-red-950"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* KPI Card */}
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
