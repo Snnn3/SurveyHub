@@ -5,6 +5,8 @@ import api, { SESSION_EXPIRED_EVENT, getApiErrorMessage } from './api';
 import { LayersIcon } from './components/Icons';
 import { OwnerSurveysPage } from './pages/OwnerSurveysPage';
 import { SurveyEditorPage } from './pages/SurveyEditorPage';
+import { RespondentSurveysPage } from './pages/RespondentSurveysPage';
+import { SurveyReceiptPage, SurveyTakePage } from './pages/SurveyTakingPage';
 
 type UserRole = 'SURVEY_OWNER' | 'RESPONDENT';
 
@@ -191,15 +193,6 @@ function LoginPage({ onLogin }: { onLogin: (email: string, password: string) => 
   );
 }
 
-function SurveysPage() {
-  return (
-    <PlaceholderCard
-      title="Survey Catalogue"
-      description="Sprint 1 Feature F-03: Respondent survey taking and response rules."
-    />
-  );
-}
-
 function SurveySummaryPlaceholder() {
   return (
     <PlaceholderCard
@@ -324,7 +317,23 @@ export default function App() {
             path="/surveys"
             element={
               <ProtectedRoute user={user} loading={authLoading} allowedRole="RESPONDENT">
-                <SurveysPage />
+                <RespondentSurveysPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/surveys/:id/take"
+            element={
+              <ProtectedRoute user={user} loading={authLoading} allowedRole="RESPONDENT">
+                <SurveyTakePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/surveys/:id/confirmation/:responseId"
+            element={
+              <ProtectedRoute user={user} loading={authLoading} allowedRole="RESPONDENT">
+                <SurveyReceiptPage />
               </ProtectedRoute>
             }
           />
