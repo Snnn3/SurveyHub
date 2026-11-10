@@ -718,25 +718,25 @@ describe('F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11)', () =>
         }),
     ]);
 
-    // Either publish won and put got SURVEY_NOT_EDITABLE (400),
-    // or put won (200) and publish succeeded (200) on updated structure.
-    // In neither case should an inconsistent state exist.
-    const statuses = [publishRes.status, putRes.status];
-    expect(statuses).toContain(200);
+    // Under row-level locking, publish must always succeed (200),
+    // and PUT must either win first (200) or be rejected once published (400 SURVEY_NOT_EDITABLE).
+    expect(publishRes.status).toBe(200);
+    expect([200, 400]).toContain(putRes.status);
 
     const dbSurvey = await prisma.survey.findUnique({
       where: { id: survey.id },
       include: { questions: true },
     });
 
-    if (publishRes.status === 200 && putRes.status === 400) {
+    expect(dbSurvey?.status).toBe(SurveyStatus.PUBLISHED);
+
+    if (putRes.status === 400) {
       expect(putRes.body.error.code).toBe('SURVEY_NOT_EDITABLE');
-      expect(dbSurvey?.status).toBe('PUBLISHED');
       expect(dbSurvey?.title).toBe('Race Condition Test');
       expect(dbSurvey?.questions).toHaveLength(1);
       expect(dbSurvey?.questions[0].prompt).toBe('Original Question');
-    } else if (publishRes.status === 200 && putRes.status === 200) {
-      expect(dbSurvey?.status).toBe('PUBLISHED');
+    } else {
+      expect(putRes.status).toBe(200);
       expect(dbSurvey?.title).toBe('Updated During Publish');
       expect(dbSurvey?.questions).toHaveLength(1);
       expect(dbSurvey?.questions[0].prompt).toBe('Updated Question');

@@ -103,8 +103,9 @@ export function ConfirmationModal({
         <div className="flex justify-end gap-3">
           <button
             type="button"
+            disabled={processing}
             onClick={onCancel}
-            className="px-4 py-2 text-sm font-semibold rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50"
+            className="px-4 py-2 text-sm font-semibold rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 disabled:opacity-50"
           >
             {cancelLabel}
           </button>
