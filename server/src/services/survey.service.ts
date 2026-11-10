@@ -253,20 +253,17 @@ export async function closeSurvey(surveyId: string, ownerId: string) {
 }
 
 export async function getSurveySummary(surveyId: string, ownerId: string) {
-  const validId = parseUuid(surveyId);
-  if (!validId) {
-    throw new NotFoundError('Survey not found.');
-  }
+  // Authorize owner before querying nested answer data per review feedback
+  const authorized = await getAuthorizedSurvey(surveyId, ownerId, false);
 
-  const survey = await prisma.survey.findUnique({
-    where: { id: validId },
+  const survey = await prisma.survey.findUniqueOrThrow({
+    where: { id: authorized.id },
     select: {
       id: true,
       title: true,
       description: true,
       status: true,
       mode: true,
-      ownerId: true,
       createdAt: true,
       _count: {
         select: { responses: true },
@@ -296,14 +293,6 @@ export async function getSurveySummary(surveyId: string, ownerId: string) {
       },
     },
   });
-
-  if (!survey) {
-    throw new NotFoundError('Survey not found.');
-  }
-
-  if (survey.ownerId !== ownerId) {
-    throw new HttpError(403, 'FORBIDDEN_OWNERSHIP', 'You do not own this survey.');
-  }
 
   const questions = survey.questions.map((question) => {
     const isText =

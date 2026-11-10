@@ -57,44 +57,44 @@ export function SurveySummaryPage() {
   const { id = '' } = useParams<{ id: string }>();
   const [summary, setSummary] = useState<SurveySummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isForbidden, setIsForbidden] = useState(false);
   const [isNotFound, setIsNotFound] = useState(false);
 
-  useEffect(() => {
-    let isMounted = true;
-    setLoading(true);
+  const fetchSummary = async (isManual = false) => {
+    if (isManual) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
     setError(null);
     setIsForbidden(false);
     setIsNotFound(false);
 
-    api.get<{ success: boolean; data: SurveySummary }>(`/surveys/${id}/summary`)
-      .then((res) => {
-        if (isMounted) {
-          setSummary(res.data.data);
-        }
-      })
-      .catch((err: unknown) => {
-        if (!isMounted) return;
-        const status = getApiErrorStatus(err);
-        if (status === 403) {
-          setIsForbidden(true);
-        } else if (status === 404) {
-          setIsNotFound(true);
-        } else {
-          setError(getApiErrorMessage(err, 'Failed to load survey summary.'));
-        }
-      })
-      .finally(() => {
-        if (isMounted) setLoading(false);
-      });
+    try {
+      const res = await api.get<{ success: boolean; data: SurveySummary }>(`/surveys/${id}/summary`);
+      setSummary(res.data.data);
+    } catch (err: unknown) {
+      const status = getApiErrorStatus(err);
+      if (status === 403) {
+        setIsForbidden(true);
+      } else if (status === 404) {
+        setIsNotFound(true);
+      } else {
+        setError(getApiErrorMessage(err, 'Failed to load survey summary.'));
+      }
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
-    return () => {
-      isMounted = false;
-    };
+  useEffect(() => {
+    fetchSummary();
   }, [id]);
 
-  if (loading) {
+  if (loading && !summary) {
     return (
       <div role="status" aria-label="Loading survey summary" className="space-y-6">
         <div aria-hidden="true" className="animate-pulse space-y-4">
@@ -158,13 +158,23 @@ export function SurveySummaryPage() {
         <Link to="/owner/surveys" className="text-sm font-medium text-indigo-600 hover:text-indigo-800">
           &larr; Back to surveys
         </Link>
-        <div className="mt-3 flex flex-wrap items-center gap-3">
-          <h2 id="summary-heading" className="text-2xl font-bold text-slate-900">
-            {summary.title}
-          </h2>
-          <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusBadgeClass(summary.status)}`}>
-            {summary.status}
-          </span>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 id="summary-heading" className="text-2xl font-bold text-slate-900">
+              {summary.title}
+            </h2>
+            <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusBadgeClass(summary.status)}`}>
+              {summary.status}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => fetchSummary(true)}
+            disabled={refreshing || loading}
+            className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 transition"
+          >
+            {refreshing ? 'Refreshing…' : 'Refresh results'}
+          </button>
         </div>
         {summary.description && (
           <p className="mt-2 text-sm text-slate-600">{summary.description}</p>
@@ -185,7 +195,7 @@ export function SurveySummaryPage() {
         <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
           <p className="text-sm font-medium text-slate-700">No responses submitted yet.</p>
           <p className="mt-1 text-xs text-slate-500">
-            Below is your question outline. Answer statistics will update automatically as respondents submit responses.
+            Below is your question outline. Refresh this page or click "Refresh results" to check for new submissions as respondents complete your survey.
           </p>
         </div>
       )}
