@@ -7,6 +7,7 @@ import { OwnerSurveysPage } from './pages/OwnerSurveysPage';
 import { SurveyEditorPage } from './pages/SurveyEditorPage';
 import { RespondentSurveysPage } from './pages/RespondentSurveysPage';
 import { SurveyReceiptPage, SurveyTakePage } from './pages/SurveyTakingPage';
+import { SurveySummaryPage } from './pages/SurveySummaryPage';
 
 type UserRole = 'SURVEY_OWNER' | 'RESPONDENT';
 
@@ -193,15 +194,6 @@ function LoginPage({ onLogin }: { onLogin: (email: string, password: string) => 
   );
 }
 
-function SurveySummaryPlaceholder() {
-  return (
-    <PlaceholderCard
-      title="Survey Summary"
-      description="Sprint 1 Feature F-04: Owner survey summary and real-time response aggregation."
-    />
-  );
-}
-
 function NotFound() {
   return <PlaceholderCard title="Page Not Found" description="The requested page does not exist." />;
 }
@@ -365,7 +357,7 @@ export default function App() {
             path="/owner/surveys/:id/summary"
             element={
               <ProtectedRoute user={user} loading={authLoading} allowedRole="SURVEY_OWNER">
-                <SurveySummaryPlaceholder />
+                <SurveySummaryPage />
               </ProtectedRoute>
             }
           />

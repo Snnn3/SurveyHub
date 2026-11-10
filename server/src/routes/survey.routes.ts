@@ -15,6 +15,7 @@ import {
   deleteSurvey,
   publishSurvey,
   closeSurvey,
+  getSurveySummary,
 } from '../controllers/survey.controller';
 
 const router = Router();
@@ -31,6 +32,7 @@ router.get('/', ...requireOwner, listOwnerSurveys);
 router.post('/', ...requireOwner, createSurvey);
 
 // Route registration order per SDS §4.4: F-03 GET /active must precede /:id so literal path is not captured as id
+router.get('/:id/summary', ...requireOwner, getSurveySummary);
 router.get('/:id', ...requireOwner, getSurveyById);
 router.put('/:id', ...requireOwner, updateSurvey);
 router.delete('/:id', ...requireOwner, deleteSurvey);

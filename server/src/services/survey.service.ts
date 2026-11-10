@@ -251,3 +251,115 @@ export async function closeSurvey(surveyId: string, ownerId: string) {
     });
   });
 }
+
+export async function getSurveySummary(surveyId: string, ownerId: string) {
+  // Authorize owner before querying nested answer data per review feedback
+  const authorized = await getAuthorizedSurvey(surveyId, ownerId, false);
+
+  const survey = await prisma.survey.findUniqueOrThrow({
+    where: { id: authorized.id },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      status: true,
+      mode: true,
+      createdAt: true,
+      _count: {
+        select: { responses: true },
+      },
+      questions: {
+        orderBy: [{ orderIndex: 'asc' }, { id: 'asc' }],
+        select: {
+          id: true,
+          prompt: true,
+          questionType: true,
+          options: {
+            orderBy: [{ orderIndex: 'asc' }, { id: 'asc' }],
+            select: {
+              id: true,
+              label: true,
+            },
+          },
+          answers: {
+            select: {
+              textValue: true,
+              selectedOptions: {
+                select: { optionId: true },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const questions = survey.questions.map((question) => {
+    const isText =
+      question.questionType === QuestionType.SHORT_TEXT ||
+      question.questionType === QuestionType.LONG_TEXT;
+    const isChoice =
+      question.questionType === QuestionType.SINGLE_CHOICE ||
+      question.questionType === QuestionType.MULTI_CHOICE ||
+      question.questionType === QuestionType.YES_NO ||
+      question.questionType === QuestionType.LIKERT;
+
+    if (isText) {
+      const validAnswers = question.answers.filter(
+        (answer) => typeof answer.textValue === 'string' && answer.textValue.trim().length > 0
+      );
+      return {
+        questionId: question.id,
+        prompt: question.prompt,
+        questionType: question.questionType,
+        answeredCount: validAnswers.length,
+        textAnswers: validAnswers.map((answer) => answer.textValue!),
+      };
+    }
+
+    if (isChoice) {
+      const validAnswers = question.answers.filter((answer) => answer.selectedOptions.length > 0);
+      const answeredCount = validAnswers.length;
+
+      const options = question.options.map((option) => {
+        const count = validAnswers.filter((answer) =>
+          answer.selectedOptions.some((selectedOption) => selectedOption.optionId === option.id)
+        ).length;
+        const percentage = answeredCount > 0 ? Number(((count / answeredCount) * 100).toFixed(2)) : 0;
+        return {
+          optionId: option.id,
+          label: option.label,
+          count,
+          percentage,
+        };
+      });
+
+      return {
+        questionId: question.id,
+        prompt: question.prompt,
+        questionType: question.questionType,
+        answeredCount,
+        options,
+      };
+    }
+
+    // Sprint 2 question types (RATING, INTEGER, DATE)
+    return {
+      questionId: question.id,
+      prompt: question.prompt,
+      questionType: question.questionType,
+      answeredCount: 0,
+    };
+  });
+
+  return {
+    surveyId: survey.id,
+    title: survey.title,
+    description: survey.description,
+    status: survey.status,
+    mode: survey.mode,
+    totalResponses: survey._count.responses,
+    createdAt: survey.createdAt,
+    questions,
+  };
+}

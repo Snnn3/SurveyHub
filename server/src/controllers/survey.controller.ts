@@ -112,3 +112,14 @@ export async function closeSurvey(req: Request, res: Response, next: NextFunctio
     next(error);
   }
 }
+
+export async function getSurveySummary(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const id = getValidUuid(req.params.id, 'Survey');
+    const ownerId = req.auth!.id;
+    const summary = await surveyService.getSurveySummary(id, ownerId);
+    res.status(200).json({ success: true, data: summary });
+  } catch (error) {
+    next(error);
+  }
+}
