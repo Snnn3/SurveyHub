@@ -2,6 +2,12 @@ import { Router } from 'express';
 import { Role } from '@prisma/client';
 import { authenticateJWT, requireRole } from '../middleware/auth.middleware';
 import {
+  getSurveyForm as getRespondentSurveyForm,
+  getSurveyReceipt,
+  listActiveSurveys,
+  submitSurveyResponse,
+} from '../controllers/response.controller';
+import {
   listOwnerSurveys,
   createSurvey,
   getSurveyById,
@@ -14,6 +20,12 @@ import {
 const router = Router();
 
 const requireOwner = [authenticateJWT, requireRole(Role.SURVEY_OWNER)];
+const requireRespondent = [authenticateJWT, requireRole(Role.RESPONDENT)];
+
+router.get('/active', ...requireRespondent, listActiveSurveys);
+router.get('/:id/form', ...requireRespondent, getRespondentSurveyForm);
+router.post('/:id/responses', ...requireRespondent, submitSurveyResponse);
+router.get('/:id/responses/:responseId', ...requireRespondent, getSurveyReceipt);
 
 router.get('/', ...requireOwner, listOwnerSurveys);
 router.post('/', ...requireOwner, createSurvey);

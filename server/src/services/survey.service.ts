@@ -1,9 +1,9 @@
 import { Prisma, QuestionType, SurveyStatus } from '@prisma/client';
 import { prisma } from '../utils/prisma';
 import { HttpError, NotFoundError } from '../utils/errors';
+import { parseUuid } from '../utils/uuid';
 import {
   validateSurveyStructure,
-  parseSurveyId,
   type SurveyInput,
 } from '../validators/survey.validator';
 
@@ -54,7 +54,7 @@ export async function getAuthorizedSurvey(
   includeDetails = false,
   tx: Prisma.TransactionClient = prisma
 ) {
-  const validId = parseSurveyId(surveyId);
+  const validId = parseUuid(surveyId);
   if (!validId) {
     throw new NotFoundError('Survey not found.');
   }
