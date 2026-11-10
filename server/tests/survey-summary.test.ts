@@ -202,4 +202,98 @@ describe('F-04 Aggregate Summary (STS-F04-01 to STS-F04-04)', () => {
     expect(data.questions[1].answeredCount).toBe(0);
     expect(data.questions[1].textAnswers).toEqual([]);
   });
+
+  it('returns 404 NOT_FOUND for unknown survey UUID or malformed UUID', async () => {
+    const unknownUuid = '11111111-1111-4111-8111-111111111111';
+    const unknownRes = await request(app)
+      .get(`/api/surveys/${unknownUuid}/summary`)
+      .set('Authorization', `Bearer ${owner1Token}`);
+
+    expect(unknownRes.status).toBe(404);
+    expect(unknownRes.body.error?.code).toBe('NOT_FOUND');
+
+    const malformedRes = await request(app)
+      .get('/api/surveys/not-a-valid-uuid/summary')
+      .set('Authorization', `Bearer ${owner1Token}`);
+
+    expect(malformedRes.status).toBe(404);
+    expect(malformedRes.body.error?.code).toBe('NOT_FOUND');
+  });
+
+  it('uses answeredCount rather than totalResponses as percentage denominator when questions are skipped', async () => {
+    const survey = await prisma.survey.create({
+      data: {
+        title: 'Optional Choice Survey',
+        ownerId: owner1Id,
+        status: SurveyStatus.PUBLISHED,
+        publishedAt: new Date(),
+        questions: {
+          create: [
+            {
+              prompt: 'Optional single choice',
+              questionType: QuestionType.SINGLE_CHOICE,
+              isRequired: false,
+              orderIndex: 0,
+              options: {
+                create: [
+                  { label: 'Yes', orderIndex: 0 },
+                  { label: 'No', orderIndex: 1 },
+                ],
+              },
+            },
+          ],
+        },
+      },
+      include: {
+        questions: {
+          include: { options: true },
+        },
+      },
+    });
+
+    const [question] = survey.questions;
+    const yesOpt = question.options.find((o) => o.label === 'Yes')!;
+    const noOpt = question.options.find((o) => o.label === 'No')!;
+
+    // Response 1: chose Yes
+    await prisma.surveyResponse.create({
+      data: {
+        surveyId: survey.id,
+        respondentId: resp1Id,
+        answers: {
+          create: [
+            {
+              questionId: question.id,
+              selectedOptions: { create: [{ optionId: yesOpt.id }] },
+            },
+          ],
+        },
+      },
+    });
+
+    // Response 2: skipped question completely (no answer)
+    await prisma.surveyResponse.create({
+      data: {
+        surveyId: survey.id,
+        respondentId: resp2Id,
+      },
+    });
+
+    const res = await request(app)
+      .get(`/api/surveys/${survey.id}/summary`)
+      .set('Authorization', `Bearer ${owner1Token}`);
+
+    expect(res.status).toBe(200);
+    const { data } = res.body;
+    expect(data.totalResponses).toBe(2);
+
+    const questionResult = data.questions[0];
+    expect(questionResult.answeredCount).toBe(1);
+    // Denominator is answeredCount (1), NOT totalResponses (2)
+    // 1 / 1 = 100%, NOT 1 / 2 = 50%
+    expect(questionResult.options).toEqual([
+      { optionId: yesOpt.id, label: 'Yes', count: 1, percentage: 100 },
+      { optionId: noOpt.id, label: 'No', count: 0, percentage: 0 },
+    ]);
+  });
 });

@@ -305,44 +305,61 @@ export async function getSurveySummary(surveyId: string, ownerId: string) {
     throw new HttpError(403, 'FORBIDDEN_OWNERSHIP', 'You do not own this survey.');
   }
 
-  const questions = survey.questions.map((q) => {
-    const isText = q.questionType === QuestionType.SHORT_TEXT || q.questionType === QuestionType.LONG_TEXT;
+  const questions = survey.questions.map((question) => {
+    const isText =
+      question.questionType === QuestionType.SHORT_TEXT ||
+      question.questionType === QuestionType.LONG_TEXT;
+    const isChoice =
+      question.questionType === QuestionType.SINGLE_CHOICE ||
+      question.questionType === QuestionType.MULTI_CHOICE ||
+      question.questionType === QuestionType.YES_NO ||
+      question.questionType === QuestionType.LIKERT;
 
     if (isText) {
-      const validAnswers = q.answers.filter(
-        (a) => typeof a.textValue === 'string' && a.textValue.trim().length > 0
+      const validAnswers = question.answers.filter(
+        (answer) => typeof answer.textValue === 'string' && answer.textValue.trim().length > 0
       );
       return {
-        questionId: q.id,
-        prompt: q.prompt,
-        questionType: q.questionType,
+        questionId: question.id,
+        prompt: question.prompt,
+        questionType: question.questionType,
         answeredCount: validAnswers.length,
-        textAnswers: validAnswers.map((a) => a.textValue!),
+        textAnswers: validAnswers.map((answer) => answer.textValue!),
       };
     }
 
-    const validAnswers = q.answers.filter((a) => a.selectedOptions.length > 0);
-    const answeredCount = validAnswers.length;
+    if (isChoice) {
+      const validAnswers = question.answers.filter((answer) => answer.selectedOptions.length > 0);
+      const answeredCount = validAnswers.length;
 
-    const options = q.options.map((opt) => {
-      const count = validAnswers.filter((a) =>
-        a.selectedOptions.some((so) => so.optionId === opt.id)
-      ).length;
-      const percentage = answeredCount > 0 ? Number(((count / answeredCount) * 100).toFixed(2)) : 0;
+      const options = question.options.map((option) => {
+        const count = validAnswers.filter((answer) =>
+          answer.selectedOptions.some((selectedOption) => selectedOption.optionId === option.id)
+        ).length;
+        const percentage = answeredCount > 0 ? Number(((count / answeredCount) * 100).toFixed(2)) : 0;
+        return {
+          optionId: option.id,
+          label: option.label,
+          count,
+          percentage,
+        };
+      });
+
       return {
-        optionId: opt.id,
-        label: opt.label,
-        count,
-        percentage,
+        questionId: question.id,
+        prompt: question.prompt,
+        questionType: question.questionType,
+        answeredCount,
+        options,
       };
-    });
+    }
 
+    // Sprint 2 question types (RATING, INTEGER, DATE)
     return {
-      questionId: q.id,
-      prompt: q.prompt,
-      questionType: q.questionType,
-      answeredCount,
-      options,
+      questionId: question.id,
+      prompt: question.prompt,
+      questionType: question.questionType,
+      answeredCount: 0,
     };
   });
 
