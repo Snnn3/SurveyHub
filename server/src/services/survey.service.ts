@@ -251,3 +251,109 @@ export async function closeSurvey(surveyId: string, ownerId: string) {
     });
   });
 }
+
+export async function getSurveySummary(surveyId: string, ownerId: string) {
+  const validId = parseUuid(surveyId);
+  if (!validId) {
+    throw new NotFoundError('Survey not found.');
+  }
+
+  const survey = await prisma.survey.findUnique({
+    where: { id: validId },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      status: true,
+      mode: true,
+      ownerId: true,
+      createdAt: true,
+      _count: {
+        select: { responses: true },
+      },
+      questions: {
+        orderBy: [{ orderIndex: 'asc' }, { id: 'asc' }],
+        select: {
+          id: true,
+          prompt: true,
+          questionType: true,
+          options: {
+            orderBy: [{ orderIndex: 'asc' }, { id: 'asc' }],
+            select: {
+              id: true,
+              label: true,
+            },
+          },
+          answers: {
+            select: {
+              textValue: true,
+              selectedOptions: {
+                select: { optionId: true },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!survey) {
+    throw new NotFoundError('Survey not found.');
+  }
+
+  if (survey.ownerId !== ownerId) {
+    throw new HttpError(403, 'FORBIDDEN_OWNERSHIP', 'You do not own this survey.');
+  }
+
+  const questions = survey.questions.map((q) => {
+    const isText = q.questionType === QuestionType.SHORT_TEXT || q.questionType === QuestionType.LONG_TEXT;
+
+    if (isText) {
+      const validAnswers = q.answers.filter(
+        (a) => typeof a.textValue === 'string' && a.textValue.trim().length > 0
+      );
+      return {
+        questionId: q.id,
+        prompt: q.prompt,
+        questionType: q.questionType,
+        answeredCount: validAnswers.length,
+        textAnswers: validAnswers.map((a) => a.textValue!),
+      };
+    }
+
+    const validAnswers = q.answers.filter((a) => a.selectedOptions.length > 0);
+    const answeredCount = validAnswers.length;
+
+    const options = q.options.map((opt) => {
+      const count = validAnswers.filter((a) =>
+        a.selectedOptions.some((so) => so.optionId === opt.id)
+      ).length;
+      const percentage = answeredCount > 0 ? Number(((count / answeredCount) * 100).toFixed(2)) : 0;
+      return {
+        optionId: opt.id,
+        label: opt.label,
+        count,
+        percentage,
+      };
+    });
+
+    return {
+      questionId: q.id,
+      prompt: q.prompt,
+      questionType: q.questionType,
+      answeredCount,
+      options,
+    };
+  });
+
+  return {
+    surveyId: survey.id,
+    title: survey.title,
+    description: survey.description,
+    status: survey.status,
+    mode: survey.mode,
+    totalResponses: survey._count.responses,
+    createdAt: survey.createdAt,
+    questions,
+  };
+}
