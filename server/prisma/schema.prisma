@@ -1,0 +1,182 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  SURVEY_OWNER
+  RESPONDENT
+}
+
+enum SurveyStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+enum SurveyMode {
+  IDENTIFIED
+  ANONYMOUS
+}
+
+enum QuestionType {
+  SINGLE_CHOICE
+  MULTI_CHOICE
+  SHORT_TEXT
+  LONG_TEXT
+  YES_NO
+  LIKERT
+  RATING
+  INTEGER
+  DATE
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  fullName     String   @map("full_name")
+  role         Role
+  tokenVersion Int      @default(0) @map("token_version")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  ownedSurveys Survey[]            @relation("SurveyOwner")
+  responses    SurveyResponse[]    @relation("ResponseRespondent")
+  claims       ResponseClaim[]
+  eligibility  SurveyEligibility[]
+
+  @@map("users")
+}
+
+model Survey {
+  id          String       @id @default(uuid())
+  title       String
+  description String?
+  status      SurveyStatus @default(DRAFT)
+  mode        SurveyMode   @default(IDENTIFIED)
+  ownerId     String       @map("owner_id")
+  owner       User         @relation("SurveyOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  publishedAt DateTime?    @map("published_at")
+  closesAt    DateTime?    @map("closes_at")
+  closedAt    DateTime?    @map("closed_at")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  questions   Question[]
+  responses   SurveyResponse[]
+  claims      ResponseClaim[]
+  eligibility SurveyEligibility[]
+
+  @@index([ownerId, status])
+  @@index([status, closesAt])
+  @@map("surveys")
+}
+
+model SurveyEligibility {
+  id        String   @id @default(uuid())
+  surveyId  String   @map("survey_id")
+  survey    Survey   @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([surveyId, userId])
+  @@index([userId])
+  @@map("survey_eligibility")
+}
+
+model Question {
+  id            String       @id @default(uuid())
+  surveyId      String       @map("survey_id")
+  survey        Survey       @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  prompt        String
+  questionType  QuestionType @map("question_type")
+  isRequired    Boolean      @default(true) @map("is_required")
+  orderIndex    Int          @default(0) @map("order_index")
+  minSelections Int?         @map("min_selections")
+  maxSelections Int?         @map("max_selections")
+  numberMin     Int?         @map("number_min")
+  numberMax     Int?         @map("number_max")
+
+  options Option[]
+  answers Answer[]
+
+  @@index([surveyId, orderIndex])
+  @@map("questions")
+}
+
+model Option {
+  id         String   @id @default(uuid())
+  questionId String   @map("question_id")
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  label      String
+  orderIndex Int      @default(0) @map("order_index")
+
+  answerOptions AnswerOption[]
+
+  @@unique([questionId, label])
+  @@index([questionId, orderIndex])
+  @@map("options")
+}
+
+model SurveyResponse {
+  id           String   @id @default(uuid())
+  surveyId     String   @map("survey_id")
+  survey       Survey   @relation(fields: [surveyId], references: [id], onDelete: Restrict)
+  respondentId String?  @map("respondent_id")
+  respondent   User?    @relation("ResponseRespondent", fields: [respondentId], references: [id], onDelete: Restrict)
+  submittedAt  DateTime @default(now()) @map("submitted_at")
+
+  answers Answer[]
+
+  @@unique([surveyId, respondentId])
+  @@index([surveyId, submittedAt])
+  @@map("survey_responses")
+}
+
+model ResponseClaim {
+  id        String   @id @default(uuid())
+  surveyId  String   @map("survey_id")
+  survey    Survey   @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([surveyId, userId])
+  @@index([userId])
+  @@map("response_claims")
+}
+
+model Answer {
+  id          String         @id @default(uuid())
+  responseId  String         @map("response_id")
+  response    SurveyResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  questionId  String         @map("question_id")
+  question    Question       @relation(fields: [questionId], references: [id], onDelete: Restrict)
+  textValue   String?        @map("text_value")
+  numberValue Int?           @map("number_value")
+  dateValue   DateTime?      @map("date_value") @db.Date
+
+  selectedOptions AnswerOption[]
+
+  @@unique([responseId, questionId])
+  @@index([questionId])
+  @@map("answers")
+}
+
+model AnswerOption {
+  id       String @id @default(uuid())
+  answerId String @map("answer_id")
+  answer   Answer @relation(fields: [answerId], references: [id], onDelete: Cascade)
+  optionId String @map("option_id")
+  option   Option @relation(fields: [optionId], references: [id], onDelete: Restrict)
+
+  @@unique([answerId, optionId])
+  @@index([optionId])
+  @@map("answer_options")
+}
