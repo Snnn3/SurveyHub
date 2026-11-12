@@ -8,7 +8,7 @@ SurveyHub is a full-stack survey management system built with React, Express, Ty
 
 ---
 
-## 🛠️ Tech Stack & Architecture
+## Tech Stack & Architecture
 
 - **Frontend (`client/`):** React 18, Vite, TypeScript, Tailwind CSS, React Router, Axios
 - **Backend (`server/`):** Node.js 20 LTS, Express, TypeScript, Prisma ORM, bcryptjs, jsonwebtoken, Zod, Helmet, CORS
@@ -17,7 +17,7 @@ SurveyHub is a full-stack survey management system built with React, Express, Ty
 
 ---
 
-## 🚀 Quickstart & Clean-Checkout Setup
+## Quickstart & Clean-Checkout Setup
 
 ### Prerequisites
 
@@ -91,7 +91,7 @@ npm run dev
 
 ---
 
-## 🧪 Testing & Quality Verification
+## Testing & Quality Verification
 
 Automated test suites use an isolated test database (`surveyhub_test`) so tests never mutate seeded development data:
 
@@ -111,7 +111,7 @@ npm run build
 
 ---
 
-## 👥 Seeded Synthetic Demo Accounts
+## Seeded Synthetic Demo Accounts
 
 All seeded demo accounts are initialized with password `Password123!` (bcrypt cost factor 10):
 
@@ -124,7 +124,7 @@ All seeded demo accounts are initialized with password `Password123!` (bcrypt co
 
 ---
 
-## 📂 Repository Structure
+## Repository Structure
 
 ```text
 .
