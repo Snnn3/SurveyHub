@@ -3,20 +3,14 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)
 **Course:** CPE 334 Software Engineering, Semester 1/2026
 **Deliverable:** Project Deliverable 1 — Part F (20 points)
-**Document status:** Verification guide v5 with Issue #7 evidence update dated 13 November 2026
+**Document status:** Verification guide v6 with Issue #7 and Sprint 1 release record dated 13 November 2026
 **Related documents:** Part E (contracts and test specifications), Part C (design), Part B (traceability)
 
-> **Status: Issue #7 worktree evidence captured on 13 November 2026.**
-> The release results from PR #17 are historical PR-reported evidence. The latest test and E2E
-> runs below were executed against tested PR revision `947370798d4852bc4868b5c70b53ebffa9e626a1`,
-> based on `00494b26df89892066c2680e0a03e0cc03c905a7`; the route-enumeration fix is code commit
-> `3592af27a8e78541a552b94d09caacc4a4129a2a`. Evidence-only commit
-> `fa079a8b865ec9033fa4af9b4b317cdfc07b6490` refreshes the captured outputs and this record. Runs
-> used the isolated, loopback-only PostgreSQL test database `surveyhub_test`. `npm test` passed 7
-> suites / 60 tests, including the recursively enumerated security matrix; the guarded production
-> build and both E2E journeys passed.
-> The 50-request benchmark earlier measured p95 at 13.249 ms. These are worktree results, not a
-> separate run on the release tag. Manual demo scenarios not run here remain PLANNED.
+> **Status: Sprint 1 release PR #28 merged on 13 November 2026.**
+> GitHub confirms `main` and tag `v0.1.0-sprint1` point to merge commit `4afd44d20c502b9f6ded50e0b888b892923a89fb`, created from staging head `fd0d7770781c67c46983469e2e0745601a825d4f`.
+> The latest build, regression and E2E checks ran before merge from checkout `d09d28144d6afea0b4724a739652b3171ae591be`. `git diff --quiet HEAD origin/sprint-1-staging --` returned 0, and the tested tracked tree matched the staging/release tree. The checks used the isolated local `surveyhub_test` database.
+> `npm run build` passed (exit 0); `npm test` passed 7 suites / 60 tests (184.331 s); `npm run test:e2e` passed the database guard and production build, then both Playwright journeys (2/2, 29.1 s). The actual run summaries are recorded in [release PR #28](https://github.com/Snnn3/SurveyHub/pull/28).
+> The earlier 50-request benchmark measured p95 at 13.249 ms. Manual demo scenarios not run here remain PLANNED.
 >
 > The previous draft contained invented test counts, invented terminal logs, invented pull requests
 > and commit SHAs that never existed in the repository. All of that has been removed. If a check has
@@ -34,10 +28,15 @@
 | E2E rerun (earlier blocked attempt) | `npm run test:e2e` | Guard and build passed; Playwright could not start because PostgreSQL ports were unreachable and Prisma could not reset the test database | `docs/evidence/e2e-guard-review-run.txt` |
 | Security matrix (included in full suite below) | `npm test` | Passed 1 suite / 4 tests on tested revision `9473707`; enumerates the full API router recursively, covering 14 protected routes, token failures, wrong roles, non-owner access, private-data absence, and unchanged database state | `docs/evidence/npm-test-run.txt` |
 | Full server suite | `npm test` | Passed 7 suites / 60 tests on tested revision `9473707`, including bcrypt cost 10 and logout revocation assertions | `docs/evidence/npm-test-run.txt` |
-| Latest E2E rerun | `npm run test:e2e` | Database guard passed, client/server production builds passed, and both Playwright journeys passed (2/2) on tested revision `9473707` | `docs/evidence/e2e-run.txt` |
+| Earlier Issue #7 E2E rerun | `npm run test:e2e` | Database guard passed, client/server production builds passed, and both Playwright journeys passed (2/2) on tested revision `9473707` | `docs/evidence/e2e-run.txt` |
 | Performance | `npm run bench:read --prefix server` | 50 sequential authenticated form reads; p50 7.693 ms, p95 13.249 ms, p99 22.422 ms; p95 below the 300 ms target | `docs/evidence/nfr-perf-01-run.txt`, `docs/evidence/nfr-perf-01.json` |
 | LaTeX report | `xelatex -interaction=nonstopmode -halt-on-error -file-line-error Deliverable_1.tex` (final two passes) | Both final passes exited 0; final PDF has 76 pages. Pages 64–76 were rendered; updated evidence pages were inspected with no clipping or overlap | `docs/evidence/report-compile-run.txt`, `docs/evidence/deliverable-1/Deliverable_1.pdf` |
 | Issue #5 TDD provenance | Git history plus Issue #5 comments | Corrected red/green summaries exist in the issue/chat record; neither run has a provable SHA or separately archived raw log | See §5 below and the report source |
+| Release PR and tag | GitHub PR #28 and remote refs | Merged 13 November 2026; `main` and `v0.1.0-sprint1` point to `4afd44d20c502b9f6ded50e0b888b892923a89fb`; staging head was `fd0d7770781c67c46983469e2e0745601a825d4f` | [PR #28](https://github.com/Snnn3/SurveyHub/pull/28) |
+| Release candidate build | `npm run build` | Passed; client production bundle and server Prisma/TypeScript build completed (exit 0) | [PR #28](https://github.com/Snnn3/SurveyHub/pull/28) |
+| Release candidate regression | `npm test` | Passed 7 suites / 60 tests (184.331 s) | [PR #28](https://github.com/Snnn3/SurveyHub/pull/28) |
+| Release candidate E2E | `npm run test:e2e` | Database guard and build passed; Playwright passed both journeys (2/2, 29.1 s) | [PR #28](https://github.com/Snnn3/SurveyHub/pull/28) |
+| Tested source tree | `git diff --quiet HEAD origin/sprint-1-staging --` | Exit 0; checkout `d09d28144d6afea0b4724a739652b3171ae591be` matched staging tree `fd0d7770781c67c46983469e2e0745601a825d4f` | [PR #28](https://github.com/Snnn3/SurveyHub/pull/28) |
 
 Environment: Node `v24.14.1`; PostgreSQL `18.1` on Windows `10.0.26200 x64`; CPU
 `Intel(R) Core(TM) i5-8250U CPU @ 1.60GHz`; database `surveyhub_test` bound to loopback port
@@ -67,11 +66,10 @@ are part of the assessment: the TA may follow them exactly.
 | Default branch | `main` |
 | Release branch | `sprint-1-staging` → release PR → `main` |
 | Release tag | `v0.1.0-sprint1` |
-| Release commit SHA | `<fill with the full 40-character SHA after the tag exists>` |
-| Assessed date | `<fill with the date the evidence below was captured>` |
+| Release commit SHA | `4afd44d20c502b9f6ded50e0b888b892923a89fb` |
+| Assessed date | `2026-11-13` |
 
-Do not fill the SHA from memory or from a planning document. Run `git rev-parse v0.1.0-sprint1` after
-tagging and copy the output.
+The SHA above was checked against the remote `main` branch and `v0.1.0-sprint1` tag after PR #28 merged. Confirm it locally with `git rev-parse v0.1.0-sprint1` after fetching tags.
 
 ### 1.3 Setup commands
 
