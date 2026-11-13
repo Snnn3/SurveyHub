@@ -18,7 +18,7 @@ computing gzip size...
 dist/index.html                   0.56 kB │ gzip:  0.37 kB
 dist/assets/index-BBd11mzi.css   20.11 kB │ gzip:  4.31 kB
 dist/assets/index-CzKupfJd.js   277.68 kB │ gzip: 87.72 kB
-✓ built in 3.57s
+✓ built in 4.03s
 
 > surveyhub-server@0.1.0 build
 > prisma generate && tsc && tsc prisma/seed.ts --outDir dist/prisma --module commonjs --target ES2022 --moduleResolution node --skipLibCheck --esModuleInterop
@@ -29,42 +29,24 @@ For more information, see: https://pris.ly/prisma-config
 Environment variables loaded from .env
 Prisma schema loaded from prisma\schema.prisma
 
-✔ Generated Prisma Client (v6.19.3) to .\..\node_modules\@prisma\client in 211ms
+✔ Generated Prisma Client (v6.19.3) to .\..\node_modules\@prisma\client in 378ms
 
 Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
 
-Tip: Want to turn off tips and other hints? https://pris.ly/tip-4-nohints
+Tip: Interested in query caching in just a few lines of code? Try Accelerate today! https://pris.ly/tip-3-accelerate
 
-[WebServer] (node:25304) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
-[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
 [WebServer] warn The configuration property `package.json#prisma` is deprecated and will be removed in Prisma 7. Please migrate to a Prisma config file (e.g., `prisma.config.ts`).
 [WebServer] For more information, see: https://pris.ly/prisma-config
 [WebServer]
 [WebServer] Environment variables loaded from .env
-[WebServer] Error: Schema engine error:
-[WebServer]
-[WebServer] node:child_process:1000
-[WebServer]     throw err;
-[WebServer]     ^
-[WebServer]
-[WebServer] Error: Command failed: npx prisma migrate deploy
-[WebServer]     at genericNodeError (node:internal/errors:985:15)
-[WebServer]     at wrappedFn (node:internal/errors:539:14)
-[WebServer]     at checkExecSyncError (node:child_process:925:11)
-[WebServer]     at execSync (node:child_process:997:15)
-[WebServer]     at Object.<anonymous> (C:\KMUTT\Y3T1\CPE334\SEProject\e2e\start-server.js:17:1)
-[WebServer]     at Module._compile (node:internal/modules/cjs/loader:1812:14)
-[WebServer]     at Object..js (node:internal/modules/cjs/loader:1943:10)
-[WebServer]     at Module.load (node:internal/modules/cjs/loader:1533:32)
-[WebServer]     at Module._load (node:internal/modules/cjs/loader:1335:12)
-[WebServer]     at wrapModuleLoad (node:internal/modules/cjs/loader:255:19) {
-[WebServer]   status: 1,
-[WebServer]   signal: null,
-[WebServer]   output: [ null, null, null ],
-[WebServer]   pid: 8684,
-[WebServer]   stdout: null,
-[WebServer]   stderr: null
-[WebServer] }
-[WebServer]
-[WebServer] Node.js v24.14.1
-Error: Process from config.webServer was not able to start. Exit code: 1
+
+Running 2 tests using 1 worker
+
+(node:5944) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 e2e\sprint1-survey-flow.spec.ts:13:1 › STS-E2E-01: owner publishes, respondent submits, and owner sees persisted summary (6.6s)
+[WebServer] (node:26040) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+  ok 2 e2e\sprint1-survey-flow.spec.ts:51:1 › STS-E2E-02: duplicate, cross-receipt access, and a logged-out token are rejected (3.0s)
+
+  2 passed (22.6s)

@@ -1,18 +1,19 @@
 {
-  "status": "UNMEASURED",
-  "attemptedAt": "2026-11-13",
+  "measuredAt": "2026-11-13T08:57:26.069Z",
   "command": "npm run bench:read --prefix server",
   "route": "GET /api/surveys/:id/form",
-  "targetRequestCount": 50,
-  "requestsCompleted": 0,
-  "p50Ms": null,
-  "p95Ms": null,
-  "p99Ms": null,
+  "requestCount": 50,
+  "workload": "50 sequential authenticated reads of one published single-choice survey form",
   "targetP95Ms": 300,
+  "p50Ms": 7.693,
+  "p95Ms": 13.249,
+  "p99Ms": 22.422,
+  "passed": true,
   "environment": {
     "node": "v24.14.1",
-    "postgres": null,
+    "postgres": "PostgreSQL 18.1 on x86_64-windows, compiled by msvc-19.44.35221, 64-bit",
+    "platform": "win32 10.0.26200 x64",
+    "cpu": "Intel(R) Core(TM) i5-8250U CPU @ 1.60GHz",
     "database": "surveyhub_test"
-  },
-  "blocker": "The isolated PostgreSQL test database was unreachable at localhost:15432. Migration/connectivity setup failed before benchmark requests began."
+  }
 }

@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import app from '../src/app';
 import authRoutes from '../src/routes/auth.routes';
+import healthRoutes from '../src/routes/health.routes';
 import surveyRoutes from '../src/routes/survey.routes';
 import { env } from '../src/config/environment';
 import { authenticateJWT } from '../src/middleware/auth.middleware';
@@ -13,10 +14,10 @@ import { TABLES_IN_DEPENDENCY_ORDER, truncateTestDatabase } from './setup';
 const missingSurveyId = '00000000-0000-4000-a000-000000000099';
 const password = 'Password123!';
 
-interface ProtectedRoute {
+interface ApiRoute {
   method: string;
   path: string;
-  hasRoleGuard: boolean;
+  isProtected: boolean;
 }
 
 interface RegisteredRouter {
@@ -29,32 +30,33 @@ interface RegisteredRouter {
   }>;
 }
 
-function enumerateProtectedRoutes(): ProtectedRoute[] {
+function enumerateApiRoutes(): ApiRoute[] {
   return [
-    { prefix: '/auth', router: authRoutes as unknown as RegisteredRouter },
-    { prefix: '/surveys', router: surveyRoutes as unknown as RegisteredRouter },
+    { prefix: '/api/auth', router: authRoutes as unknown as RegisteredRouter },
+    { prefix: '/api/health', router: healthRoutes as unknown as RegisteredRouter },
+    { prefix: '/api/surveys', router: surveyRoutes as unknown as RegisteredRouter },
   ].flatMap(({ prefix, router }) =>
-    router.stack
-      .filter((layer) => layer.route?.stack.some((handler) => handler.handle === authenticateJWT))
-      .flatMap((layer) => {
-        const route = layer.route!;
-        const paths = Array.isArray(route.path) ? route.path : [route.path];
-        return paths.flatMap((routePath) =>
-          Object.keys(route.methods).map((method) => ({
-            method,
-            path: `/api${prefix}${routePath === '/' ? '' : routePath}`
-              .replace(':id', missingSurveyId)
-              .replace(':responseId', missingSurveyId),
-            hasRoleGuard: route.stack.length > 2,
-          }))
-        );
-      })
+    router.stack.flatMap((layer) => {
+      if (!layer.route) return [];
+      const route = layer.route;
+      const paths = Array.isArray(route.path) ? route.path : [route.path];
+      return paths.flatMap((routePath) =>
+        Object.keys(route.methods).map((method) => ({
+          method,
+          path: `${prefix}${routePath === '/' ? '' : routePath}`
+            .replace(':id', missingSurveyId)
+            .replace(':responseId', missingSurveyId),
+          isProtected: route.stack.some((handler) => handler.handle === authenticateJWT),
+        }))
+      );
+    })
   );
 }
 
-const protectedRoutes = enumerateProtectedRoutes();
+const apiRoutes = enumerateApiRoutes();
+const protectedRoutes = apiRoutes.filter((route) => route.isProtected);
 
-async function callRoute(route: ProtectedRoute, token?: string) {
+async function callRoute(route: ApiRoute, token?: string) {
   const path = route.path || '/';
   const method = route.method.toLowerCase();
   let call;
@@ -103,6 +105,11 @@ describe('Sprint 1 security matrix (STS-SEC-01/02)', () => {
   let respondentToken: string;
   let otherRespondentToken: string;
 
+  it('keeps only login and health public', () => {
+    expect(apiRoutes.filter((route) => !route.isProtected).map(({ method, path }) => `${method} ${path}`).sort())
+      .toEqual(['get /api/health', 'post /api/auth/login']);
+  });
+
   beforeEach(async () => {
     await truncateTestDatabase();
     const users = await prisma.$transaction(seedUsers);
@@ -133,9 +140,11 @@ describe('Sprint 1 security matrix (STS-SEC-01/02)', () => {
     }
   });
 
-  it('rejects each wrong role on every role-guarded route without changing the database', async () => {
+  it('rejects each wrong role on every survey route without changing the database', async () => {
     const before = await snapshotDatabase();
-    const roleRoutes = protectedRoutes.filter((route) => route.hasRoleGuard);
+    const roleRoutes = protectedRoutes.filter((route) =>
+      route.path === '/api/surveys' || route.path.startsWith('/api/surveys/')
+    );
     expect(roleRoutes.length).toBeGreaterThan(0);
 
     for (const route of roleRoutes) {

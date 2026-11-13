@@ -9,23 +9,26 @@ Environment variables loaded from .env
 Prisma schema loaded from prisma\schema.prisma
 Datasource "db": PostgreSQL database "surveyhub_test", schema "public" at "localhost:15432"
 
-Error: Schema engine error:
+1 migration found in prisma/migrations
 
-Error: Command failed: npx prisma migrate deploy
-    at genericNodeError (node:internal/errors:985:15)
-    at wrappedFn (node:internal/errors:539:14)
-    at checkExecSyncError (node:child_process:925:11)
-    at execSync (node:child_process:997:15)
-    at main (C:\KMUTT\Y3T1\CPE334\SEProject\server\scripts\benchmark-read.ts:22:3)
-    at Object.<anonymous> (C:\KMUTT\Y3T1\CPE334\SEProject\server\scripts\benchmark-read.ts:94:1)
-    at Module._compile (node:internal/modules/cjs/loader:1812:14)
-    at Module.m._compile (C:\KMUTT\Y3T1\CPE334\SEProject\node_modules\ts-node\src\index.ts:1618:23)
-    at node:internal/modules/cjs/loader:1943:10
-    at Object.require.extensions.<computed> [as .ts] (C:\KMUTT\Y3T1\CPE334\SEProject\node_modules\ts-node\src\index.ts:1621:12) {
-  status: 1,
-  signal: null,
-  output: [ null, null, null ],
-  pid: 24884,
-  stdout: null,
-  stderr: null
+
+No pending migrations to apply.
+{
+  "measuredAt": "2026-11-13T08:57:26.069Z",
+  "command": "npm run bench:read --prefix server",
+  "route": "GET /api/surveys/:id/form",
+  "requestCount": 50,
+  "workload": "50 sequential authenticated reads of one published single-choice survey form",
+  "targetP95Ms": 300,
+  "p50Ms": 7.693,
+  "p95Ms": 13.249,
+  "p99Ms": 22.422,
+  "passed": true,
+  "environment": {
+    "node": "v24.14.1",
+    "postgres": "PostgreSQL 18.1 on x86_64-windows, compiled by msvc-19.44.35221, 64-bit",
+    "platform": "win32 10.0.26200 x64",
+    "cpu": "Intel(R) Core(TM) i5-8250U CPU @ 1.60GHz",
+    "database": "surveyhub_test"
+  }
 }

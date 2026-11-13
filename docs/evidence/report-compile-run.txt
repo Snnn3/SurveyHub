@@ -1,6 +1,7 @@
-Command: xelatex -interaction=nonstopmode -halt-on-error -file-line-error Deliverable_1.tex
-Passes recorded: final two passes (both exited 0)
-Final output:
+Pass 1 exit code: 0
 Output written on Deliverable_1.pdf (76 pages).
 Transcript written on Deliverable_1.log.
-Visual check: Poppler rendered pages 64-76; no clipped or overlapping content observed.
+Pass 2 exit code: 0
+Output written on Deliverable_1.pdf (76 pages).
+Transcript written on Deliverable_1.log.
+Visual check: Poppler rendered pages 64-76; updated evidence pages 67-69 and 75-76 were inspected with no clipping or overlap.

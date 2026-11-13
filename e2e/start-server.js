@@ -1,6 +1,5 @@
 const { execSync } = require('child_process');
 const { randomBytes } = require('crypto');
-const { PrismaClient } = require('@prisma/client');
 const dotenv = require('dotenv');
 const path = require('path');
 
@@ -14,23 +13,9 @@ if (!testDatabaseUrl || new URL(testDatabaseUrl).pathname.replace(/^\//, '') !==
 }
 
 const childEnv = { ...process.env, DATABASE_URL: testDatabaseUrl };
-execSync('npx prisma migrate deploy', { cwd: server, env: childEnv, stdio: 'inherit' });
+execSync('npm run db:reset', { cwd: server, env: childEnv, stdio: 'inherit' });
 
-async function start() {
-  const prisma = new PrismaClient({ datasources: { db: { url: testDatabaseUrl } } });
-  try {
-    for (const table of [
-      'answer_options', 'answers', 'response_claims', 'survey_responses', 'options',
-      'questions', 'survey_eligibility', 'surveys', 'users',
-    ]) {
-      await prisma.$executeRawUnsafe(`TRUNCATE TABLE "${table}" CASCADE`);
-    }
-  } finally {
-    await prisma.$disconnect();
-  }
-
-  execSync('npm run db:seed', { cwd: server, env: childEnv, stdio: 'inherit' });
-
+function start() {
   process.env.NODE_ENV = 'production';
   process.env.PORT = '4173';
   process.env.DATABASE_URL = testDatabaseUrl;
@@ -43,7 +28,9 @@ async function start() {
   }
 }
 
-start().catch((error) => {
+try {
+  start();
+} catch (error) {
   console.error(error);
   process.exitCode = 1;
-});
+}

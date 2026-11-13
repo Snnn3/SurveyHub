@@ -6,12 +6,13 @@
 **Document status:** Verification guide v5 with Issue #7 evidence update dated 13 November 2026
 **Related documents:** Part E (contracts and test specifications), Part C (design), Part B (traceability)
 
-> **Status: evidence update in progress.**
+> **Status: Issue #7 worktree evidence captured on 13 November 2026.**
 > The release results from PR #17 are historical PR-reported evidence. The commands below were run
-> from the Issue #7 worktree based on `00494b26df89892066c2680e0a03e0cc03c905a7`. Build and
-> typecheck passed. Database-dependent E2E, Jest and benchmark runs could not reach the isolated
-> PostgreSQL test database at `127.0.0.1:15432`; those checks remain blocked or unmeasured as stated
-> below. Manual demo scenarios not run in this update remain PLANNED.
+> from the Issue #7 worktree based on `00494b26df89892066c2680e0a03e0cc03c905a7`, using an
+> isolated, loopback-only PostgreSQL 18.1 cluster and `surveyhub_test`. Typecheck/build passed;
+> `npm test` passed 7 suites / 60 tests; the focused security matrix passed 4 tests; both E2E
+> journeys passed; and the 50-request benchmark measured p95 at 13.249 ms. These are worktree
+> results, not a separate run on the release tag. Manual demo scenarios not run here remain PLANNED.
 >
 > The previous draft contained invented test counts, invented terminal logs, invented pull requests
 > and commit SHAs that never existed in the repository. All of that has been removed. If a check has
@@ -24,16 +25,16 @@
 | Typecheck | `npm run typecheck` | Passed for server and client | `docs/evidence/static-checks-run.txt` |
 | Production build | `npm run build` | Passed for client and server | `docs/evidence/build-run.txt` |
 | E2E discovery | `npx playwright test --list` | Found the two specified E2E tests; this does not execute them | `e2e/sprint1-survey-flow.spec.ts` |
-| E2E run | `npm run test:e2e` | Production build passed; test server setup stopped at `npx prisma migrate deploy` because PostgreSQL was unreachable; no browser tests ran | `docs/evidence/e2e-run.txt` |
-| Security matrix | `npm run test --prefix server -- --runTestsByPath tests/security-matrix.test.ts` | Jest setup could not connect to `127.0.0.1:15432`; 1 suite and 3 tests are reported failed during setup, before the matrix assertions ran | `docs/evidence/security-matrix-run.txt` |
-| Full server suite | `npm test` | 7 suites and 59 tests reported failed at the same database setup step; this is not a passing regression run | `docs/evidence/npm-test-run.txt` |
-| Performance | `npm run bench:read --prefix server` | Migration/connectivity setup failed before sampling; 0 requests completed, so p50/p95/p99 are unmeasured | `docs/evidence/nfr-perf-01-run.txt`, `docs/evidence/nfr-perf-01.json` |
-| LaTeX report | `xelatex -interaction=nonstopmode -halt-on-error -file-line-error Deliverable_1.tex` (final two passes) | Both final passes exited 0; final PDF has 76 pages. Pages 64–76 were rendered and visually inspected | `docs/evidence/report-compile-run.txt`; report PDF beside its `.tex` source |
+| E2E run | `npm run test:e2e` | Production build passed; both STS-E2E journeys passed (2/2) against a clean seeded test database | `docs/evidence/e2e-run.txt` |
+| Security matrix | `npm run test --prefix server -- --runTestsByPath tests/security-matrix.test.ts` | Passed 1 suite / 4 tests; covered 14 protected route registrations, missing/malformed/expired tokens, wrong roles, non-owner access, private-data absence, and unchanged database state | `docs/evidence/security-matrix-run.txt` |
+| Full server suite | `npm test` | Passed 7 suites / 60 tests, including bcrypt cost 10 and logout revocation assertions | `docs/evidence/npm-test-run.txt` |
+| Performance | `npm run bench:read --prefix server` | 50 sequential authenticated form reads; p50 7.693 ms, p95 13.249 ms, p99 22.422 ms; p95 below the 300 ms target | `docs/evidence/nfr-perf-01-run.txt`, `docs/evidence/nfr-perf-01.json` |
+| LaTeX report | `xelatex -interaction=nonstopmode -halt-on-error -file-line-error Deliverable_1.tex` (final two passes) | Both final passes exited 0; final PDF has 76 pages. Pages 64–76 were rendered; updated evidence pages were inspected with no clipping or overlap | `docs/evidence/report-compile-run.txt`, `docs/evidence/deliverable-1/Deliverable_1.pdf` |
 | Issue #5 TDD provenance | Git history plus Issue #5 comments | Corrected red/green summaries exist in the issue/chat record; neither run has a provable SHA or separately archived raw log | See §5 below and the report source |
 
-Node was `v24.14.1`. PostgreSQL's version could not be observed because the database was unavailable.
-The Compose image is configured as PostgreSQL 16, but that is not a measurement of the running
-database. Sprint 1 has no CI; no CI gap is reported.
+Environment: Node `v24.14.1`; PostgreSQL `18.1` on Windows `10.0.26200 x64`; CPU
+`Intel(R) Core(TM) i5-8250U CPU @ 1.60GHz`; database `surveyhub_test` bound to loopback port
+`15432`. Sprint 1 has no CI; no CI gap is reported.
 
 ---
 
@@ -354,29 +355,30 @@ Record the actual run exactly below, including any tests added, failed or skippe
 
 | Field | Value |
 |---|---|
-| Command | `npm test`; `npm run test:e2e` |
-| Commit | Local worktree based on `00494b26df89892066c2680e0a03e0cc03c905a7`; Issue #7 changes were uncommitted during these runs |
-| Version | Local Issue #7 worktree; not the release tag |
+| Command | `npm test`; focused security matrix; `npm run test:e2e` |
+| Base | `00494b26df89892066c2680e0a03e0cc03c905a7` (`sprint-1-staging`); Issue #7 worktree, not the release tag |
+| Test database | Loopback-only PostgreSQL 18.1; `surveyhub_test` |
+| Version | Node `v24.14.1`; Windows `10.0.26200 x64` |
 | Date | 2026-11-13 |
-| Unit/integration result | `npm test`: 7 suites failed, 59 tests failed during shared database setup; no test suite completed |
-| E2E result | 0 browser tests ran; server setup failed while applying migrations to the unavailable test database |
-| Total time | Jest reported 17.813 s; E2E did not reach Playwright tests |
-| Exit code | `1` for both commands |
+| Unit/integration result | `npm test`: 7 suites / 60 tests passed; focused security matrix: 1 suite / 4 tests passed |
+| E2E result | `npm run test:e2e`: 2 journeys passed against a clean seeded test database |
+| Total time | Jest reported 84.28 s; final E2E run reported 22.6 s |
+| Exit code | `0` for all three commands |
 
-The complete outputs are saved at `docs/evidence/npm-test-run.txt` and
-`docs/evidence/e2e-run.txt`. The failures show that the configured `surveyhub_test` database could
-not be reached at `127.0.0.1:15432`; they do not establish that the application tests pass or fail.
+The complete outputs are saved at `docs/evidence/npm-test-run.txt`,
+`docs/evidence/security-matrix-run.txt`, and `docs/evidence/e2e-run.txt`.
 
 ```text
-Test Suites: 7 failed, 7 total
-Tests:       59 failed, 59 total
+Test Suites: 7 passed, 7 total
+Tests:       60 passed, 60 total
 Snapshots:   0 total
-Time:        17.813 s
+Time:        84.28 s
 Ran all test suites.
 ```
 
 ```text
-E2E: production build completed; `npx prisma migrate deploy` failed before any browser test ran.
+Running 2 tests using 1 worker
+2 passed (22.6s)
 ```
 
 ### 3.3 Acceptance-criteria-to-test mapping
@@ -417,25 +419,25 @@ Every row stays `PLANNED` until the named test has run on the assessed commit. `
 | AC-F04-02 | STS-F04-02 | Integration (role) | `server/tests/survey-summary.test.ts` | PLANNED | `<fig/line>` |
 | AC-F04-03 | STS-F04-03 | Integration (ownership) | `server/tests/survey-summary.test.ts` | PLANNED | `<fig/line>` |
 | AC-F04-04 | STS-F04-04 | Integration | `server/tests/survey-summary.test.ts` | PLANNED | `<fig/line>` |
-| AC-SEC-01 | STS-SEC-01 | Integration (route matrix) | `server/tests/security-matrix.test.ts` | BLOCKED: database setup failed before assertions | `docs/evidence/security-matrix-run.txt` |
-| AC-SEC-02 | STS-SEC-02 | Integration (role matrix) | `server/tests/security-matrix.test.ts` | BLOCKED: database setup failed before assertions | `docs/evidence/security-matrix-run.txt` |
-| AC-PERF-01 | Benchmark `benchmark-read.ts` | Measurement | `server/scripts/benchmark-read.ts` | UNMEASURED: no requests sampled | `docs/evidence/nfr-perf-01.json` |
+| AC-SEC-01 | STS-SEC-01 | Integration (route matrix) | `server/tests/security-matrix.test.ts` | PASS: 14 protected routes reject missing, malformed, and expired tokens with 401 and no data | `docs/evidence/security-matrix-run.txt` |
+| AC-SEC-02 | STS-SEC-02 | Integration (role matrix) | `server/tests/security-matrix.test.ts` | PASS: wrong-role and non-owner calls return 403 with no private data or database changes | `docs/evidence/security-matrix-run.txt` |
+| AC-PERF-01 | Benchmark `benchmark-read.ts` | Measurement | `server/scripts/benchmark-read.ts` | PASS: 50 requests; p95 13.249 ms (<300 ms) | `docs/evidence/nfr-perf-01.json` |
 | AC-DATA-01 | STS-F03-03 + restart check | Integration + manual | `server/tests/response-submission.test.ts` | PLANNED | `<fig/line>` |
 | BR-06 structure | STS-U-01, STS-U-02 | Unit | `server/tests/unit/rules.test.ts` | PLANNED | `<fig/line>` |
 | BR-03 validation | STS-U-03, STS-U-04 | Unit | `server/tests/unit/rules.test.ts` | PLANNED | `<fig/line>` |
 | Percentage logic | STS-U-05 | Unit | `server/tests/unit/rules.test.ts` | PLANNED | `<fig/line>` |
-| Journey 1 | STS-E2E-01 | E2E | `e2e/sprint1-survey-flow.spec.ts` | BLOCKED: test server setup failed before browser launch | `docs/evidence/e2e-run.txt` |
-| Journey 2 | STS-E2E-02 | E2E | `e2e/sprint1-survey-flow.spec.ts` | BLOCKED: test server setup failed before browser launch | `docs/evidence/e2e-run.txt` |
+| Journey 1 | STS-E2E-01 | E2E | `e2e/sprint1-survey-flow.spec.ts` | PASS: owner creates/publishes; respondent submits and reloads receipt; owner sees 1 response / 100% | `docs/evidence/e2e-run.txt` |
+| Journey 2 | STS-E2E-02 | E2E | `e2e/sprint1-survey-flow.spec.ts` | PASS: duplicate 409, cross-response access 403 without answer data, logged-out token 401 `TOKEN_REVOKED` | `docs/evidence/e2e-run.txt` |
 
 ### 3.4 Non-functional verification plan
 
 | NFR | Target | Method | Observed value | Result |
 |---|---|---|---|---|
-| NFR-SEC-01 | Every protected route rejects missing, malformed and expired tokens with 401 and no data | `STS-SEC-01` dynamically enumerates protected router registrations | 14 protected route registrations are targeted by the test source; execution blocked at shared DB setup | BLOCKED |
-| NFR-SEC-02 | Every forbidden role/ownership operation returns 403 and leaves data unchanged | `STS-SEC-02` plus the feature-level 403 tests | Role and ownership assertions are implemented; execution blocked at shared DB setup | BLOCKED |
-| NFR-SEC-03 | bcrypt cost 10; no plaintext password or hash in any response | Existing dedicated assertion in `server/tests/auth.test.ts` checks `$2b$10$` | Assertion exists in source; test run blocked at shared DB setup | BLOCKED |
-| NFR-SEC-04 | Logout revokes existing tokens | `STS-F01-05`; old token returns 401 `TOKEN_REVOKED` | Existing auth test and E2E path are present; this run did not reach assertions | BLOCKED |
-| NFR-PERF-01 | p95 of `GET /api/surveys/:id/form` < 300 ms over 50 requests on the local development environment | `server/scripts/benchmark-read.ts` writes p50/p95/p99 JSON | Node `v24.14.1`; PostgreSQL unavailable; 0 requests completed; no p95 | UNMEASURED |
+| NFR-SEC-01 | Every protected route rejects missing, malformed and expired tokens with 401 and no data | `STS-SEC-01` dynamically enumerates API route registrations and requires only login/health to be public | 14 protected route registrations; all token cases passed with no response data | PASS |
+| NFR-SEC-02 | Every forbidden role/ownership operation returns 403 and leaves data unchanged | `STS-SEC-02` role and ownership matrix | Wrong roles and non-owners received 403; snapshots of the test tables were unchanged | PASS |
+| NFR-SEC-03 | bcrypt cost 10; no plaintext password or hash in any response | Existing dedicated assertion in `server/tests/auth.test.ts` checks `$2b$10$` | Full suite passed the bcrypt cost/prefix assertion and response privacy checks | PASS |
+| NFR-SEC-04 | Logout revokes existing tokens | `STS-F01-05`; old token returns 401 `TOKEN_REVOKED` | Full suite and E2E both passed logout token-revocation checks | PASS |
+| NFR-PERF-01 | p95 of `GET /api/surveys/:id/form` < 300 ms over 50 requests on the local development environment | `server/scripts/benchmark-read.ts` writes p50/p95/p99 JSON | Node `v24.14.1`; PostgreSQL `18.1`; 50 requests; p50 7.693 ms / p95 13.249 ms / p99 22.422 ms | PASS |
 | NFR-DATA-01 | Foreign keys and unique constraints exist; data survives API and database restart | Inspect migration SQL; `STS-F03-03`; restart check in Scenario 1 | `<record>` | PLANNED |
 | NFR-PRIV-01 | Anonymous responses carry no identity link | Deferred to Sprint 2 with `STS-PRIV-01` | — | DEFERRED |
 
@@ -447,12 +449,13 @@ latency measurement and must not be reported as one.
 | Field | Value |
 |---|---|
 | Command | `npm run bench:read --prefix server` |
-| Commit | Local worktree based on `00494b26df89892066c2680e0a03e0cc03c905a7`; changes were uncommitted during the attempt |
+| Base | `00494b26df89892066c2680e0a03e0cc03c905a7` (`sprint-1-staging`); this is a worktree benchmark, not release-tag evidence |
 | Target requests | 50 sequential reads |
-| Completed requests | 0; migration/connectivity setup failed before sampling |
-| p50 / p95 / p99 | Unmeasured |
-| Result file | `docs/evidence/nfr-perf-01.json` (blocker record; no latency values) |
-| Pass/fail | UNMEASURED; test database unreachable at `localhost:15432` |
+| Completed requests | 50 sequential authenticated reads |
+| p50 / p95 / p99 | 7.693 ms / 13.249 ms / 22.422 ms |
+| Environment | Node `v24.14.1`; PostgreSQL `18.1`; Windows `10.0.26200 x64`; Intel i5-8250U @ 1.60GHz; `surveyhub_test` |
+| Result file | `docs/evidence/nfr-perf-01.json` |
+| Pass/fail | PASS; p95 is below the 300 ms target |
 
 ---
 
@@ -554,8 +557,9 @@ records the expected duplicate-accepted red (`201` instead of `409`) and a passi
 but does not name either SHA or contain a separately archived terminal log. The earlier [Issue #5
 comment](https://github.com/Snnn3/SurveyHub/issues/5#issuecomment-6767457565) records a `404` red
 run that was replaced because the endpoint did not yet exist. The supplied LaTeX report contains
-chat-recovered output excerpts; those excerpts are not raw archived logs. No new TDD reproduction
-was run in this update because the test database was unavailable.
+chat-recovered output excerpts; those excerpts are not raw archived logs. No new controlled TDD
+red/green reproduction was run in this update; the passing regression suite does not recreate the
+historical database changes used for the red stage.
 
 ### 5.2 Red run record
 

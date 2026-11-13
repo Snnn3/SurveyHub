@@ -24,8 +24,8 @@ test('STS-E2E-01: owner publishes, respondent submits, and owner sees persisted 
   await page.getByLabel('Survey Title').fill(title);
   await page.getByRole('button', { name: '+ Single Choice' }).click();
   await page.getByPlaceholder('e.g. How satisfied are you with the course?').fill('Was this survey useful?');
-  await page.getByLabel('Option 1').fill('Yes');
-  await page.getByLabel('Option 2').fill('No');
+  await page.getByRole('textbox', { name: 'Question 1 Option 1' }).fill('Yes');
+  await page.getByRole('textbox', { name: 'Question 1 Option 2' }).fill('No');
   await page.getByRole('button', { name: 'Publish Survey' }).click();
   await expect(page.getByText(title)).toBeVisible();
   expect(surveyId).toMatch(/^[0-9a-f-]{36}$/i);
@@ -82,7 +82,11 @@ test('STS-E2E-02: duplicate, cross-receipt access, and a logged-out token are re
   });
   expect(forbiddenReceipt.status()).toBe(403);
   expect((await forbiddenReceipt.json()).error.code).toBe('FORBIDDEN_CROSS_RESPONSE_ACCESS');
+  const logout = page.waitForResponse((response) =>
+    response.url().endsWith('/api/auth/logout') && response.request().method() === 'POST'
+  );
   await page.getByRole('button', { name: 'Log out' }).click();
+  expect((await logout).status()).toBe(200);
 
   const reusedToken = await page.request.get(new URL('/api/auth/me', page.url()).toString(), {
     headers: { Authorization: `Bearer ${secondToken}` },
