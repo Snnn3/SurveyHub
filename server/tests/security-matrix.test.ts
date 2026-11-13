@@ -2,9 +2,7 @@ import { QuestionType, SurveyStatus } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import app from '../src/app';
-import authRoutes from '../src/routes/auth.routes';
-import healthRoutes from '../src/routes/health.routes';
-import surveyRoutes from '../src/routes/survey.routes';
+import apiRouter from '../src/routes';
 import { env } from '../src/config/environment';
 import { authenticateJWT } from '../src/middleware/auth.middleware';
 import { prisma } from '../src/utils/prisma';
@@ -20,40 +18,67 @@ interface ApiRoute {
   isProtected: boolean;
 }
 
-interface RegisteredRouter {
-  stack: Array<{
-    route?: {
-      path: string | string[];
-      methods: Record<string, boolean>;
-      stack: Array<{ handle: unknown }>;
-    };
-  }>;
+interface RegisteredRoute {
+  path: string | string[] | RegExp;
+  methods: Record<string, boolean>;
+  stack: Array<{ handle: unknown }>;
 }
 
-function enumerateApiRoutes(): ApiRoute[] {
-  return [
-    { prefix: '/api/auth', router: authRoutes as unknown as RegisteredRouter },
-    { prefix: '/api/health', router: healthRoutes as unknown as RegisteredRouter },
-    { prefix: '/api/surveys', router: surveyRoutes as unknown as RegisteredRouter },
-  ].flatMap(({ prefix, router }) =>
-    router.stack.flatMap((layer) => {
-      if (!layer.route) return [];
+interface RegisteredLayer {
+  route?: RegisteredRoute;
+  handle?: unknown;
+  regexp?: RegExp & { fast_slash?: boolean };
+}
+
+interface RegisteredRouter {
+  stack: RegisteredLayer[];
+}
+
+function joinPaths(...parts: string[]): string {
+  const path = parts.flatMap((part) => part.split('/')).filter(Boolean).join('/');
+  return `/${path}`;
+}
+
+function getMountPrefix(regexp?: RegisteredLayer['regexp']): string {
+  if (regexp?.fast_slash) return '';
+  const source = regexp?.source;
+  const suffix = '\\/?(?=\\/|$)';
+  if (!source?.startsWith('^') || !source.endsWith(suffix)) {
+    throw new Error(`Cannot enumerate mounted API router path from ${source}.`);
+  }
+  return source.slice(1, -suffix.length).replace(/\\\//g, '/');
+}
+
+function isRouter(value: unknown): value is RegisteredRouter {
+  return typeof value === 'function' && Array.isArray((value as unknown as RegisteredRouter).stack);
+}
+
+function enumerateApiRoutes(router: RegisteredRouter, prefix = '/api'): ApiRoute[] {
+  return router.stack.flatMap((layer) => {
+    if (layer.route) {
       const route = layer.route;
       const paths = Array.isArray(route.path) ? route.path : [route.path];
+      if (paths.some((routePath) => routePath instanceof RegExp)) {
+        throw new Error('Security matrix route enumeration does not support RegExp paths.');
+      }
       return paths.flatMap((routePath) =>
         Object.keys(route.methods).map((method) => ({
           method,
-          path: `${prefix}${routePath === '/' ? '' : routePath}`
-            .replace(':id', missingSurveyId)
-            .replace(':responseId', missingSurveyId),
+          path: joinPaths(prefix, routePath as string).replace(/:[A-Za-z0-9_]+/g, missingSurveyId),
           isProtected: route.stack.some((handler) => handler.handle === authenticateJWT),
         }))
       );
-    })
-  );
+    }
+
+    if (isRouter(layer.handle)) {
+      return enumerateApiRoutes(layer.handle, joinPaths(prefix, getMountPrefix(layer.regexp)));
+    }
+
+    return [];
+  });
 }
 
-const apiRoutes = enumerateApiRoutes();
+const apiRoutes = enumerateApiRoutes(apiRouter as unknown as RegisteredRouter);
 const protectedRoutes = apiRoutes.filter((route) => route.isProtected);
 
 async function callRoute(route: ApiRoute, token?: string) {
