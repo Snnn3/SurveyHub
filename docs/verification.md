@@ -3,18 +3,45 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)
 **Course:** CPE 334 Software Engineering, Semester 1/2026
 **Deliverable:** Project Deliverable 1 — Part F (20 points)
-**Document status:** Verification guide v5, aligned with the Part E test plan on 6 November 2026
+**Document status:** Verification guide v5 with Issue #7 evidence update dated 13 November 2026
 **Related documents:** Part E (contracts and test specifications), Part C (design), Part B (traceability)
 
-> **Status: PLANNED.**
-> This document describes how Sprint 1 will be verified and which evidence must be captured. It is
-> not a test report. Every result field below contains a placeholder that must be replaced with real
-> output from the assessed commit before submission. Nothing in this document is marked PASS in
-> advance.
+> **Status: Issue #7 worktree evidence captured on 13 November 2026.**
+> The release results from PR #17 are historical PR-reported evidence. The latest test and E2E
+> runs below were executed against tested PR revision `947370798d4852bc4868b5c70b53ebffa9e626a1`,
+> based on `00494b26df89892066c2680e0a03e0cc03c905a7`; the route-enumeration fix is code commit
+> `3592af27a8e78541a552b94d09caacc4a4129a2a`. Evidence-only commit
+> `fa079a8b865ec9033fa4af9b4b317cdfc07b6490` refreshes the captured outputs and this record. Runs
+> used the isolated, loopback-only PostgreSQL test database `surveyhub_test`. `npm test` passed 7
+> suites / 60 tests, including the recursively enumerated security matrix; the guarded production
+> build and both E2E journeys passed.
+> The 50-request benchmark earlier measured p95 at 13.249 ms. These are worktree results, not a
+> separate run on the release tag. Manual demo scenarios not run here remain PLANNED.
 >
 > The previous draft contained invented test counts, invented terminal logs, invented pull requests
 > and commit SHAs that never existed in the repository. All of that has been removed. If a check has
 > not been run, it stays `PLANNED`. If a check failed, it is recorded as `FAILED`, not hidden.
+
+### Issue #7 evidence run — 13 November 2026
+
+| Check | Command | Actual result | Evidence |
+|---|---|---|---|
+| Typecheck | `npm run typecheck` | Passed for server and client | `docs/evidence/static-checks-run.txt` |
+| Production build | `npm run build` | Passed for client and server | `docs/evidence/build-run.txt` |
+| E2E discovery | `npx playwright test --list` | Found the two specified E2E tests; this does not execute them | `e2e/sprint1-survey-flow.spec.ts` |
+| E2E run (earlier verification) | `npm run test:e2e` | Production build passed; both STS-E2E journeys passed (2/2) against a clean seeded test database before the local-database guard was added | Earlier result retained in Git history |
+| E2E reset safety (PR review follow-up) | `node e2e/start-server.test.js` | Passed for a remote authority, `host`/`hostaddr`/`service` overrides, the wrong database name, and an unsupported scheme; none invoked the reset command | `docs/evidence/e2e-guard-review-run.txt` |
+| E2E rerun (earlier blocked attempt) | `npm run test:e2e` | Guard and build passed; Playwright could not start because PostgreSQL ports were unreachable and Prisma could not reset the test database | `docs/evidence/e2e-guard-review-run.txt` |
+| Security matrix (included in full suite below) | `npm test` | Passed 1 suite / 4 tests on tested revision `9473707`; enumerates the full API router recursively, covering 14 protected routes, token failures, wrong roles, non-owner access, private-data absence, and unchanged database state | `docs/evidence/npm-test-run.txt` |
+| Full server suite | `npm test` | Passed 7 suites / 60 tests on tested revision `9473707`, including bcrypt cost 10 and logout revocation assertions | `docs/evidence/npm-test-run.txt` |
+| Latest E2E rerun | `npm run test:e2e` | Database guard passed, client/server production builds passed, and both Playwright journeys passed (2/2) on tested revision `9473707` | `docs/evidence/e2e-run.txt` |
+| Performance | `npm run bench:read --prefix server` | 50 sequential authenticated form reads; p50 7.693 ms, p95 13.249 ms, p99 22.422 ms; p95 below the 300 ms target | `docs/evidence/nfr-perf-01-run.txt`, `docs/evidence/nfr-perf-01.json` |
+| LaTeX report | `xelatex -interaction=nonstopmode -halt-on-error -file-line-error Deliverable_1.tex` (final two passes) | Both final passes exited 0; final PDF has 76 pages. Pages 64–76 were rendered; updated evidence pages were inspected with no clipping or overlap | `docs/evidence/report-compile-run.txt`, `docs/evidence/deliverable-1/Deliverable_1.pdf` |
+| Issue #5 TDD provenance | Git history plus Issue #5 comments | Corrected red/green summaries exist in the issue/chat record; neither run has a provable SHA or separately archived raw log | See §5 below and the report source |
+
+Environment: Node `v24.14.1`; PostgreSQL `18.1` on Windows `10.0.26200 x64`; CPU
+`Intel(R) Core(TM) i5-8250U CPU @ 1.60GHz`; database `surveyhub_test` bound to loopback port
+`15432`. Sprint 1 has no CI; no CI gap is reported.
 
 ---
 
@@ -335,82 +362,91 @@ Record the actual run exactly below, including any tests added, failed or skippe
 
 | Field | Value |
 |---|---|
-| Command | `npm test` and `npm run test:e2e` |
-| Commit | `<full SHA>` |
-| Version | `v0.1.0-sprint1` |
-| Date | `<ISO 8601>` |
-| Unit/integration result | `<X passed, Y failed, Z skipped>` |
-| E2E result | `<X passed, Y failed, Z skipped>` |
-| Total time | `<from the real output>` |
-| Exit code | `<0 or non-zero>` |
+| Command | `npm test`; focused security matrix; `npm run test:e2e` |
+| Base | `00494b26df89892066c2680e0a03e0cc03c905a7` (`sprint-1-staging`); Issue #7 worktree, not the release tag |
+| Test database | Loopback-only PostgreSQL 18.1; `surveyhub_test` |
+| Version | Node `v24.14.1`; Windows `10.0.26200 x64` |
+| Date | 2026-11-13 |
+| Unit/integration result | `npm test`: 7 suites / 60 tests passed; focused security matrix: 1 suite / 4 tests passed |
+| E2E result | `npm run test:e2e`: 2 journeys passed against a clean seeded test database |
+| Total time | Jest reported 84.28 s; final E2E run reported 22.6 s |
+| Exit code | `0` for all three commands |
 
-Paste the real terminal tail below. Do not edit counts or timings.
+The complete outputs are saved at `docs/evidence/npm-test-run.txt`,
+`docs/evidence/security-matrix-run.txt`, and `docs/evidence/e2e-run.txt`.
 
 ```text
-<PASTE THE ACTUAL JEST SUMMARY HERE>
+Test Suites: 7 passed, 7 total
+Tests:       60 passed, 60 total
+Snapshots:   0 total
+Time:        84.28 s
+Ran all test suites.
 ```
 
 ```text
-<PASTE THE ACTUAL PLAYWRIGHT SUMMARY HERE>
+Running 2 tests using 1 worker
+2 passed (22.6s)
 ```
 
 ### 3.3 Acceptance-criteria-to-test mapping
 
-Every row stays `PLANNED` until the named test has run on the assessed commit. `PASS`, `FAILED`,
-`SKIPPED` and `BLOCKED` are the only valid outcomes once execution starts.
+Statuses below reflect the named checks in the saved test output. The database-restart row remains
+`PLANNED` because no restart check was run in this evidence update. `PASS`, `FAILED`, `SKIPPED` and
+`BLOCKED` are the valid outcomes once execution starts.
 
 | AC | Test ID | Level | File | Result | Evidence |
 |---|---|---|---|---|---|
-| AC-F01-01 | STS-F01-01 | Integration | `server/tests/auth.test.ts` | PLANNED | `<fig/line>` |
-| AC-F01-02 | STS-F01-02 | Integration | `server/tests/auth.test.ts` | PLANNED | `<fig/line>` |
-| AC-F01-03 | STS-F01-03 | Integration | `server/tests/auth.test.ts` | PLANNED | `<fig/line>` |
-| AC-F01-04 | STS-F01-04 | Integration/DB | `server/tests/auth.test.ts` | PLANNED | `<fig/line>` |
-| AC-F01-05 | STS-F01-05 | Integration | `server/tests/auth.test.ts` | PLANNED | `<fig/line>` |
-| AC-F01-06 | STS-F01-06 | Integration/DB | `server/tests/auth.test.ts` | PLANNED | `<fig/line>` |
-| AC-F02-01 | STS-F02-01 | Integration | `server/tests/survey-lifecycle.test.ts` | PLANNED | `<fig/line>` |
-| AC-F02-02 | STS-F02-02 | Integration | `server/tests/survey-lifecycle.test.ts` | PLANNED | `<fig/line>` |
-| AC-F02-03 | STS-F02-03 | Integration | `server/tests/survey-lifecycle.test.ts` | PLANNED | `<fig/line>` |
-| AC-F02-04 | STS-F02-04 | Integration | `server/tests/survey-lifecycle.test.ts` | PLANNED | `<fig/line>` |
-| AC-F02-05 | STS-F02-05 | Integration/DB | `server/tests/survey-lifecycle.test.ts` | PLANNED | `<fig/line>` |
-| AC-F02-06 | STS-F02-06 | Integration | `server/tests/survey-lifecycle.test.ts` | PLANNED | `<fig/line>` |
-| AC-F02-07 | STS-F02-07 | Integration | `server/tests/survey-lifecycle.test.ts` | PLANNED | `<fig/line>` |
-| AC-F02-08 | STS-F02-08 | Integration | `server/tests/survey-lifecycle.test.ts` | PLANNED | `<fig/line>` |
-| AC-F02-09 | STS-F02-09 | Integration | `server/tests/survey-lifecycle.test.ts` | PLANNED | `<fig/line>` |
-| AC-F02-10 | STS-F02-10 | Integration | `server/tests/survey-lifecycle.test.ts` | PLANNED | `<fig/line>` |
-| AC-F02-11 | STS-F02-11 | Integration | `server/tests/survey-lifecycle.test.ts` | PLANNED | `<fig/line>` |
-| AC-F03-01 | STS-F03-01 | Integration | `server/tests/response-submission.test.ts` | PLANNED | `<fig/line>` |
-| AC-F03-02 | STS-F03-02 | Integration | `server/tests/response-submission.test.ts` | PLANNED | `<fig/line>` |
-| AC-F03-03 | STS-F03-03 | Integration/DB | `server/tests/response-submission.test.ts` | PLANNED | `<fig/line>` |
-| AC-F03-04 | STS-F03-04 | Integration (TDD) | `server/tests/response-submission.test.ts` | PLANNED | `<fig/line>` |
-| AC-F03-05 | STS-F03-05 | Integration | `server/tests/response-submission.test.ts` | PLANNED | `<fig/line>` |
-| AC-F03-06 | STS-F03-06 | Integration | `server/tests/response-submission.test.ts` | PLANNED | `<fig/line>` |
-| AC-F03-07 | STS-F03-07 | Integration | `server/tests/response-submission.test.ts` | PLANNED | `<fig/line>` |
-| AC-F03-08 | STS-F03-08 | Integration (privacy) | `server/tests/response-submission.test.ts` | PLANNED | `<fig/line>` |
-| AC-F03-09 | STS-F03-09 | Integration (role) | `server/tests/response-submission.test.ts` | PLANNED | `<fig/line>` |
-| AC-F03-10 | STS-F03-10 | Integration | `server/tests/response-submission.test.ts` | PLANNED | `<fig/line>` |
-| AC-F04-01 | STS-F04-01 | Integration/DB | `server/tests/survey-summary.test.ts` | PLANNED | `<fig/line>` |
-| AC-F04-02 | STS-F04-02 | Integration (role) | `server/tests/survey-summary.test.ts` | PLANNED | `<fig/line>` |
-| AC-F04-03 | STS-F04-03 | Integration (ownership) | `server/tests/survey-summary.test.ts` | PLANNED | `<fig/line>` |
-| AC-F04-04 | STS-F04-04 | Integration | `server/tests/survey-summary.test.ts` | PLANNED | `<fig/line>` |
-| AC-SEC-01 | STS-SEC-01 | Integration (route matrix) | `server/tests/security-matrix.test.ts` | PLANNED | `<fig/line>` |
-| AC-SEC-02 | STS-SEC-02 | Integration (role matrix) | `server/tests/security-matrix.test.ts` | PLANNED | `<fig/line>` |
-| AC-PERF-01 | Benchmark `benchmark-read.ts` | Measurement | `server/scripts/benchmark-read.ts` | PLANNED | `<report path>` |
-| AC-DATA-01 | STS-F03-03 + restart check | Integration + manual | `server/tests/response-submission.test.ts` | PLANNED | `<fig/line>` |
-| BR-06 structure | STS-U-01, STS-U-02 | Unit | `server/tests/unit/rules.test.ts` | PLANNED | `<fig/line>` |
-| BR-03 validation | STS-U-03, STS-U-04 | Unit | `server/tests/unit/rules.test.ts` | PLANNED | `<fig/line>` |
-| Percentage logic | STS-U-05 | Unit | `server/tests/unit/rules.test.ts` | PLANNED | `<fig/line>` |
-| Journey 1 | STS-E2E-01 | E2E | `e2e/sprint1-survey-flow.spec.ts` | PLANNED | `<fig/line>` |
-| Journey 2 | STS-E2E-02 | E2E | `e2e/sprint1-survey-flow.spec.ts` | PLANNED | `<fig/line>` |
+| AC-F01-01 | STS-F01-01 | Integration | `server/tests/auth.test.ts` | PASS: auth suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F01-02 | STS-F01-02 | Integration | `server/tests/auth.test.ts` | PASS: auth suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F01-03 | STS-F01-03 | Integration | `server/tests/auth.test.ts` | PASS: auth suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F01-04 | STS-F01-04 | Integration/DB | `server/tests/auth.test.ts` | PASS: auth suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F01-05 | STS-F01-05 | Integration | `server/tests/auth.test.ts` | PASS: logout/revocation test passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F01-06 | STS-F01-06 | Integration/DB | `server/tests/auth.test.ts` | PASS: auth suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F02-01 | STS-F02-01 | Integration | `server/tests/survey-lifecycle.test.ts` | PASS: lifecycle suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F02-02 | STS-F02-02 | Integration | `server/tests/survey-lifecycle.test.ts` | PASS: lifecycle suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F02-03 | STS-F02-03 | Integration | `server/tests/survey-lifecycle.test.ts` | PASS: lifecycle suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F02-04 | STS-F02-04 | Integration | `server/tests/survey-lifecycle.test.ts` | PASS: lifecycle suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F02-05 | STS-F02-05 | Integration/DB | `server/tests/survey-lifecycle.test.ts` | PASS: lifecycle suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F02-06 | STS-F02-06 | Integration | `server/tests/survey-lifecycle.test.ts` | PASS: lifecycle suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F02-07 | STS-F02-07 | Integration | `server/tests/survey-lifecycle.test.ts` | PASS: lifecycle suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F02-08 | STS-F02-08 | Integration | `server/tests/survey-lifecycle.test.ts` | PASS: lifecycle suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F02-09 | STS-F02-09 | Integration | `server/tests/survey-lifecycle.test.ts` | PASS: lifecycle suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F02-10 | STS-F02-10 | Integration | `server/tests/survey-lifecycle.test.ts` | PASS: lifecycle suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F02-11 | STS-F02-11 | Integration | `server/tests/survey-lifecycle.test.ts` | PASS: lifecycle suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F03-01 | STS-F03-01 | Integration | `server/tests/response-submission.test.ts` | PASS: response suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F03-02 | STS-F03-02 | Integration | `server/tests/response-submission.test.ts` | PASS: response suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F03-03 | STS-F03-03 | Integration/DB | `server/tests/response-submission.test.ts` | PASS: response, answers, option, and claim persisted atomically | `docs/evidence/npm-test-run.txt` |
+| AC-F03-04 | STS-F03-04 | Integration (TDD) | `server/tests/response-submission.test.ts` | PASS: current regression passed; historical red/green SHAs remain unavailable (see §5) | `docs/evidence/npm-test-run.txt` |
+| AC-F03-05 | STS-F03-05 | Integration | `server/tests/response-submission.test.ts` | PASS: response suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F03-06 | STS-F03-06 | Integration | `server/tests/response-submission.test.ts` | PASS: response suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F03-07 | STS-F03-07 | Integration | `server/tests/response-submission.test.ts` | PASS: response suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F03-08 | STS-F03-08 | Integration (privacy) | `server/tests/response-submission.test.ts` | PASS: response suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F03-09 | STS-F03-09 | Integration (role) | `server/tests/response-submission.test.ts` | PASS: response suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F03-10 | STS-F03-10 | Integration | `server/tests/response-submission.test.ts` | PASS: receipt retrieval test passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F04-01 | STS-F04-01 | Integration/DB | `server/tests/survey-summary.test.ts` | PASS: summary suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F04-02 | STS-F04-02 | Integration (role) | `server/tests/survey-summary.test.ts` | PASS: summary suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F04-03 | STS-F04-03 | Integration (ownership) | `server/tests/survey-summary.test.ts` | PASS: summary suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F04-04 | STS-F04-04 | Integration | `server/tests/survey-summary.test.ts` | PASS: summary suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-SEC-01 | STS-SEC-01 | Integration (route matrix) | `server/tests/security-matrix.test.ts` | PASS: 14 protected routes reject missing, malformed, and expired tokens with 401 and no data | `docs/evidence/security-matrix-run.txt` |
+| AC-SEC-02 | STS-SEC-02 | Integration (role matrix) | `server/tests/security-matrix.test.ts` | PASS: wrong-role and non-owner calls return 403 with no private data or database changes | `docs/evidence/security-matrix-run.txt` |
+| AC-PERF-01 | Benchmark `benchmark-read.ts` | Measurement | `server/scripts/benchmark-read.ts` | PASS: 50 requests; p95 13.249 ms (<300 ms) | `docs/evidence/nfr-perf-01.json` |
+| AC-DATA-01 | STS-F03-03 + restart check | Integration + manual | `server/tests/response-submission.test.ts` | PLANNED: STS-F03-03 passed; restart survival was not checked | `docs/evidence/npm-test-run.txt` |
+| STS-F03-03 persistence | STS-F03-03 | Integration/DB | `server/tests/response-submission.test.ts` | PASS: response, answers, option, and claim persisted atomically | `docs/evidence/npm-test-run.txt` |
+| BR-06 structure | STS-U-01, STS-U-02 | Unit | `server/tests/unit/rules.test.ts` | PASS: 8 unit tests passed in full run | `docs/evidence/npm-test-run.txt` |
+| BR-03 validation | STS-U-03, STS-U-04 | Unit | `server/tests/unit/rules.test.ts` | PASS: 8 unit tests passed in full run | `docs/evidence/npm-test-run.txt` |
+| Percentage logic | STS-U-05 | Unit | `server/tests/unit/rules.test.ts` | PASS: 8 unit tests passed in full run | `docs/evidence/npm-test-run.txt` |
+| Journey 1 | STS-E2E-01 | E2E | `e2e/sprint1-survey-flow.spec.ts` | PASS: owner creates/publishes; respondent submits and reloads receipt; owner sees 1 response / 100% | `docs/evidence/e2e-run.txt` |
+| Journey 2 | STS-E2E-02 | E2E | `e2e/sprint1-survey-flow.spec.ts` | PASS: duplicate 409, cross-response access 403 without answer data, logged-out token 401 `TOKEN_REVOKED` | `docs/evidence/e2e-run.txt` |
 
 ### 3.4 Non-functional verification plan
 
 | NFR | Target | Method | Observed value | Result |
 |---|---|---|---|---|
-| NFR-SEC-01 | Every protected route rejects missing, malformed and expired tokens with 401 and no data | `STS-SEC-01` route-matrix test | `<record>` | PLANNED |
-| NFR-SEC-02 | Every forbidden role/ownership operation returns 403 and leaves data unchanged | `STS-SEC-02` plus the feature-level 403 tests | `<record>` | PLANNED |
-| NFR-SEC-03 | bcrypt cost 10; no plaintext password or hash in any response | `STS-F01-06`; inspect hashes and response bodies | `<record>` | PLANNED |
-| NFR-SEC-04 | Logout revokes existing tokens | `STS-F01-05`; old token returns 401 `TOKEN_REVOKED` | `<record>` | PLANNED |
-| NFR-PERF-01 | p95 of `GET /api/surveys/:id/form` < 300 ms over 50 requests on the local development environment | `server/scripts/benchmark-read.ts` writes p50/p95/p99 JSON | `<record p95>` | PLANNED |
+| NFR-SEC-01 | Every protected route rejects missing, malformed and expired tokens with 401 and no data | `STS-SEC-01` dynamically enumerates API route registrations and requires only login/health to be public | 14 protected route registrations; all token cases passed with no response data | PASS |
+| NFR-SEC-02 | Every forbidden role/ownership operation returns 403 and leaves data unchanged | `STS-SEC-02` role and ownership matrix | Wrong roles and non-owners received 403; snapshots of the test tables were unchanged | PASS |
+| NFR-SEC-03 | bcrypt cost 10; no plaintext password or hash in any response | Existing dedicated assertion in `server/tests/auth.test.ts` checks `$2b$10$` | Full suite passed the bcrypt cost/prefix assertion and response privacy checks | PASS |
+| NFR-SEC-04 | Logout revokes existing tokens | `STS-F01-05`; old token returns 401 `TOKEN_REVOKED` | Full suite and E2E both passed logout token-revocation checks | PASS |
+| NFR-PERF-01 | p95 of `GET /api/surveys/:id/form` < 300 ms over 50 requests on the local development environment | `server/scripts/benchmark-read.ts` writes p50/p95/p99 JSON | Node `v24.14.1`; PostgreSQL `18.1`; 50 requests; p50 7.693 ms / p95 13.249 ms / p99 22.422 ms | PASS |
 | NFR-DATA-01 | Foreign keys and unique constraints exist; data survives API and database restart | Inspect migration SQL; `STS-F03-03`; restart check in Scenario 1 | `<record>` | PLANNED |
 | NFR-PRIV-01 | Anonymous responses carry no identity link | Deferred to Sprint 2 with `STS-PRIV-01` | — | DEFERRED |
 
@@ -422,13 +458,13 @@ latency measurement and must not be reported as one.
 | Field | Value |
 |---|---|
 | Command | `npm run bench:read --prefix server` |
-| Commit | `<full SHA>` |
-| Requests | 50 |
-| p50 | `<ms>` |
-| p95 | `<ms>` |
-| p99 | `<ms>` |
-| Result file | `<path to committed JSON>` |
-| Pass/fail | `<p95 < 300 ms>` |
+| Base | `00494b26df89892066c2680e0a03e0cc03c905a7` (`sprint-1-staging`); this is a worktree benchmark, not release-tag evidence |
+| Target requests | 50 sequential reads |
+| Completed requests | 50 sequential authenticated reads |
+| p50 / p95 / p99 | 7.693 ms / 13.249 ms / 22.422 ms |
+| Environment | Node `v24.14.1`; PostgreSQL `18.1`; Windows `10.0.26200 x64`; Intel i5-8250U @ 1.60GHz; `surveyhub_test` |
+| Result file | `docs/evidence/nfr-perf-01.json` |
+| Pass/fail | PASS; p95 is below the 300 ms target |
 
 ---
 
@@ -523,30 +559,41 @@ constraint, not only a service check.
 | Green | `feat(rules): enforce BR-01 duplicate submission guard (green)` | Same test passes after claim constraint and `P2002` mapping |
 | Refactor | `refactor(rules): extract response claim handling` | Test still passes unchanged |
 
+Historical evidence search on 13 November 2026 found no red-stage or green-stage commit SHA in the
+reachable Git history. The feature implementation commit `ca501838cb2c0e2579b70eed42ce3baf545d2753`
+is not evidence for either test stage and is not assigned to them. [Issue #5's corrected comment](https://github.com/Snnn3/SurveyHub/issues/5#issuecomment-6767760438)
+records the expected duplicate-accepted red (`201` instead of `409`) and a passing green summary,
+but does not name either SHA or contain a separately archived terminal log. The earlier [Issue #5
+comment](https://github.com/Snnn3/SurveyHub/issues/5#issuecomment-6767457565) records a `404` red
+run that was replaced because the endpoint did not yet exist. The supplied LaTeX report contains
+chat-recovered output excerpts; those excerpts are not raw archived logs. No new controlled TDD
+red/green reproduction was run in this update; the passing regression suite does not recreate the
+historical database changes used for the red stage.
+
 ### 5.2 Red run record
 
 | Field | Value |
 |---|---|
-| Command | `npm test --prefix server -- tests/response-submission.test.ts` |
-| Commit | `<full SHA of the red commit>` |
-| Failed test | `<exact test name>` |
-| Expected vs received | `<e.g. expected 409, received 201>` |
-| Failure reason is the intended one | `<yes/no and why>` |
+| Command | Chat excerpt: `npm test --prefix server -- --runInBand --cacheDirectory .jest-cache --testTimeout=60000 tests/response-submission.test.ts -t "STS-F03-04"` |
+| Commit | Unavailable; Issue #5 and Git history do not associate the run with a SHA |
+| Failed test | `STS-F03-04`, as reported in Issue #5 and the chat excerpt |
+| Expected vs received | Corrected red summary: expected `409`, received `201`; an earlier `404` run was explicitly superseded |
+| Failure reason is the intended one | Issue #5 says yes for the corrected red: the duplicate guard was disabled and duplicate indexes were temporarily removed on the test database |
 
 ```text
-<PASTE THE REAL RED-STAGE OUTPUT>
+The report's red output is recovered from the project chat, not a raw archived log.
 ```
 
 ### 5.3 Green run record
 
 | Field | Value |
 |---|---|
-| Command | `npm test --prefix server -- tests/response-submission.test.ts` |
-| Commit | `<full SHA of the green commit>` |
-| Result | `<X passed, Y failed, Z skipped>` |
+| Command | Chat excerpt: `npm test --prefix server -- --runInBand --cacheDirectory .jest-cache --testTimeout=60000 tests/response-submission.test.ts -t "STS-F03-04"` |
+| Commit | Unavailable; Issue #5 and Git history do not associate the run with a SHA |
+| Result | Issue #5 and the chat excerpt report the test passed with one `201`, one `409 DUPLICATE_SUBMISSION`, and one response/claim per respondent; raw test totals are not independently archived |
 
 ```text
-<PASTE THE REAL GREEN-STAGE OUTPUT>
+The report's green output is recovered from the project chat, not a raw archived log.
 ```
 
 If the red stage cannot be reproduced, record that fact. Do not reconstruct a plausible failure log

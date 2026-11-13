@@ -1,0 +1,16 @@
+
+> surveyhub-server@0.1.0 test
+> jest --runInBand --detectOpenHandles --forceExit --runTestsByPath tests/security-matrix.test.ts
+
+PASS tests/security-matrix.test.ts (40.003 s)
+  Sprint 1 security matrix (STS-SEC-01/02)
+    √ keeps only login and health public (3275 ms)
+    √ rejects missing, malformed, and expired tokens on every protected route without returning data (5070 ms)
+    √ rejects each wrong role on every survey route without changing the database (4828 ms)
+    √ denies non-owner survey operations and cross-respondent receipts without data or database changes (2930 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       4 passed, 4 total
+Snapshots:   0 total
+Time:        40.677 s, estimated 50 s
+Ran all test suites within paths "tests/security-matrix.test.ts".

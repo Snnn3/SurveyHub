@@ -1,0 +1,3337 @@
+\documentclass[12pt,a4paper]{article}
+
+% --- Packages, following the Lab2_Report.tex layout ---
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{xurl}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+    citecolor=blue,
+}
+\pagestyle{plain}
+\setcounter{tocdepth}{3}
+\lstset{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    backgroundcolor=\color{gray!10},
+    captionpos=b,
+    literate={—}{---}1 {–}{--}1 {→}{->}1 {⇄}{<->}1 {≥}{>=}1 {×}{x}1 {√}{$\surd$}1 {§}{\S}1 {─}{-}1 {│}{|}1 {├}{+}1 {└}{+}1,
+}
+
+\title{\textbf{SurveyHub: Project Deliverable 1\\[2pt]Parts A--F}}
+\author{CPE 334 Software Engineering\\Semester 1/2026\\[6pt]67070501040 Worawut Sereethai and 67070501059 Chanon Lhumsa-ard}
+\date{}
+
+\begin{document}
+\maketitle
+\begin{center}
+\fcolorbox{blue!75!black}{blue!8}{\parbox{0.82\textwidth}{\centering\textbf{DRAFT -- release tagged; remaining evidence gaps listed}}}\\[8pt]
+Evidence snapshot: 13 November 2026\\Theme 10: Review, Feedback, and Survey System\\Context: university course feedback and survey collection\\Repository: \href{https://github.com/Snnn3/SurveyHub}{SurveyHub}\\Screenshot commit: \href{https://github.com/Snnn3/SurveyHub/commit/b0e58eb9fbf066bc56ef5197ea5d39174f6afe76}{\texttt{b0e58eb9fbf0}} (PR \href{https://github.com/Snnn3/SurveyHub/pull/16}{\#16})\\Staging verification: \href{https://github.com/Snnn3/SurveyHub/commit/00494b26df89892066c2680e0a03e0cc03c905a7}{\texttt{00494b26df89}}\\Release tag: \href{https://github.com/Snnn3/SurveyHub/commit/827ed220e6d2290193df7d5234ed3b757ec38988}{\texttt{v0.1.0-sprint1} -> \texttt{827ed220e6d2}}
+\end{center}
+\setcounter{page}{1}
+\tableofcontents
+\newpage
+\clearpage
+\section*{Project Deliverable 1 - PDF Navigation}
+\phantomsection
+\addcontentsline{toc}{section}{Project Deliverable 1 - PDF Navigation}
+Page ranges are generated from the Part A-F labels and update when the document is compiled twice.
+
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.10804\textwidth}>{\raggedright\arraybackslash}p{0.24618\textwidth}>{\raggedright\arraybackslash}p{0.16571\textwidth}>{\raggedright\arraybackslash}p{0.44013\textwidth}@{}}
+\toprule
+\textbf{Part} & \textbf{Source document(s)} & \textbf{Page range} & \textbf{Relevant IDs and contents} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Part} & \textbf{Source document(s)} & \textbf{Page range} & \textbf{Relevant IDs and contents} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{4}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\textbf{A - SRS and product scope} & \textcolor{blue}{SRS} & \pageref{part-a-start}--\pageref{part-a-end} & FR-01..FR-16, BR-01..BR-11, NFRs, assumptions and decisions \\
+\textbf{B - Feature inventory and traceability} & \textcolor{blue}{Feature inventory}; \textcolor{blue}{traceability} & \pageref{part-b-start}--\pageref{part-b-end} & F-01..F-08; FR/BR/NFR-to-feature, sprint and verification mappings \\
+\textbf{C - System-Level SDS} & \textcolor{blue}{System design} & \pageref{part-c-start}--\pageref{part-c-end} & Architecture, data model, UI/API, authentication, authorization and delivery design \\
+\textbf{D - Sprint plan} & \textcolor{blue}{Sprint plan} & \pageref{part-d-start}--\pageref{part-d-end} & Sprint 1-3 goals, feature IDs, dependencies, outcomes and issue map \\
+\textbf{E - Sprint 1 contracts and STS} & \textcolor{blue}{Part E overview}; \textcolor{blue}{F-01}; \textcolor{blue}{F-02}; \textcolor{blue}{F-03}; \textcolor{blue}{F-04}; \textcolor{blue}{shared STS} & \pageref{part-e-start}--\pageref{part-e-end} & F-01..F-04; AC-F01..F04; STS-F01..F04, STS-U, STS-SEC and STS-E2E \\
+\textbf{F - Verification and engineering evidence} & \textcolor{blue}{Verification and engineering evidence} & \pageref{part-f-start}--\pageref{part-f-end} & PR-reported checks, test mapping, demo evidence gaps, release status, contributions and limitations \\
+\end{longtable}}
+\clearpage
+
+\section{Part A: Software Requirements Specification (SRS) and Product Scope}
+
+\label{part-a-start}
+
+
+\begin{quote}
+Status note: this section defines requirements and design intent. Feature and test status is summarized in Parts B and F; Part F distinguishes pull-request reports from release-level verification.
+
+\end{quote}
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsection*{1. Stakeholder Context and Problem Statement}
+\addcontentsline{toc}{subsection}{1. Stakeholder Context and Problem Statement}
+\phantomsection
+\subsubsection*{1.1 Chosen context}
+\addcontentsline{toc}{subsubsection}{1.1 Chosen context}
+The product is used by a university course team. A \textbf{course coordinator} (Survey Owner) needs to collect structured feedback from \textbf{enrolled students} (Respondents) during and after a course. The current process uses ad hoc forms, shared spreadsheets and chat messages. It has four problems:
+
+\begin{enumerate}[leftmargin=*]
+\item \textbf{No lifecycle control.} A form cannot be reliably opened, closed or versioned, so responses arrive after the feedback window and results mix different question sets.
+\item \textbf{Duplicate and invalid responses.} The same student can submit several times, and required questions are often skipped, which distorts totals.
+\item \textbf{Weak privacy boundaries.} Raw answers are copied into shared files. Students can see each other's comments, and there is no clear rule for who may read raw data.
+\item \textbf{Manual aggregation.} The coordinator counts responses by hand and cannot see a trustworthy summary while the survey is open.
+\end{enumerate}
+
+\phantomsection
+\subsubsection*{1.2 Product purpose}
+\addcontentsline{toc}{subsubsection}{1.2 Product purpose}
+SurveyHub lets an organization define surveys, control their lifecycle, collect validated responses from eligible users, and report aggregate results. The system enforces its rules on the server, not in the browser.
+
+The theme title also mentions \textbf{Review and Feedback}. In this product that requirement is expressed through \textbf{open-text feedback questions} attached to a survey. There is no separate review or rating entity outside a survey. This interpretation is recorded as a scope decision (ADR-06) and should be confirmed with the instructor or TA.
+
+\phantomsection
+\subsubsection*{1.3 Product name and deployment target}
+\addcontentsline{toc}{subsubsection}{1.3 Product name and deployment target}
+\begin{itemize}[leftmargin=*]
+\item Working name: \textbf{SurveyHub}
+\item Deployment target from Lab 5 onward: Docker image on Google Cloud Run with a managed PostgreSQL instance.
+\item Sprint 1 runs locally with a reproducible seed and does not require cloud resources.
+\end{itemize}
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsection*{2. Actors and Responsibilities}
+\addcontentsline{toc}{subsection}{2. Actors and Responsibilities}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.09336\textwidth}>{\raggedright\arraybackslash}p{0.24027\textwidth}>{\raggedright\arraybackslash}p{0.63975\textwidth}@{}}
+\toprule
+\textbf{Actor} & \textbf{Description} & \textbf{Responsibilities and permissions} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Actor} & \textbf{Description} & \textbf{Responsibilities and permissions} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\textbf{Survey Owner} & Course coordinator, lecturer or administrator who runs a survey & Create, edit and delete \textbf{draft} surveys; publish and close \textbf{own} surveys; view aggregate summaries for \textbf{own} surveys; no access to another owner's surveys \\
+\textbf{Respondent} & Enrolled student or other eligible user & Browse published surveys; submit one validated response per survey; view only their own submission receipt; cannot manage surveys or read another respondent's answers \\
+\textbf{Unauthenticated user} & A visitor without a valid token & Can call login and health endpoints only; every protected endpoint returns \texttt{401} \\
+\end{longtable}}
+
+\phantomsection
+\subsubsection*{2.1 Role model decision}
+\addcontentsline{toc}{subsubsection}{2.1 Role model decision}
+Roles are \textbf{exclusive}: an account is either \texttt{SURVEY\_OWNER} or \texttt{RESPONDENT}. An owner account cannot submit a response, even to another owner's survey. This keeps the authorization matrix small and testable for Sprint 1. If a coordinator also needs to answer a survey, they use a respondent account.
+
+This decision replaces the contradictory statements in the previous draft, where owners were allowed to open a survey form but forbidden to submit it.
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsection*{3. Product Scope}
+\addcontentsline{toc}{subsection}{3. Product Scope}
+\phantomsection
+\subsubsection*{3.1 In scope for the whole product}
+\addcontentsline{toc}{subsubsection}{3.1 In scope for the whole product}
+\begin{enumerate}[leftmargin=*]
+\item Authentication with login, logout, current-user identity and server-side token revocation.
+\item Two roles with backend-enforced permissions and per-record ownership.
+\item Survey lifecycle: \texttt{DRAFT -> PUBLISHED -> CLOSED}. \texttt{CLOSED} is terminal.
+\item Survey authoring: title, description, ordered questions, required flags and type-specific options.
+\item Question types: single-choice and short text in Sprint 1; multi-choice, long text, yes/no, five-point Likert, 1-5 rating, bounded integer and date questions in Sprint 2.
+\item Response collection with validation, duplicate prevention and concurrency protection.
+\item Identified responses in Sprint 1; anonymous responses with identity/answer separation in Sprint 2.
+\item Response eligibility: all authenticated respondents in Sprint 1; an explicit allowlist in Sprint 2.
+\item Aggregate summary: response counts, per-option counts and percentages, rating/integer statistics, date counts and unlinked short- and long-text answers.
+\item Rich analysis, individual response browsing and CSV/JSON export in Sprint 3.
+\item Docker Compose local development from Sprint 1; CI/CD and GCP deployment from Lab 5 onward.
+\end{enumerate}
+
+\phantomsection
+\subsubsection*{3.2 Sprint 1 scope (Deliverable 1)}
+\addcontentsline{toc}{subsubsection}{3.2 Sprint 1 scope (Deliverable 1)}
+\begin{itemize}[leftmargin=*]
+\item React single-page client, Express/TypeScript API and PostgreSQL through Prisma.
+\item Seeded accounts only; no self-registration.
+\item Owner can create a draft survey with questions, update a draft, delete a draft, publish it and close it.
+\item Respondent can browse published surveys, open the form, submit one valid response and see a receipt.
+\item Owner can view an aggregate summary of their own survey.
+\item Business rules BR-01 to BR-09 and the Sprint 1 aggregate portion of BR-11 enforced in the service layer, with database constraints where useful.
+\item Automated verification of rules, persistence and access control, plus selected end-to-end journeys.
+\item Docker Compose local stack with the application and PostgreSQL, database readiness gating, a named persistent database volume, and a separate test database (GitHub Issue \href{https://github.com/Snnn3/SurveyHub/issues/2}{\#2}).
+\end{itemize}
+
+\phantomsection
+\subsubsection*{3.3 Explicit exclusions}
+\addcontentsline{toc}{subsubsection}{3.3 Explicit exclusions}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.37425\textwidth}>{\raggedright\arraybackslash}p{0.61244\textwidth}@{}}
+\toprule
+\textbf{Excluded item} & \textbf{Reason / planned handling} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Excluded item} & \textbf{Reason / planned handling} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{2}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+Self-registration, email verification, password reset & Seeded accounts are sufficient for the course; excluded from all sprints \\
+Real email or SMS invitations & Not required; eligibility is represented in the database \\
+Payments, file upload, matrix/grid questions, skip logic & Outside the theme brief; not planned \\
+Multi-tenancy, organization administration, SSO & Outside scope \\
+Real-time dashboards or websockets & Not required; summaries are computed on request \\
+Native mobile application & Web only \\
+CI/CD automation and GCP production deployment & Lab 5; Sprint 1 provides a reproducible local environment only. \\
+Production-grade rate limiting and WAF & Recorded as technical debt; basic input limits only \\
+Automated scheduled jobs & Sprint 2 auto-close is evaluated lazily on read/write, not by a background worker \\
+\end{longtable}}
+
+\phantomsection
+\subsubsection*{3.4 Scope changes from the previous baseline}
+\addcontentsline{toc}{subsubsection}{3.4 Scope changes from the previous baseline}
+The previous draft promised editing and deleting surveys in the UI but defined no API for it. It also used a schema that could not represent multi-select answers, ratings or anonymous responses without a breaking migration. This baseline records the following approved changes:
+
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.44359\textwidth}>{\raggedright\arraybackslash}p{0.54309\textwidth}@{}}
+\toprule
+\textbf{Change} & \textbf{Reason} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Change} & \textbf{Reason} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{2}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+Added \texttt{GET /api/surveys/:id}, \texttt{PUT /api/surveys/:id}, \texttt{DELETE /api/surveys/:id} & Make draft authoring real and make BR-07 testable \\
+Added \texttt{AnswerOption} join table and \texttt{Answer.numberValue} & Support multi-choice and rating without redesigning answers later \\
+Expanded F-06 from multi-choice and rating to a defined nine-type catalogue & Give the product useful answer formats while keeping Sprint 1 limited to single-choice and short text; record the additional Sprint 2 scope before implementation (GitHub Issues \href{https://github.com/Snnn3/SurveyHub/issues/1}{\#1} and \href{https://github.com/Snnn3/SurveyHub/issues/9}{\#9}). \\
+Added \texttt{SurveyEligibility} and \texttt{ResponseClaim} models & Make eligibility and anonymous duplicate prevention explicit and forward-compatible \\
+Added \texttt{User.tokenVersion} and server-side logout & Logout must invalidate the token, not just clear browser state \\
+Added \texttt{GET /api/health} & Required for container and cloud health checks \\
+Replaced the unmeasured performance claim with a defined benchmark & The previous "24 tests in 2.65 s" figure was not a latency measurement \\
+Added a Docker Compose application and PostgreSQL stack to Sprint 1 & Team decision: reproducible local setup from the first scaffold; CI/CD and GCP remain Lab 5 work \\
+Keep authored deliverable documents in the tracked \texttt{docs/} tree & Team workflow decision; only local reference material under \texttt{docs/materials/} is ignored \\
+\end{longtable}}
+
+\phantomsection
+\subsubsection*{3.5 Requirement summary}
+\addcontentsline{toc}{subsubsection}{3.5 Requirement summary}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.27269\textwidth}>{\raggedright\arraybackslash}p{0.16561\textwidth}>{\raggedright\arraybackslash}p{0.36134\textwidth}>{\raggedright\arraybackslash}p{0.16043\textwidth}@{}}
+\toprule
+\textbf{Group} & \textbf{Total} & \textbf{Sprint 1} & \textbf{Later} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Group} & \textbf{Total} & \textbf{Sprint 1} & \textbf{Later} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{4}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+Functional requirements & 16 & 10 & 6 \\
+Business rules & 11 & 10 (including the Sprint 1 portions of BR-02, BR-08 and BR-11) & 1 \\
+Non-functional requirements & 7 & 6 & 1 \\
+\textbf{Total} & \textbf{34} & \textbf{26} & \textbf{8} \\
+\end{longtable}}
+
+The Sprint 1 count in this table is the same count used by the Part B coverage matrix. BR-02, BR-08 and BR-11 have a Sprint 1 portion and a later extension; they are counted once in the Sprint 1 column.
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsection*{4. Functional Requirements}
+\addcontentsline{toc}{subsection}{4. Functional Requirements}
+Stable IDs are used in Parts B-F. "Sprint" is the planned delivery sprint.
+
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.06736\textwidth}>{\raggedright\arraybackslash}p{0.21033\textwidth}>{\raggedright\arraybackslash}p{0.59358\textwidth}>{\raggedright\arraybackslash}p{0.08879\textwidth}@{}}
+\toprule
+\textbf{ID} & \textbf{Requirement} & \textbf{Observable behavior} & \textbf{Sprint} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Requirement} & \textbf{Observable behavior} & \textbf{Sprint} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{4}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\textbf{FR-01} & Authentication and logout & A user can log in with email and password, receives a JWT, and can log out. Logout revokes existing tokens for that account. & 1 \\
+\textbf{FR-02} & Current user and role & \texttt{GET /api/auth/me} returns the authenticated user's id, email, full name and role, and never returns the password hash. & 1 \\
+\textbf{FR-03} & Manage survey drafts & A Survey Owner can list and read their surveys, create a survey with a title, optional description and ordered questions, and delete a survey while it is \texttt{DRAFT}. A new survey is always \texttt{DRAFT}. & 1 \\
+\textbf{FR-04} & Author and edit draft questions & A Survey Owner can add, edit, reorder and remove questions and options while the survey is \texttt{DRAFT}. & 1 \\
+\textbf{FR-05} & Publish survey & A Survey Owner can publish their own valid draft. The status becomes \texttt{PUBLISHED} and \texttt{publishedAt} is recorded. & 1 \\
+\textbf{FR-06} & Close survey & A Survey Owner can close their own published survey. The status becomes \texttt{CLOSED} and \texttt{closedAt} is recorded. & 1 \\
+\textbf{FR-07} & Browse published surveys & A Respondent can list published surveys and see whether they have already submitted. & 1 \\
+\textbf{FR-08} & Take and submit survey & A Respondent can open a published survey, answer the questions and submit exactly one response. & 1 \\
+\textbf{FR-09} & Persisted confirmation & A successful submission is stored in PostgreSQL and the respondent receives a receipt with response id and timestamp. The receipt can be retrieved later. & 1 \\
+\textbf{FR-10} & Aggregate summary & A Survey Owner can view total responses and per-question answered counts. Choice questions show option counts and percentages; short- and long-text answers appear unlinked; rating and integer questions show count, average, minimum and maximum; date questions show counts by calendar date. Sprint 1 delivers counts, choice summaries and short text; F-06 adds the remaining formats in Sprint 2. & 1 (base) / 2 (F-06 formats) \\
+\textbf{FR-11} & Anonymous responses & A survey can run in anonymous mode. Responses are stored without a link to the respondent, while duplicate submission is still prevented. & 2 \\
+\textbf{FR-12} & Expanded question types & In addition to Sprint 1 single-choice and short text, owners can author and respondents can answer multi-choice, long text, yes/no, five-point Likert, 1-5 rating, bounded integer and date questions. Results preserve the answer type and are included in the owner summary. & 2 \\
+\textbf{FR-13} & Export results & A Survey Owner can export their own survey results as CSV and JSON. Anonymous surveys export aggregates only. & 3 \\
+\textbf{FR-14} & Eligibility management & A Survey Owner can restrict a survey to an explicit set of eligible respondents. An empty list means all respondents are eligible. & 2 \\
+\textbf{FR-15} & Scheduled close & A Survey Owner can set a closing date and time. After that time the survey behaves as closed for submissions. & 2 \\
+\textbf{FR-16} & Browse individual responses & A Survey Owner can browse individual identified responses for their own survey. Anonymous surveys never expose identity. & 3 \\
+\end{longtable}}
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsection*{5. Business Rules}
+\addcontentsline{toc}{subsection}{5. Business Rules}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.05777\textwidth}>{\raggedright\arraybackslash}p{0.10718\textwidth}>{\raggedright\arraybackslash}p{0.69319\textwidth}>{\raggedright\arraybackslash}p{0.10193\textwidth}@{}}
+\toprule
+\textbf{ID} & \textbf{Rule} & \textbf{Rejection and observable behavior} & \textbf{Sprint} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Rule} & \textbf{Rejection and observable behavior} & \textbf{Sprint} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{4}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\textbf{BR-01} & One response per respondent per survey & A second submission by the same respondent returns \texttt{409 DUPLICATE\_SUBMISSION}. Exactly one response is stored, including under concurrent requests. Enforced by a service check, a \texttt{ResponseClaim} unique constraint and an identified-response unique constraint. & 1 \\
+\textbf{BR-02} & Survey state guard & Responses are accepted only while the survey is \texttt{PUBLISHED} and, from Sprint 2, before \texttt{closesAt}. A \texttt{DRAFT} or \texttt{CLOSED} survey returns \texttt{400 SURVEY\_NOT\_ACCEPTING\_RESPONSES}. & 1 (state) / 2 (scheduled close) \\
+\textbf{BR-03} & Answer validation & Every required question must be answered and each answer must use exactly the value shape for its type. Selected options must belong to that question. Short text is trimmed and at most 2,000 characters; long text is trimmed and at most 10,000 characters. Yes/no has exactly one fixed \texttt{Yes} or \texttt{No} option; Likert has exactly one of five ordered labels; rating is an integer from 1 through 5; integer answers respect any configured minimum and maximum; date answers are calendar dates without a time zone. Invalid input returns \texttt{400 INVALID\_ANSWER} or \texttt{400 MISSING\_REQUIRED\_QUESTIONS}. Sprint 1 enforces the single-choice and short-text subset. & 1 (subset) / 2 (extensions) \\
+\textbf{BR-04} & Survey ownership boundary & Only the owner may read, update, delete, publish, close or summarize a survey. A non-owner receives \texttt{403 FORBIDDEN\_OWNERSHIP}; an unknown survey id receives \texttt{404 NOT\_FOUND}. & 1 \\
+\textbf{BR-05} & Cross-response privacy & A respondent may retrieve only their own response receipt. Requesting another respondent's receipt returns \texttt{403 FORBIDDEN\_CROSS\_RESPONSE\_ACCESS} without returning any answer data. & 1 \\
+\textbf{BR-06} & Publish structure & A survey can be published only if it has at least one question and every prompt is non-empty. Single-choice and multi-choice questions have at least two options; multi-choice selection bounds are valid and do not exceed the option count. Yes/no has the fixed \texttt{Yes} and \texttt{No} options, Likert has five ordered labels, rating uses the fixed 1-5 scale, and configured integer bounds do not contradict each other. Otherwise \texttt{400 INVALID\_QUESTION\_STRUCTURE}. Sprint 1 enforces the single-choice subset. & 1 (subset) / 2 (extensions) \\
+\textbf{BR-07} & Immutable structure after publication & Questions and options cannot be added, edited, reordered or removed after publication. \texttt{PUT /api/surveys/:id} returns \texttt{400 SURVEY\_NOT\_EDITABLE}. Metadata edits are also blocked in Sprint 1 for simplicity. & 1 \\
+\textbf{BR-08} & Response eligibility & Only authenticated users with the \texttt{RESPONDENT} role may submit. From Sprint 2, if a survey has eligibility entries, the respondent must be on the list; otherwise \texttt{403 NOT\_ELIGIBLE}. In Sprint 1 an empty eligibility list means all respondents are eligible. & 1 (role) / 2 (allowlist) \\
+\textbf{BR-09} & Terminal closed state & \texttt{CLOSED} is terminal. Publishing a published or closed survey, or closing a draft or closed survey, returns \texttt{400 INVALID\_STATE\_TRANSITION}. & 1 \\
+\textbf{BR-10} & Anonymous identity separation & In anonymous mode, \texttt{SurveyResponse.respondentId} is \texttt{NULL}; no name, email, IP address or user agent is stored with the response; the \texttt{ResponseClaim} row records only that the user submitted, not which response is theirs. Owners see aggregates and unlinked text only. & 2 \\
+\textbf{BR-11} & Result privacy & Aggregate and export responses never include respondent identity fields. Identified raw-response browsing is available only to the owning Survey Owner and only for identified surveys. & 1 (aggregate) / 3 (raw) \\
+\end{longtable}}
+
+\phantomsection
+\subsubsection*{5.1 Access-to-raw-data policy}
+\addcontentsline{toc}{subsubsection}{5.1 Access-to-raw-data policy}
+The theme brief requires an explicit raw-data policy.
+
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.13966\textwidth}>{\raggedright\arraybackslash}p{0.19558\textwidth}>{\raggedright\arraybackslash}p{0.37432\textwidth}>{\raggedright\arraybackslash}p{0.25050\textwidth}@{}}
+\toprule
+\textbf{Caller} & \textbf{Aggregate summary} & \textbf{Individual response content} & \textbf{Respondent identity} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Caller} & \textbf{Aggregate summary} & \textbf{Individual response content} & \textbf{Respondent identity} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{4}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+Respondent & No & Own receipt only & Own account \\
+Survey Owner (own survey, identified mode) & Yes & From Sprint 3, through an explicit response browser and export & From Sprint 3, included only in the identified raw export \\
+Survey Owner (own survey, anonymous mode) & Yes & Unlinked text answers in the summary; no response-level identity & Never \\
+Survey Owner (another owner's survey) & No & No & No \\
+Unauthenticated & No & No & No \\
+\end{longtable}}
+
+Sprint 1 implements the aggregate column only. Short-text answers appear in the summary as a list of strings with no respondent name, email or response id. This is deliberate: the previous draft claimed owners could see only aggregates while also returning raw text samples, which was contradictory.
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsection*{6. Non-Functional Requirements}
+\addcontentsline{toc}{subsection}{6. Non-Functional Requirements}
+Each NFR has a measurable target and a named verification method. Targets are compared with actual results only in Part F, after execution.
+
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\scriptsize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.04262\textwidth}>{\raggedright\arraybackslash}p{0.18794\textwidth}>{\raggedright\arraybackslash}p{0.34879\textwidth}>{\raggedright\arraybackslash}p{0.31432\textwidth}>{\raggedright\arraybackslash}p{0.05307\textwidth}@{}}
+\toprule
+\textbf{ID} & \textbf{Quality attribute} & \textbf{Measurable target} & \textbf{Verification method} & \textbf{Sprint} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Quality attribute} & \textbf{Measurable target} & \textbf{Verification method} & \textbf{Sprint} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{5}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\textbf{NFR-SEC-01} & Protected API enforcement & 100\% of protected endpoints return \texttt{401} with no private data when called without a token or with an invalid token & Parameterized integration test that enumerates every protected route (\texttt{server/tests/security-matrix.test.ts}) & 1 \\
+\textbf{NFR-SEC-02} & Role and ownership enforcement & 100\% of forbidden role/ownership operations return \texttt{403} and leave the database unchanged & Role/ownership matrix integration tests across all protected operations & 1 \\
+\textbf{NFR-SEC-03} & Password storage & Every stored password hash uses bcrypt cost 10 (\texttt{\$2b\$10\$} prefix). No plaintext password appears in the database or API responses. & Integration test queries \texttt{users.password\_hash} and asserts the prefix; response-shape assertions & 1 \\
+\textbf{NFR-SEC-04} & Token revocation & A token used before logout returns \texttt{401 TOKEN\_REVOKED} after logout & Integration test: login, call \texttt{/me}, logout, call \texttt{/me} with the same token & 1 \\
+\textbf{NFR-PERF-01} & Read latency & p95 latency of \texttt{GET /api/surveys/:id/form} is below 300 ms over 50 sequential requests on the local development environment (Node.js 20+ and PostgreSQL 16+ on the same machine; actual versions are recorded in Part F) & \texttt{server/scripts/benchmark-read.ts} records p50/p95/p99 and writes a JSON result & 1 \\
+\textbf{NFR-DATA-01} & Relational integrity and durability & Foreign keys and unique constraints exist; a submitted response is still retrievable after an API restart and after a database server restart & Migration inspection plus a documented restart check against the seeded environment & 1 \\
+\textbf{NFR-PRIV-01} & Anonymous unlinkability & In anonymous mode, \texttt{survey\_responses.respondent\_id IS NULL} for 100\% of anonymous responses, and no identity field exists in the answers or API output & Database audit test and API response-shape assertions & 2 \\
+\end{longtable}}
+
+\textbf{Explicit non-target:} the project does not claim production-scale throughput, high availability or sub-second p99 latency. Those are outside the course scope.
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsection*{7. Assumptions and Architecture Decisions}
+\addcontentsline{toc}{subsection}{7. Assumptions and Architecture Decisions}
+\phantomsection
+\subsubsection*{7.1 Assumptions}
+\addcontentsline{toc}{subsubsection}{7.1 Assumptions}
+The following assumptions are treated as true for planning. If one changes, the affected requirements, contracts and tests are revised and the change is recorded.
+
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.07634\textwidth}>{\raggedright\arraybackslash}p{0.44372\textwidth}>{\raggedright\arraybackslash}p{0.45331\textwidth}@{}}
+\toprule
+\textbf{ID} & \textbf{Assumption} & \textbf{Impact if false} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Assumption} & \textbf{Impact if false} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\textbf{A-01} & Test commands ran on one Windows workstation using Node and a loopback PostgreSQL 18.1 test database. A clean-clone run and the second student's environment remain unverified. \\
+\textbf{A-02} & Sprint 1 uses seeded accounts; no self-registration or email delivery is required. & Authentication scope and the seed/login flow must be redesigned. \\
+\textbf{A-03} & One account has exactly one role; a person who needs both roles uses two accounts. & The role matrix and authorization tests must be extended. \\
+\textbf{A-04} & A survey is owned by one owner account; ownership transfer is not required. & The ownership model and BR-04 change. \\
+\textbf{A-05} & Timestamps are handled in UTC on the server and displayed in local time by the client. & Scheduled close and receipt timestamps become ambiguous. \\
+\textbf{A-06} & Demo data is synthetic; no real student data or production secrets are used. & The raw-data policy and submission may violate privacy rules. \\
+\textbf{A-07} & PostgreSQL supports the constraints and transactional behaviour used by Prisma. & The duplicate guard and data-integrity claims need a different mechanism. \\
+\end{longtable}}
+
+\phantomsection
+\subsubsection*{7.2 Architecture decisions}
+\addcontentsline{toc}{subsubsection}{7.2 Architecture decisions}
+\phantomsection
+\subsubsection*{ADR-01 - Stack}
+\addcontentsline{toc}{subsubsection}{ADR-01 - Stack}
+React 18 + Vite + TypeScript + Tailwind CSS on the client; Node.js 20+ + Express + TypeScript on the server; Prisma ORM with PostgreSQL 16+. The team already used this stack in Labs 1-4. A modular monolith is sufficient and keeps deployment to one API container plus one database.
+
+\phantomsection
+\subsubsection*{ADR-02 - Authentication and revocation}
+\addcontentsline{toc}{subsubsection}{ADR-02 - Authentication and revocation}
+JWT in the \texttt{Authorization: Bearer} header, signed with HS256, containing \texttt{sub}, \texttt{role} and \texttt{ver}. \texttt{User.tokenVersion} is compared on every authenticated request. Logout increments the version, which revokes every token issued to that account. Tokens expire after 8 hours. There are no refresh tokens; the user logs in again after expiry. This is a deliberate, testable session design rather than a client-only logout that leaves the token valid.
+
+\phantomsection
+\subsubsection*{ADR-03 - Duplicate-submission strategy}
+\addcontentsline{toc}{subsubsection}{ADR-03 - Duplicate-submission strategy}
+Defense in depth:
+
+\begin{enumerate}[leftmargin=*]
+\item The service checks for an existing \texttt{ResponseClaim} and returns a friendly \texttt{409}.
+\item A unique constraint on \texttt{ResponseClaim(surveyId, userId)} prevents a race.
+\item \texttt{SurveyResponse(surveyId, respondentId)} is also unique for identified responses.
+\item Prisma error \texttt{P2002} is translated to \texttt{409 DUPLICATE\_SUBMISSION}.
+\end{enumerate}
+
+\phantomsection
+\subsubsection*{ADR-04 - Seeded accounts only}
+\addcontentsline{toc}{subsubsection}{ADR-04 - Seeded accounts only}
+Sprint 1 uses four seeded accounts: two owners and two respondents. Self-registration and password recovery are excluded. Demo passwords are synthetic and documented only in the private handoff or local seed.
+
+\phantomsection
+\subsubsection*{ADR-05 - Forward-compatible data model}
+\addcontentsline{toc}{subsubsection}{ADR-05 - Forward-compatible data model}
+The Sprint 1 schema already contains the structures needed by later sprints:
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{AnswerOption} join table, so one answer can reference several options for multi-choice and one ordered option for yes/no or Likert.
+\item \texttt{Answer.numberValue} for 1-5 ratings and bounded integer questions; \texttt{Answer.dateValue} for dates.
+\item \texttt{Question.numberMin/numberMax} for optional integer bounds; short and long text share \texttt{textValue} with type-specific length limits.
+\item \texttt{SurveyEligibility}, so eligibility can be switched on without a new table.
+\item Nullable \texttt{SurveyResponse.respondentId} plus \texttt{ResponseClaim}, so anonymous mode does not require a breaking migration.
+\end{itemize}
+
+\texttt{schema.prisma} is the single source of truth; migrations are committed.
+
+\phantomsection
+\subsubsection*{ADR-06 - Theme interpretation}
+\addcontentsline{toc}{subsubsection}{ADR-06 - Theme interpretation}
+The survey's short-text questions are the "review and feedback" element. A separate review entity is not built. This avoids inventing a second domain that the stakeholder brief does not require.
+
+\phantomsection
+\subsubsection*{ADR-07 - Raw-data policy}
+\addcontentsline{toc}{subsubsection}{ADR-07 - Raw-data policy}
+Defined in section 5.1. The rule is: aggregate data is available to the owner; individual response content is limited to the owner's own survey; respondent identity is never exposed to other respondents, and is never exposed for anonymous surveys.
+
+\phantomsection
+\subsubsection*{ADR-08 - Time handling}
+\addcontentsline{toc}{subsubsection}{ADR-08 - Time handling}
+All timestamps are stored in UTC (\texttt{timestamptz} semantics through Prisma \texttt{DateTime}). The API returns ISO 8601 strings. The client displays local time. Scheduled close compares \texttt{closesAt} with the server clock.
+
+\phantomsection
+\subsubsection*{ADR-09 - Test database}
+\addcontentsline{toc}{subsubsection}{ADR-09 - Test database}
+Integration tests use a separate PostgreSQL database (\texttt{surveyhub\_test}) and run with \texttt{jest --runInBand}. Each suite truncates tables in dependency order before seeding fixtures. Tests never touch the development or demo database. This is required for reproducible evidence.
+
+\phantomsection
+\subsubsection*{ADR-10 - Final video length}
+\addcontentsline{toc}{subsubsection}{ADR-10 - Final video length}
+The course handouts disagree: the group specification and Final Delivery section 2 allow up to 10 minutes, while Final Delivery section 3.5 says a maximum of 4 minutes. The team will target \textbf{4 minutes} (the stricter limit) unless the instructor or TA confirms otherwise.
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsubsection*{ADR-11 - Docker Compose in Sprint 1}
+\addcontentsline{toc}{subsubsection}{ADR-11 - Docker Compose in Sprint 1}
+\textbf{Decision:} Sprint 1 Issue \#2 provides a root-level Compose setup for the application and PostgreSQL. The database has a health check, a named persistent volume, and separate development and test databases. The application waits for database readiness. CI/CD and GCP deployment remain Lab 5 work.
+
+\textbf{Reason:} the team asked for a reproducible, containerized local environment as part of the first scaffold. This supersedes the planning draft's Lab 5 timing for Docker.
+
+\textbf{Verification:} a clean-clone setup, health check, migration, seed, test-database isolation and persistence check are recorded in Part F after they are run.
+
+\phantomsection
+\subsection*{8. Questions and Resolutions}
+\addcontentsline{toc}{subsection}{8. Questions and Resolutions}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.08249\textwidth}>{\raggedright\arraybackslash}p{0.31164\textwidth}>{\raggedright\arraybackslash}p{0.57924\textwidth}@{}}
+\toprule
+\textbf{\#} & \textbf{Question} & \textbf{Resolution} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{\#} & \textbf{Question} & \textbf{Resolution} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+Q1 & How do we prevent two simultaneous submissions from the same respondent? & Service pre-check plus \texttt{ResponseClaim} unique constraint plus identified-response unique constraint. Catch \texttt{P2002} and return \texttt{409}. Tested with concurrent requests. \\
+Q2 & Who may read raw answers? & The owner of the survey, for their own identified survey, from Sprint 3. Respondents see only their own receipt. Anonymous surveys never expose identity. Sprint 1 exposes aggregates and unlinked text only. \\
+Q3 & What happens if an owner edits questions after publication? & Rejected with \texttt{400 SURVEY\_NOT\_EDITABLE}. Metadata edits are also blocked in Sprint 1 to keep the published contract stable. \\
+Q4 & How is logout made real with stateless JWT? & \texttt{User.tokenVersion} is embedded in the token and checked on every request. Logout increments it. Old tokens return \texttt{401 TOKEN\_REVOKED}. \\
+Q5 & Who is eligible in Sprint 1? & Every authenticated \texttt{RESPONDENT}. The \texttt{SurveyEligibility} table is present but empty, which means "open to all respondents". Sprint 2 adds allowlist management. \\
+Q6 & Does anonymous mode need cryptography? & No. It needs separation: the response row has no user link, the claim row has no response link, and no request metadata is stored. Residual risk: a database administrator could correlate timestamps. That risk is documented rather than overclaimed. \\
+Q7 & How do we model the expanded question types without redesigning later? & \texttt{AnswerOption} stores single-choice, multi-choice, yes/no and Likert selections; \texttt{Answer.textValue} stores short and long text; \texttt{Answer.numberValue} stores ratings and bounded integers; \texttt{Answer.dateValue} stores calendar dates. \texttt{Question.minSelections/maxSelections} and \texttt{numberMin/numberMax} hold type-specific bounds. \\
+Q8 & What is the evidence standard for this project? & Link every result to a real command and commit. Identify pull-request-reported results separately; do not claim release verification before testing the release commit. \\
+Q9 & The handouts give different video limits. Which do we follow? & 4 minutes unless the TA confirms 10. \\
+Q10 & Student ids end in 9 and 0; why Theme 10? & Theme 10 matches the partner's last digit (0). Theme 9 was also available but Survey was the team's preference. Recorded here as the theme decision. \\
+\end{longtable}}
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsection*{9. Traceability and Status}
+\addcontentsline{toc}{subsection}{9. Traceability and Status}
+\begin{itemize}[leftmargin=*]
+\item Every FR, BR and NFR in this document is mapped to a feature, sprint, acceptance criterion and verification target in \textbf{Part B}.
+\item Feature contracts for Sprint 1 are in \textbf{Part E}.
+\item The verification plan and evidence-collection procedure are in \textbf{Part F}.
+\item No requirement in this SRS is marked complete until the corresponding test has run against the submitted commit and the result is recorded in Part F.
+\end{itemize}
+
+
+
+\label{part-a-end}
+\clearpage
+
+\section{Part B: Feature Inventory}
+
+\label{part-b-start}
+
+
+\begin{quote}
+Status note: this feature inventory is the scope baseline. The traceability matrix records PR-reported implementation and test status; Part F distinguishes those reports from release-level verification.
+
+\end{quote}
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsection*{1. Feature Inventory}
+\addcontentsline{toc}{subsection}{1. Feature Inventory}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\scriptsize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.07378\textwidth}>{\raggedright\arraybackslash}p{0.08928\textwidth}>{\raggedright\arraybackslash}p{0.36838\textwidth}>{\raggedright\arraybackslash}p{0.23596\textwidth}>{\raggedright\arraybackslash}p{0.11009\textwidth}>{\raggedright\arraybackslash}p{0.05594\textwidth}@{}}
+\toprule
+\textbf{Feature} & \textbf{Name} & \textbf{Short description} & \textbf{Linked requirements} & \textbf{Depends on} & \textbf{Sprint} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Feature} & \textbf{Name} & \textbf{Short description} & \textbf{Linked requirements} & \textbf{Depends on} & \textbf{Sprint} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{6}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\textbf{F-01} & Authentication and RBAC & Login, logout with token revocation, current-user identity, JWT verification, bcrypt password storage, role guards & FR-01, FR-02; NFR-SEC-01..04 & None & \textbf{1} \\
+\textbf{F-02} & Survey lifecycle and authoring & List, create, read, update and delete draft surveys; ordered questions and options; publish and close; ownership, structure and immutability rules & FR-03..FR-06; BR-04, BR-06, BR-07, BR-09 & F-01 & \textbf{1} \\
+\textbf{F-03} & Response submission and rules & Browse published surveys, load a form, submit one validated response, retrieve the receipt, reject duplicates and invalid states/answers, protect cross-response access & FR-07..FR-09; BR-01, BR-02, BR-03, BR-05, BR-08 & F-01, F-02 & \textbf{1} \\
+\textbf{F-04} & Aggregate summary & Owner-only summary with total responses, answered counts, option counts/percentages and unlinked short text. F-06 defines additional type-aware summary values in Sprint 2. & FR-10 (Sprint 1 base; Sprint 2 type extensions); BR-04, BR-05, BR-11 & F-01..F-03 & \textbf{1} \\
+\textbf{F-05} & Anonymous mode & Survey-level anonymous mode with identity/answer separation and duplicate prevention through claims & FR-11; BR-10; NFR-PRIV-01 & F-01, F-03, F-04 & \textbf{2} \\
+\textbf{F-06} (\href{https://github.com/Snnn3/SurveyHub/issues/9}{Issue \#9}) & Expanded question types & Multi-choice, long text, yes/no, five-point Likert, 1-5 rating, bounded integer and date questions across authoring, response and summary & FR-12 & F-02, F-03, F-04 & \textbf{2} \\
+\textbf{F-07} & Eligibility and scheduled close & Explicit respondent allowlist and a closing date/time evaluated by the server & FR-14, FR-15; BR-02, BR-08 & F-02, F-03 & \textbf{2} \\
+\textbf{F-08} & Rich analytics, response browsing and export & Charts, identified raw-response browser and CSV/JSON export with mode-aware privacy & FR-13, FR-16; BR-11 & F-04, F-06 & \textbf{3} \\
+\end{longtable}}
+
+\phantomsection
+\subsubsection*{1.1 Feature allocation summary}
+\addcontentsline{toc}{subsubsection}{1.1 Feature allocation summary}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.19064\textwidth}>{\raggedright\arraybackslash}p{0.33118\textwidth}>{\raggedright\arraybackslash}p{0.45155\textwidth}@{}}
+\toprule
+\textbf{Sprint} & \textbf{Features} & \textbf{Checkpoint} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Sprint} & \textbf{Features} & \textbf{Checkpoint} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+Sprint 1 & F-01, F-02, F-03, F-04 & Deliverable 1 - 8 November 2026 \\
+Sprint 2 & F-05, F-06, F-07 & Deliverable 2 - 29 November 2026; Labs 5-6 \\
+Sprint 3 & F-08 plus hardening and defect fixes & Final Delivery - 13 December 2026; Lab 7 \\
+\end{longtable}}
+
+Every feature is allocated to exactly one sprint. Later work is not used to excuse a missing Sprint 1 feature.
+
+\phantomsection
+\subsubsection*{1.2 Question type inventory}
+\addcontentsline{toc}{subsubsection}{1.2 Question type inventory}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.22752\textwidth}>{\raggedright\arraybackslash}p{0.09553\textwidth}>{\raggedright\arraybackslash}p{0.65032\textwidth}@{}}
+\toprule
+\textbf{Question type} & \textbf{Sprint} & \textbf{Answer representation and rule} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Question type} & \textbf{Sprint} & \textbf{Answer representation and rule} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+Single-choice & 1 & Select exactly one question option. \\
+Short text & 1 & Trimmed text, up to 2,000 characters. \\
+Multi-choice & 2 & Select question options within the configured minimum and maximum. \\
+Long text & 2 & Trimmed text, up to 10,000 characters. \\
+Yes/no & 2 & Select exactly one fixed option: \texttt{Yes} or \texttt{No}. \\
+Likert & 2 & Select exactly one of five ordered labels: Strongly disagree, Disagree, Neither agree nor disagree, Agree, Strongly agree. \\
+Rating & 2 & Integer from 1 through 5. \\
+Integer & 2 & Whole-number answer within optional author-defined minimum and maximum. \\
+Date & 2 & Calendar date, stored without a time component or time zone. \\
+\end{longtable}}
+
+The catalog has nine answer types. A dropdown is a presentation control for choice options, not a separate answer type. File upload and matrix/grid questions remain out of scope.
+
+\phantomsection
+\subsubsection*{1.3 F-06 acceptance criteria (Sprint 2)}
+\addcontentsline{toc}{subsubsection}{1.3 F-06 acceptance criteria (Sprint 2)}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.11427\textwidth}>{\raggedright\arraybackslash}p{0.87242\textwidth}@{}}
+\toprule
+\textbf{AC} & \textbf{Observable outcome} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{AC} & \textbf{Observable outcome} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{2}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\textbf{AC-F06-01} & Each Sprint 2 type can be authored in a draft, rendered to a respondent, submitted and persisted using the correct answer representation. \\
+\textbf{AC-F06-02} & Multi-choice accepts only options belonging to the question and enforces its configured minimum and maximum selections. \\
+\textbf{AC-F06-03} & Long text accepts at most 10,000 characters; required values cannot be blank after trimming. \\
+\textbf{AC-F06-04} & Yes/no accepts exactly one of the fixed \texttt{Yes} and \texttt{No} options. \\
+\textbf{AC-F06-05} & Likert accepts exactly one of the five ordered labels defined in \S{}1.2. \\
+\textbf{AC-F06-06} & Rating accepts only integer values from 1 through 5. \\
+\textbf{AC-F06-07} & Integer answers respect configured minimum and maximum bounds, when present. \\
+\textbf{AC-F06-08} & Date answers accept a valid \texttt{YYYY-MM-DD} calendar date and persist without a time or time-zone shift. \\
+\textbf{AC-F06-09} & The owner summary reports option counts/percentages, unlinked short- and long-text answers, rating/integer count, average, minimum and maximum, and date counts; it contains no respondent identity. \\
+\end{longtable}}
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+Part B continues in \textcolor{blue}{traceability.md}, which contains the requirements matrix, coverage analysis and verification evidence rules.
+
+
+
+\clearpage
+
+\phantomsection
+\subsection*{Part B (continued): Requirements Traceability}
+\addcontentsline{toc}{subsection}{Part B (continued): Requirements Traceability}
+
+\begin{quote}
+Status note: every row is a \textbf{plan} until actual test evidence for the assessed commit is recorded in Part F. No requirement is marked verified in advance.
+
+\end{quote}
+
+\phantomsection
+\subsubsection*{2. Traceability Matrix}
+\addcontentsline{toc}{subsubsection}{2. Traceability Matrix}
+Status values: \textbf{PLANNED} (not implemented), \textbf{IMPLEMENTED} (code exists, no mapped run is recorded), \textbf{VERIFIED} (a linked PR reports the mapped test passing; not a release-wide result), \textbf{PARTIAL} (coverage or evidence is incomplete), \textbf{FAILED}, \textbf{SKIPPED}, and \textbf{DEFERRED} (later sprint).
+
+\phantomsection
+\paragraph*{2.1 Functional requirements}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\scriptsize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.11805\textwidth}>{\raggedright\arraybackslash}p{0.12990\textwidth}>{\raggedright\arraybackslash}p{0.07828\textwidth}>{\raggedright\arraybackslash}p{0.06061\textwidth}>{\raggedright\arraybackslash}p{0.22045\textwidth}>{\raggedright\arraybackslash}p{0.23826\textwidth}>{\raggedright\arraybackslash}p{0.07457\textwidth}@{}}
+\toprule
+\textbf{Requirement} & \textbf{Summary} & \textbf{Feature} & \textbf{Sprint} & \textbf{Acceptance criteria} & \textbf{Planned verification} & \textbf{Status} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Requirement} & \textbf{Summary} & \textbf{Feature} & \textbf{Sprint} & \textbf{Acceptance criteria} & \textbf{Planned verification} & \textbf{Status} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{7}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\textbf{FR-01} & Login, logout and token revocation & F-01 & 1 & AC-F01-01..05 & STS-F01-01..05 & VERIFIED \\
+\textbf{FR-02} & Current user and role, no password hash exposure & F-01 & 1 & AC-F01-03, AC-F01-06 & STS-F01-03, STS-F01-06 & VERIFIED \\
+\textbf{FR-03} & Manage survey drafts & F-02 & 1 & AC-F02-01..03, AC-F02-05 & STS-F02-01..03, STS-F02-05 & VERIFIED \\
+\textbf{FR-04} & Author and edit draft questions & F-02 & 1 & AC-F02-04, AC-F02-10 & STS-F02-04, STS-F02-10 & VERIFIED \\
+\textbf{FR-05} & Publish survey & F-02 & 1 & AC-F02-06, AC-F02-07 & STS-F02-06, STS-F02-07 & VERIFIED \\
+\textbf{FR-06} & Close survey & F-02 & 1 & AC-F02-08, AC-F02-11 & STS-F02-08, STS-F02-11 & VERIFIED \\
+\textbf{FR-07} & Browse published surveys and load a survey form & F-03 & 1 & AC-F03-01, AC-F03-02 & STS-F03-01, STS-F03-02 & VERIFIED \\
+\textbf{FR-08} & Take and submit survey & F-03 & 1 & AC-F03-03..07, AC-F03-09 & STS-F03-03..07, STS-F03-09 & VERIFIED \\
+\textbf{FR-09} & Persisted confirmation and receipt retrieval & F-03 & 1 & AC-F03-03, AC-F03-10 & STS-F03-03, STS-F03-10 & VERIFIED \\
+\textbf{FR-10} & Aggregate summary (Sprint 1 formats) & F-04 & 1 & AC-F04-01..04 & STS-F04-01..04 & VERIFIED \\
+\textbf{FR-11} & Anonymous responses & F-05 & 2 & AC-S2-01, AC-PRIV-01 & STS-S2-01, STS-PRIV-01 & DEFERRED \\
+\textbf{FR-12} & Expanded question types and type-aware summary & F-06, \href{https://github.com/Snnn3/SurveyHub/issues/9}{Issue \#9} & 2 & AC-F06-01..09 & Sprint 2 STS to be defined before implementation & DEFERRED \\
+\textbf{FR-13} & CSV/JSON export & F-08 & 3 & AC-S3-01 & STS-S3-01 & DEFERRED \\
+\textbf{FR-14} & Eligibility allowlist & F-07 & 2 & AC-S2-03 & STS-S2-03 & DEFERRED \\
+\textbf{FR-15} & Scheduled close & F-07 & 2 & AC-S2-04 & STS-S2-04 & DEFERRED \\
+\textbf{FR-16} & Browse individual responses & F-08 & 3 & AC-S3-02 & STS-S3-02 & DEFERRED \\
+\end{longtable}}
+
+\phantomsection
+\paragraph*{2.2 Business rules}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\scriptsize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.05229\textwidth}>{\raggedright\arraybackslash}p{0.16302\textwidth}>{\raggedright\arraybackslash}p{0.08686\textwidth}>{\raggedright\arraybackslash}p{0.06539\textwidth}>{\raggedright\arraybackslash}p{0.22994\textwidth}>{\raggedright\arraybackslash}p{0.24515\textwidth}>{\raggedright\arraybackslash}p{0.07749\textwidth}@{}}
+\toprule
+\textbf{Rule} & \textbf{Summary} & \textbf{Feature} & \textbf{Sprint} & \textbf{Acceptance criteria} & \textbf{Planned verification} & \textbf{Status} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Rule} & \textbf{Summary} & \textbf{Feature} & \textbf{Sprint} & \textbf{Acceptance criteria} & \textbf{Planned verification} & \textbf{Status} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{7}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\textbf{BR-01} & One response per respondent per survey, including concurrency & F-03 & 1 & AC-F03-04 & STS-F03-04 (TDD) & VERIFIED \\
+\textbf{BR-02} & Only PUBLISHED (and not past \texttt{closesAt}) accepts responses & F-03, F-07 & 1, 2 & AC-F03-05, AC-S2-04 & STS-F03-05, STS-S2-04 & VERIFIED \\
+\textbf{BR-03} & Required/type/option/text validation & F-03 & 1 & AC-F03-06, AC-F03-07 & STS-F03-06, STS-F03-07 & VERIFIED \\
+\textbf{BR-04} & Survey ownership boundary & F-02, F-04 & 1 & AC-F02-09, AC-F04-03 & STS-F02-09, STS-F04-03 & VERIFIED \\
+\textbf{BR-05} & Cross-response privacy & F-03, F-04 & 1 & AC-F03-08, AC-F04-02 & STS-F03-08, STS-F04-02 & VERIFIED \\
+\textbf{BR-06} & Publish structure requirements & F-02 & 1 & AC-F02-07 & STS-F02-07 & VERIFIED \\
+\textbf{BR-07} & Immutable structure after publication & F-02 & 1 & AC-F02-10 & STS-F02-10 & VERIFIED \\
+\textbf{BR-08} & Role and eligibility guard for submission & F-03, F-07 & 1, 2 & AC-F03-09, AC-S2-03 & STS-F03-09, STS-S2-03 & VERIFIED \\
+\textbf{BR-09} & CLOSED is terminal; invalid transitions rejected & F-02 & 1 & AC-F02-11 & STS-F02-11 & VERIFIED \\
+\textbf{BR-10} & Anonymous identity/answer separation & F-05 & 2 & AC-S2-01, AC-PRIV-01 & STS-S2-01, STS-PRIV-01 & DEFERRED \\
+\textbf{BR-11} & No respondent identity in aggregates or exports & F-04, F-08 & 1, 3 & AC-F04-01, AC-S3-02 & STS-F04-01, STS-S3-02 & VERIFIED \\
+\end{longtable}}
+
+\phantomsection
+\paragraph*{2.3 Non-functional requirements}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\scriptsize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.04680\textwidth}>{\raggedright\arraybackslash}p{0.19125\textwidth}>{\raggedright\arraybackslash}p{0.18181\textwidth}>{\raggedright\arraybackslash}p{0.05449\textwidth}>{\raggedright\arraybackslash}p{0.19365\textwidth}>{\raggedright\arraybackslash}p{0.18553\textwidth}>{\raggedright\arraybackslash}p{0.06659\textwidth}@{}}
+\toprule
+\textbf{NFR} & \textbf{Target} & \textbf{Responsible feature} & \textbf{Sprint} & \textbf{Acceptance criterion} & \textbf{Verification} & \textbf{Status} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{NFR} & \textbf{Target} & \textbf{Responsible feature} & \textbf{Sprint} & \textbf{Acceptance criterion} & \textbf{Verification} & \textbf{Status} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{7}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\textbf{NFR-SEC-01} & Every protected endpoint rejects missing/invalid tokens with 401 and no data & F-01, cross-cutting & 1 & AC-SEC-01 & STS-SEC-01 (parameterized route matrix) & PARTIAL \\
+\textbf{NFR-SEC-02} & Every forbidden role/ownership operation returns 403 and leaves data unchanged & F-01..F-04 & 1 & AC-SEC-02 & STS-SEC-02 plus STS-F02-09, F03-08, F03-09, F04-02, F04-03 & PARTIAL \\
+\textbf{NFR-SEC-03} & bcrypt cost 10, no plaintext password, no hash in responses & F-01 & 1 & AC-F01-06 & STS-F01-06 & PARTIAL \\
+\textbf{NFR-SEC-04} & Logout revokes existing tokens & F-01 & 1 & AC-F01-05 & STS-F01-05 & VERIFIED \\
+\textbf{NFR-PERF-01} & p95 of \texttt{GET /api/surveys/:id/form} < 300 ms over 50 requests on the local development environment & F-03 & 1 & AC-PERF-01 & \texttt{server/scripts/benchmark-read.ts}; result JSON in Part F & PLANNED \\
+\textbf{NFR-DATA-01} & Foreign keys and unique constraints exist; data survives API and database restart & F-02, F-03 & 1 & AC-DATA-01 & Migration inspection, STS-F03-03, documented restart check & VERIFIED \\
+\textbf{NFR-PRIV-01} & Anonymous responses have no identity link and no identity fields in output & F-05 & 2 & AC-PRIV-01 & STS-PRIV-01 database audit and response-shape assertions & DEFERRED \\
+\end{longtable}}
+
+Deferred rows use \texttt{AC-S2-*}, \texttt{STS-S2-*}, \texttt{AC-S3-*} and \texttt{STS-S3-*} as scheduling placeholders. They are defined in the Sprint 2 and Sprint 3 contracts; they are not claimed as existing Sprint 1 IDs.
+
+\phantomsection
+\paragraph*{2.4 Cross-cutting test suites}
+These supplemental suites cover criteria across more than one feature. Sprint 2 criteria remain deferred until their contracts and tests are defined.
+
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.13677\textwidth}>{\raggedright\arraybackslash}p{0.24547\textwidth}>{\raggedright\arraybackslash}p{0.46179\textwidth}>{\raggedright\arraybackslash}p{0.11603\textwidth}@{}}
+\toprule
+\textbf{Test ID} & \textbf{Scope} & \textbf{Linked acceptance criteria} & \textbf{Status} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Test ID} & \textbf{Scope} & \textbf{Linked acceptance criteria} & \textbf{Status} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{4}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\textbf{STS-U-01} & Reject a draft with no questions & AC-F02-07 & VERIFIED \\
+\textbf{STS-U-02} & Reject a single-choice question with one option & AC-F02-07 & VERIFIED \\
+\textbf{STS-U-03} & Report an omitted required answer & AC-F03-06 & VERIFIED \\
+\textbf{STS-U-04} & Reject blank required and over-limit short text & AC-F03-06, AC-F03-07 & VERIFIED \\
+\textbf{STS-U-05} & Calculate response percentages and rounding & AC-F04-01 & VERIFIED \\
+\textbf{STS-E2E-01} & Complete owner-to-respondent survey journey and inspect summary & AC-F02-02, AC-F02-06, AC-F03-03, AC-F04-01 & PLANNED \\
+\textbf{STS-E2E-02} & Reject duplicate submission and cross-response access; verify token revocation & AC-F01-05, AC-F03-04, AC-F03-08 & PLANNED \\
+\end{longtable}}
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsubsection*{3. Coverage and Gap Analysis}
+\addcontentsline{toc}{subsubsection}{3. Coverage and Gap Analysis}
+\phantomsection
+\paragraph*{3.1 Coverage summary}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\scriptsize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.30751\textwidth}>{\raggedright\arraybackslash}p{0.07943\textwidth}>{\raggedright\arraybackslash}p{0.09416\textwidth}>{\raggedright\arraybackslash}p{0.28561\textwidth}>{\raggedright\arraybackslash}p{0.18004\textwidth}@{}}
+\toprule
+\textbf{Requirement group} & \textbf{Total} & \textbf{Mapped} & \textbf{Sprint 1 executable} & \textbf{Later sprint} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Requirement group} & \textbf{Total} & \textbf{Mapped} & \textbf{Sprint 1 executable} & \textbf{Later sprint} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{5}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+Functional requirements & 16 & 16 & 10 & 6 \\
+Business rules & 11 & 11 & 10 & 1 \\
+Non-functional requirements & 7 & 7 & 6 & 1 \\
+\textbf{Total} & \textbf{34} & \textbf{34} & \textbf{26} & \textbf{8} \\
+\end{longtable}}
+
+\begin{itemize}[leftmargin=*]
+\item No baseline requirement is unmapped.
+\item FR-11..FR-16, BR-10 and NFR-PRIV-01 have no Sprint 1 verification and are marked DEFERRED, not missing.
+\item BR-02 (published/closed survey), BR-08 (role guard), and BR-11 (aggregate privacy) have Sprint 1 portions reported as verified; scheduled close, eligibility, and export extensions remain deferred.
+\item Feature-level integration and unit tests exist for F-01 through F-04. The dedicated E2E suite, complete security route matrix, performance measurement, and release-wide test run are not recorded; see Part F.
+\item The previous draft's uncovered items were FR-04 (no edit endpoint), BR-07 (no way to modify a survey), and the eligibility behaviour required by the theme's Sprint 1 example. All three are now explicitly covered.
+\end{itemize}
+
+\phantomsection
+\paragraph*{3.2 Approved baseline changes}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.16130\textwidth}>{\raggedright\arraybackslash}p{0.35034\textwidth}>{\raggedright\arraybackslash}p{0.26765\textwidth}>{\raggedright\arraybackslash}p{0.18077\textwidth}@{}}
+\toprule
+\textbf{Change} & \textbf{Affected requirements/features} & \textbf{Reason} & \textbf{Recorded in} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Change} & \textbf{Affected requirements/features} & \textbf{Reason} & \textbf{Recorded in} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{4}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+Added owner list/detail/update and draft-delete endpoints & FR-03, FR-04, BR-07, F-02 & The previous baseline promised editing but lacked supporting lifecycle endpoints, so the draft flow and BR-07 could not be fully tested & Part A \S{}4; Part C API table; Part E F-02 \\
+Clarified draft lifecycle coverage in FR-03 and Part B & FR-03, F-02 & F-02 already specified list, detail and draft deletion, but the requirements and traceability matrix did not identify those behaviors & Part A \S{}4; Part B \S{}2.1 \\
+Added \texttt{AnswerOption} and \texttt{numberValue} & FR-12, F-06 & One selected option per answer cannot represent multi-select; ratings need a numeric field & Part C \S{}2; Part A ADR-05 \\
+Expanded F-06 to the nine-type question catalog and fixed type-specific answer rules & FR-12, BR-03, BR-06, F-06 & The previous baseline covered only multi-choice and rating; the expanded product needs explicit answer shapes, bounds and Sprint 2 allocation & Part A \S{}\S{}3-5; Part B \S{}\S{}1.2-1.3; Part C \S{}\S{}2, 8; Part D; GitHub Issues \href{https://github.com/Snnn3/SurveyHub/issues/1}{\#1} and \href{https://github.com/Snnn3/SurveyHub/issues/9}{\#9} \\
+Added \texttt{SurveyEligibility} & FR-14, BR-08, F-07 & Eligibility was missing from the baseline despite the theme's Sprint 1 example & Part A \S{}4; Part C \S{}2 \\
+Added \texttt{ResponseClaim} & BR-01, BR-10, F-05 & A nullable \texttt{respondentId} does not enforce one response per person in anonymous mode & Part C \S{}2.4 \\
+Added \texttt{User.tokenVersion} & FR-01, NFR-SEC-04, F-01 & Logout must invalidate the token, not only clear browser state & Part A ADR-02; Part E F-01 \\
+Replaced the performance claim with a defined benchmark & NFR-PERF-01 & "24 tests in 2.65 s" was not a latency measurement & Part A \S{}6; Part F \S{}5 \\
+Added \texttt{GET /api/health} & Deployment readiness & Container and cloud health checks need an unauthenticated probe & Part C API table \\
+Added Docker Compose for the local application and PostgreSQL & Sprint 1 environment & Team decision: make clean-clone setup reproducible in the scaffold; keep CI/CD and GCP deployment in Lab 5 & Part C \S{}6.3; Part D; GitHub Issue \href{https://github.com/Snnn3/SurveyHub/issues/2}{\#2} \\
+\end{longtable}}
+
+\phantomsection
+\paragraph*{3.3 Deliberate gaps and limitations}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.27383\textwidth}>{\raggedright\arraybackslash}p{0.21126\textwidth}>{\raggedright\arraybackslash}p{0.48829\textwidth}@{}}
+\toprule
+\textbf{Item} & \textbf{Status} & \textbf{Handling} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Item} & \textbf{Status} & \textbf{Handling} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+Anonymous mode (F-05) & Not in Sprint 1 & Contract and schema placeholders exist; implementation and privacy audit in Sprint 2 \\
+Multi-choice, long text, yes/no, Likert, rating, integer and date (F-06) & Not in Sprint 1 & Sprint 2; Sprint 1 remains single-choice and short text \\
+Eligibility allowlist (F-07) & Not in Sprint 1 & Empty eligibility list means "all respondents" in Sprint 1; management in Sprint 2 \\
+Export (F-08) & Not in Sprint 1 & Sprint 3 \\
+Rate limiting, refresh tokens, password reset & Not planned & Recorded as technical debt in Part F; outside the course baseline \\
+Production-scale performance & Not claimed & NFR-PERF-01 has not been measured in the reviewed snapshot \\
+\end{longtable}}
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+
+\label{part-b-end}
+\clearpage
+
+\section{Part C: System-Level Software Design Specification (SDS)}
+
+\label{part-c-start}
+
+
+\begin{quote}
+Status note: this is a design document. It does not claim that the system is implemented or deployed. Implementation and execution evidence belong to Part F.
+
+\end{quote}
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsection*{1. Architecture and Component Responsibilities}
+\addcontentsline{toc}{subsection}{1. Architecture and Component Responsibilities}
+\phantomsection
+\subsubsection*{1.1 Architecture style}
+\addcontentsline{toc}{subsubsection}{1.1 Architecture style}
+SurveyHub is a \textbf{three-tier modular monolith}:
+
+The React SPA sends JSON requests to the Express API. Authentication and role/ownership checks run before controllers call domain services; Prisma persists data in PostgreSQL. The client and API share one origin in the local deployment.
+
+A modular monolith is deliberate: one deployable API container, one database, clear module boundaries, and no distributed-system overhead for a two-person course project.
+
+\phantomsection
+\subsubsection*{1.2 Stack decision}
+\addcontentsline{toc}{subsubsection}{1.2 Stack decision}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.13987\textwidth}>{\raggedright\arraybackslash}p{0.42528\textwidth}>{\raggedright\arraybackslash}p{0.40822\textwidth}@{}}
+\toprule
+\textbf{Layer} & \textbf{Technology} & \textbf{Reason} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Layer} & \textbf{Technology} & \textbf{Reason} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+Client & React 18, Vite, TypeScript, Tailwind CSS, React Router, Axios & Same stack as Labs 1-4; fast local development; static build \\
+API & Node.js 20+, Express 4, TypeScript, Zod & Simple REST, typed validation, easy Supertest integration \\
+ORM & Prisma 6 & Typed schema, migrations, seed, PostgreSQL constraints \\
+Database & PostgreSQL 16+ (local verification on 18.1) & Relational integrity, transactions, mature Docker and Cloud SQL support \\
+Auth & \texttt{jsonwebtoken}, \texttt{bcryptjs} & Standard JWT and password hashing; no external identity provider \\
+Tests & Jest, ts-jest, Supertest, Playwright & Unit, API/DB integration and E2E at the required levels \\
+Local container workflow & Docker Compose for the application and PostgreSQL (Sprint 1); GitHub Actions and GCP Cloud Run + Cloud SQL (Lab 5) & Reproducible local development first, course deployment later \\
+\end{longtable}}
+
+\phantomsection
+\subsubsection*{1.3 Layer responsibilities}
+\addcontentsline{toc}{subsubsection}{1.3 Layer responsibilities}
+\textbf{Client tier}
+
+\begin{itemize}[leftmargin=*]
+\item Renders role-aware routes and forms.
+\item Performs only convenience validation; the server repeats every check.
+\item Holds the JWT and current-user state.
+\item Shows loading, empty, validation and error states.
+\item Never decides authorization from a hidden button. Hiding a control is not a security boundary.
+\end{itemize}
+
+\textbf{Application tier}
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{authenticateJWT}: verifies signature and expiry, loads the user, compares \texttt{tokenVersion}.
+\item \texttt{requireRole}: rejects a role that is not allowed for the route.
+\item Ownership checks live in services, because ownership depends on the record, not only the route.
+\item Controllers validate input with Zod and map errors to one JSON envelope.
+\item Services enforce business rules and run multi-row writes in a Prisma transaction.
+\item Prisma is the only component that talks to PostgreSQL.
+\end{itemize}
+
+\textbf{Data tier}
+
+\begin{itemize}[leftmargin=*]
+\item Primary keys, foreign keys, unique constraints and indexes enforce structural integrity.
+\item Transactions protect response + answers + claim creation.
+\item Migrations are versioned in \texttt{server/prisma/migrations/}.
+\item Seed data is reproducible and idempotent.
+\end{itemize}
+
+\phantomsection
+\subsubsection*{1.4 Business-rule enforcement map}
+\addcontentsline{toc}{subsubsection}{1.4 Business-rule enforcement map}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.15910\textwidth}>{\raggedright\arraybackslash}p{0.42621\textwidth}>{\raggedright\arraybackslash}p{0.38806\textwidth}@{}}
+\toprule
+\textbf{Rule} & \textbf{Service layer} & \textbf{Database layer} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Rule} & \textbf{Service layer} & \textbf{Database layer} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+BR-01 one response per respondent & Pre-check claim, catch \texttt{P2002} & \texttt{ResponseClaim(survey\_id, user\_id)} unique; identified \texttt{SurveyResponse(survey\_id, respondent\_id)} unique \\
+BR-02 state guard & Check \texttt{status = PUBLISHED} and \texttt{closesAt} & No direct constraint; status is an enum \\
+BR-03 answer validation & Validate required, exact value shape, option ownership, type-specific text length, rating and integer bounds, date validity & \texttt{Answer(response\_id, question\_id)} unique; FKs \\
+BR-04 ownership & Compare \texttt{survey.ownerId} with current user & FK \texttt{owner\_id} \\
+BR-05 cross-response privacy & Compare \texttt{response.respondentId} with current user & FK \texttt{respondent\_id} \\
+BR-06 publish structure & Validate question count, type-specific options, selection/integer bounds and prompts & Service-level only \\
+BR-07 immutable structure & Reject update when status is not DRAFT & Service-level only \\
+BR-08 eligibility & Role check; optional allowlist check & \texttt{SurveyEligibility(survey\_id, user\_id)} unique \\
+BR-09 terminal state & State-transition check & Enum status \\
+BR-10 anonymous separation & Write \texttt{respondentId = NULL}; create claim without response link & Nullable \texttt{respondent\_id}; separate \texttt{response\_claims} table \\
+BR-11 result privacy & Build summary without identity fields & No identity columns in aggregate queries \\
+\end{longtable}}
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsection*{2. Data Model}
+\addcontentsline{toc}{subsection}{2. Data Model}
+\phantomsection
+\subsubsection*{2.1 Entity relationships}
+\addcontentsline{toc}{subsubsection}{2.1 Entity relationships}
+Users own surveys and may be linked to identified responses, eligibility entries, or response claims. Surveys contain questions and receive responses; questions contain options. Responses contain answers, and answers reference selected options through the 	exttt{AnswerOption} join table.
+
+\phantomsection
+\subsubsection*{2.2 Design decisions}
+\addcontentsline{toc}{subsubsection}{2.2 Design decisions}
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Answers are typed.} One \texttt{Answer} row exists per question per response. Single-choice, multi-choice, yes/no and Likert answers reference options through \texttt{AnswerOption}; short and long text use \texttt{textValue}; rating and integer answers use \texttt{numberValue}; date answers use \texttt{dateValue}. The service validates that each answer has the value shape required by its question type.
+\item \textbf{One answer row per question per response.} \texttt{Answer(response\_id, question\_id)} is unique. A multi-choice answer still has one \texttt{Answer} row and several \texttt{AnswerOption} rows.
+\item \textbf{Duplicate prevention is separate from response storage.} \texttt{ResponseClaim} records that a user submitted a survey. In anonymous mode it has no link to the response, so the system can prevent a second submission without knowing which response belongs to the user.
+\item \textbf{Eligibility is a table, not a boolean.} An empty eligibility list means "all respondents" in Sprint 1. Populated lists restrict submission in Sprint 2.
+\item \textbf{Closed is terminal.} \texttt{publishedAt}, \texttt{closesAt} and \texttt{closedAt} capture lifecycle history.
+\item \textbf{No user deletion in scope.} Foreign keys use \texttt{Restrict} where deleting a user or survey would destroy audit-relevant data. Draft survey deletion is handled by the service and cascades only through structure that has no responses.
+\end{enumerate}
+
+\phantomsection
+\subsubsection*{2.3 Key entities, fields and constraints}
+\addcontentsline{toc}{subsubsection}{2.3 Key entities, fields and constraints}
+The schema is implemented in \texttt{server/prisma/schema.prisma}. Every entity has a UUID \texttt{id} primary key. This summary lists the remaining fields and relations needed to understand the design; the repository schema remains the source of truth.
+
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\scriptsize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.15\textwidth}>{\raggedright\arraybackslash}p{0.44\textwidth}>{\raggedright\arraybackslash}p{0.36\textwidth}@{}}
+\toprule
+\textbf{Entity} & \textbf{Key fields} & \textbf{Relations and constraints} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Entity} & \textbf{Key fields} & \textbf{Relations and constraints} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\textbf{User} & \texttt{email}, \texttt{passwordHash}, \texttt{fullName}, \texttt{role}, \texttt{tokenVersion}, \texttt{createdAt}, \texttt{updatedAt} & Email is unique; owns surveys and may have responses, claims, and eligibility entries \\
+\textbf{Survey} & \texttt{ownerId}, \texttt{title}, \texttt{description}, \texttt{status}, \texttt{mode}, \texttt{publishedAt}, \texttt{closesAt}, \texttt{closedAt}, \texttt{createdAt}, \texttt{updatedAt} & Belongs to an owner; indexes support owner/status and status/closing-time queries \\
+\textbf{SurveyEligibility} & \texttt{surveyId}, \texttt{userId}, \texttt{createdAt} & Links a survey and user; unique on \texttt{(surveyId,userId)} \\
+\textbf{Question} & \texttt{surveyId}, \texttt{prompt}, \texttt{questionType}, \texttt{isRequired}, \texttt{orderIndex}, \texttt{minSelections}, \texttt{maxSelections}, \texttt{numberMin}, \texttt{numberMax} & Belongs to a survey; indexed by survey and order \\
+\textbf{Option} & \texttt{questionId}, \texttt{label}, \texttt{orderIndex} & Belongs to a question; label is unique within that question \\
+\textbf{SurveyResponse} & \texttt{surveyId}, nullable \texttt{respondentId}, \texttt{submittedAt} & Belongs to a survey; identified response uniqueness is enforced per survey/respondent \\
+\textbf{ResponseClaim} & \texttt{surveyId}, \texttt{userId}, \texttt{createdAt} & Unique per survey/user; prevents repeat submissions, including in anonymous mode \\
+\textbf{Answer} & \texttt{responseId}, \texttt{questionId}, \texttt{textValue}, \texttt{numberValue}, \texttt{dateValue} & Unique per response/question; references its response and question \\
+\textbf{AnswerOption} & \texttt{answerId}, \texttt{optionId} & Join between an answer and selected options; unique on \texttt{(answerId,optionId)} \\
+\end{longtable}}
+
+Foreign keys cascade for survey structure, answers, claims, and eligibility entries where defined. Deletion is restricted for owners, surveys with responses, respondents with responses, questions with answers, and options in use.
+
+\subsubsection*{2.4 Constraints added by SQL migration}
+\addcontentsline{toc}{subsubsection}{2.4 Constraints added by SQL migration}
+Prisma cannot express every check, so the initial migration adds:
+
+\begin{lstlisting}
+ALTER TABLE surveys
+  ADD CONSTRAINT survey_title_length CHECK (char_length(title) BETWEEN 1 AND 120);
+
+ALTER TABLE questions
+  ADD CONSTRAINT question_prompt_length CHECK (char_length(prompt) BETWEEN 1 AND 500),
+  ADD CONSTRAINT question_selection_bounds CHECK (
+    min_selections IS NULL OR max_selections IS NULL OR
+    (min_selections >= 1 AND min_selections <= max_selections)
+  ),
+  ADD CONSTRAINT question_integer_bounds CHECK (
+    number_min IS NULL OR number_max IS NULL OR number_min <= number_max
+  );
+
+ALTER TABLE answers
+  ADD CONSTRAINT answer_text_length CHECK (text_value IS NULL OR char_length(text_value) <= 10000);
+\end{lstlisting}
+
+These constraints are defence in depth. The service still returns friendly validation messages; the database is the last line of defence. Type-specific limits remain service-validated: Sprint 1 short text is limited to 2,000 characters, Sprint 2 long text to 10,000, rating to 1-5, and integer answers to their question's configured bounds.
+
+\phantomsection
+\subsubsection*{2.5 Migration and seed strategy}
+\addcontentsline{toc}{subsubsection}{2.5 Migration and seed strategy}
+\begin{itemize}[leftmargin=*]
+\item \texttt{npm run db:migrate} $\rightarrow$ \texttt{prisma migrate dev} locally; \texttt{prisma migrate deploy} in deployment.
+\item Migration files are committed. No manual schema edits in the database.
+\item \texttt{npm run db:seed} is idempotent: it uses \texttt{upsert} for users, surveys, questions and options.
+\item Seed data is synthetic and creates no responses or claims. Tests create their own response fixtures so counts are predictable. No real student data is used.
+\end{itemize}
+
+The seed creates two synthetic Survey Owner accounts and two synthetic Respondent accounts. Demo credentials are not repeated here.
+
+\textbf{Seeded surveys}
+
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.24645\textwidth}>{\raggedright\arraybackslash}p{0.16923\textwidth}>{\raggedright\arraybackslash}p{0.30888\textwidth}>{\raggedright\arraybackslash}p{0.23550\textwidth}@{}}
+\toprule
+\textbf{Survey} & \textbf{Status} & \textbf{Questions} & \textbf{Purpose} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Survey} & \textbf{Status} & \textbf{Questions} & \textbf{Purpose} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{4}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+CPE 334 Midterm Feedback & PUBLISHED & Single-choice + short text & Normal journey \\
+Internal Team Survey Draft & DRAFT & Single-choice & Draft/publish tests \\
+Owner 2 Course Pulse & PUBLISHED & Rating (Sprint 2 placeholder) & Cross-owner tests \\
+\end{longtable}}
+
+\phantomsection
+\subsubsection*{2.6 Test database}
+\addcontentsline{toc}{subsubsection}{2.6 Test database}
+\begin{itemize}[leftmargin=*]
+\item Integration tests use \texttt{DATABASE\_URL\_TEST} pointing to \texttt{surveyhub\_test}.
+\item A global setup runs migrations and truncates tables in dependency order: \texttt{answer\_options -> answers -> response\_claims -> survey\_responses -> options -> questions -> survey\_eligibility -> surveys -> users}.
+\item Tests run with \texttt{jest --runInBand} so database state is deterministic.
+\item No test mocks Prisma for persistence or permission tests. Mocks are allowed only for isolated unit tests of pure functions.
+\end{itemize}
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsection*{3. UI Structure and Behaviour}
+\addcontentsline{toc}{subsection}{3. UI Structure and Behaviour}
+\phantomsection
+\subsubsection*{3.1 Routes}
+\addcontentsline{toc}{subsubsection}{3.1 Routes}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.30784\textwidth}>{\raggedright\arraybackslash}p{0.23241\textwidth}>{\raggedright\arraybackslash}p{0.43312\textwidth}@{}}
+\toprule
+\textbf{Route} & \textbf{Role} & \textbf{Purpose} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Route} & \textbf{Role} & \textbf{Purpose} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\texttt{/login} & Public & Login form \\
+\texttt{/owner/surveys} & SURVEY\_OWNER & Owner survey list with status badges and actions \\
+\texttt{/owner/surveys/new} & SURVEY\_OWNER & Create a draft survey and questions \\
+\texttt{/owner/surveys/:id/edit} & SURVEY\_OWNER & Edit a draft survey \\
+\texttt{/owner/surveys/:id/summary} & SURVEY\_OWNER & Aggregate summary \\
+\texttt{/surveys} & RESPONDENT & Published survey catalogue \\
+\texttt{/surveys/:id/take} & RESPONDENT & Survey form \\
+\texttt{/surveys/:id/confirmation/:responseId} & RESPONDENT & Submission receipt \\
+\texttt{/} & Any authenticated & Redirect by role \\
+\texttt{*} & Any & Not-found page \\
+\end{longtable}}
+
+\texttt{ProtectedRoute} checks authentication and role on the client for navigation only. Every API request is independently authorized on the server.
+
+\phantomsection
+\subsubsection*{3.2 Shared UI states}
+\addcontentsline{toc}{subsubsection}{3.2 Shared UI states}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.21510\textwidth}>{\raggedright\arraybackslash}p{0.77159\textwidth}@{}}
+\toprule
+\textbf{State} & \textbf{Behaviour} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{State} & \textbf{Behaviour} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{2}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+Loading & Skeleton or spinner; submit button disabled while a request is pending \\
+Empty & Explanatory text and a relevant action, e.g. "No surveys yet - create your first survey" \\
+Validation & Inline field message, \texttt{aria-invalid}, focus moves to the first invalid field \\
+Error banner & Red banner with the server's safe message; \texttt{aria-live="polite"} \\
+Success & Confirmation card or toast; no raw error codes shown to end users \\
+Access denied & A 403 page with a link back to the user's own area; no record data is rendered \\
+Not found & A 404 page; does not reveal whether a record exists for another user \\
+\end{longtable}}
+
+\phantomsection
+\subsubsection*{3.3 Accessibility and usability conventions}
+\addcontentsline{toc}{subsubsection}{3.3 Accessibility and usability conventions}
+\begin{itemize}[leftmargin=*]
+\item Every input has a visible label; placeholders are not labels.
+\item Keyboard navigation works for the builder, radio groups and form submission.
+\item Colour is not the only status indicator; badges include text.
+\item Error messages describe what to fix.
+\item The layout is responsive down to 375 px.
+\item Destructive actions (delete draft, close survey) require confirmation.
+\end{itemize}
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsection*{4. API Design and Conventions}
+\addcontentsline{toc}{subsection}{4. API Design and Conventions}
+\phantomsection
+\subsubsection*{4.1 Envelope}
+\addcontentsline{toc}{subsubsection}{4.1 Envelope}
+Success:
+
+\begin{lstlisting}
+{
+  "success": true,
+  "data": {}
+}
+\end{lstlisting}
+
+Error:
+
+\begin{lstlisting}
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "The request contains invalid fields.",
+    "details": [
+      { "field": "title", "message": "Title is required." }
+    ]
+  }
+}
+\end{lstlisting}
+
+Rules:
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{message} is safe for end users and never contains SQL, stack traces or secrets.
+\item \texttt{details} is optional and contains field-level validation messages.
+\item HTTP status codes carry the class of error; the \texttt{code} is stable for tests and clients.
+\item All timestamps are ISO 8601 UTC strings. Date answers use the date-only \texttt{YYYY-MM-DD} form.
+\item All ids are UUID strings.
+\item JSON request bodies are limited to 100 kB.
+\end{itemize}
+
+\phantomsection
+\subsubsection*{4.2 Status codes}
+\addcontentsline{toc}{subsubsection}{4.2 Status codes}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.25135\textwidth}>{\raggedright\arraybackslash}p{0.73533\textwidth}@{}}
+\toprule
+\textbf{Code} & \textbf{Meaning} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Code} & \textbf{Meaning} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{2}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+200 & Successful read or update \\
+201 & Resource created \\
+204 & Successful delete with no body \\
+400 & Validation or invalid state transition \\
+401 & Missing, invalid, expired or revoked token \\
+403 & Authenticated but not allowed (role, ownership, eligibility, cross-response) \\
+404 & Record not found \\
+409 & Duplicate submission \\
+500 & Unexpected server error; generic message only \\
+503 & Database readiness check failed \\
+\end{longtable}}
+
+\phantomsection
+\subsubsection*{4.3 Error codes}
+\addcontentsline{toc}{subsubsection}{4.3 Error codes}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.26145\textwidth}>{\raggedright\arraybackslash}p{0.16004\textwidth}>{\raggedright\arraybackslash}p{0.55188\textwidth}@{}}
+\toprule
+\textbf{Code} & \textbf{HTTP} & \textbf{Used when} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Code} & \textbf{HTTP} & \textbf{Used when} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\texttt{VALIDATION\_ERROR} & 400 & Malformed body or invalid field \\
+\texttt{INVALID\_CREDENTIALS} & 401 & Wrong email or password \\
+\texttt{TOKEN\_REQUIRED} & 401 & No Authorization header \\
+\texttt{INVALID\_TOKEN} & 401 & Bad signature, expired or malformed token \\
+\texttt{TOKEN\_REVOKED} & 401 & Token version no longer matches the user \\
+\texttt{FORBIDDEN\_ROLE} & 403 & Role not allowed for the operation \\
+\texttt{FORBIDDEN\_OWNERSHIP} & 403 & Record belongs to another owner \\
+\texttt{FORBIDDEN\_CROSS\_RESPONSE\_ACCESS} & 403 & Respondent requests another respondent's receipt \\
+\texttt{NOT\_ELIGIBLE} & 403 & Respondent is not on the allowlist (Sprint 2) \\
+\texttt{NOT\_FOUND} & 404 & Unknown id \\
+\texttt{DUPLICATE\_SUBMISSION} & 409 & Claim already exists or unique violation \\
+\texttt{SURVEY\_NOT\_ACCEPTING\_RESPONSES} & 400 & Survey is draft, closed or past \texttt{closesAt} \\
+\texttt{MISSING\_REQUIRED\_QUESTIONS} & 400 & Required answers absent \\
+\texttt{INVALID\_ANSWER} & 400 & Wrong value shape, foreign option, duplicate question, invalid type-specific bound or date \\
+\texttt{INVALID\_QUESTION\_STRUCTURE} & 400 & Publish requirements not met \\
+\texttt{SURVEY\_NOT\_EDITABLE} & 400 & Update/delete attempted after publication \\
+\texttt{INVALID\_STATE\_TRANSITION} & 400 & Publish/close transition not allowed \\
+\texttt{SERVICE\_UNAVAILABLE} & 503 & Database connectivity check failed at the health endpoint \\
+\texttt{INTERNAL\_ERROR} & 500 & Unhandled error \\
+\end{longtable}}
+
+\phantomsection
+\subsubsection*{4.4 Endpoint table}
+\addcontentsline{toc}{subsubsection}{4.4 Endpoint table}
+All endpoints except login and health require \texttt{Authorization: Bearer <token>}.
+
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\scriptsize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.08791\textwidth}>{\raggedright\arraybackslash}p{0.12008\textwidth}>{\raggedright\arraybackslash}p{0.14451\textwidth}>{\raggedright\arraybackslash}p{0.09060\textwidth}>{\raggedright\arraybackslash}p{0.25995\textwidth}>{\raggedright\arraybackslash}p{0.23039\textwidth}@{}}
+\toprule
+\textbf{\#} & \textbf{Method} & \textbf{Path} & \textbf{Auth} & \textbf{Allowed role} & \textbf{Purpose} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{\#} & \textbf{Method} & \textbf{Path} & \textbf{Auth} & \textbf{Allowed role} & \textbf{Purpose} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{6}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+1 & POST & \texttt{/api/auth/login} & Public & - & Authenticate and return JWT \\
+2 & GET & \texttt{/api/auth/me} & Token & Any & Current user identity and role \\
+3 & POST & \texttt{/api/auth/logout} & Token & Any & Increment \texttt{tokenVersion} and revoke tokens \\
+4 & GET & \texttt{/api/health} & Public & - & Liveness/readiness probe \\
+5 & GET & \texttt{/api/surveys} & Token & SURVEY\_OWNER & List own surveys \\
+6 & POST & \texttt{/api/surveys} & Token & SURVEY\_OWNER & Create draft survey with questions \\
+7 & GET & \texttt{/api/surveys/:id} & Token & SURVEY\_OWNER (owner) & Get own survey detail \\
+8 & PUT & \texttt{/api/surveys/:id} & Token & SURVEY\_OWNER (owner) & Replace draft metadata and questions \\
+9 & DELETE & \texttt{/api/surveys/:id} & Token & SURVEY\_OWNER (owner) & Delete a draft survey \\
+10 & PATCH & \texttt{/api/surveys/:id/publish} & Token & SURVEY\_OWNER (owner) & Publish a valid draft \\
+11 & PATCH & \texttt{/api/surveys/:id/close} & Token & SURVEY\_OWNER (owner) & Close a published survey \\
+12 & GET & \texttt{/api/surveys/:id/summary} & Token & SURVEY\_OWNER (owner) & Aggregate results \\
+13 & GET & \texttt{/api/surveys/active} & Token & RESPONDENT & List published surveys and submission state \\
+14 & GET & \texttt{/api/surveys/:id/form} & Token & RESPONDENT & Get the form for a published survey \\
+15 & POST & \texttt{/api/surveys/:id/responses} & Token & RESPONDENT & Submit one response \\
+16 & GET & \texttt{/api/surveys/:id/responses/:responseId} & Token & RESPONDENT (own) & Get own submission receipt \\
+\end{longtable}}
+
+Route registration order: \texttt{/api/surveys/active} must be registered before \texttt{/api/surveys/:id} so the literal path is not captured as an id.
+
+\phantomsection
+\paragraph*{GET /api/health}
+This public endpoint is used by local containers and deployment probes to check API and database readiness. It requires no authentication and has no request body. The handler runs \texttt{SELECT 1} and exposes no table data, credentials, version, host, environment variables or stack trace.
+
+Success \texttt{200}:
+
+\begin{lstlisting}
+{
+  "success": true,
+  "data": { "status": "ok", "database": "up" }
+}
+\end{lstlisting}
+
+Database check failure \texttt{503}:
+
+\begin{lstlisting}
+{
+  "success": false,
+  "error": {
+    "code": "SERVICE_UNAVAILABLE",
+    "message": "Database connection failed."
+  }
+}
+\end{lstlisting}
+
+\phantomsection
+\subsubsection*{4.5 Validation approach}
+\addcontentsline{toc}{subsubsection}{4.5 Validation approach}
+\begin{itemize}[leftmargin=*]
+\item Zod schemas validate body, params and query at the controller boundary.
+\item Unknown fields are rejected or stripped; the contract uses strict objects.
+\item Service-level domain validation runs after shape validation.
+\item Validation errors return field-level details and never echo the submitted password.
+\item \texttt{PUT /api/surveys/:id} replaces the full question set atomically inside a transaction. It is allowed only when the survey is \texttt{DRAFT}.
+\end{itemize}
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsection*{5. Authentication and Authorization}
+\addcontentsline{toc}{subsection}{5. Authentication and Authorization}
+\phantomsection
+\subsubsection*{5.1 Password handling}
+\addcontentsline{toc}{subsubsection}{5.1 Password handling}
+\begin{itemize}[leftmargin=*]
+\item Passwords are hashed with \texttt{bcryptjs}, cost factor 10.
+\item \texttt{passwordHash} is never returned by any endpoint.
+\item Seed passwords are hashed at seed time, never stored as plaintext.
+\item Login compares the submitted password with the hash using a constant-time bcrypt comparison.
+\end{itemize}
+
+\phantomsection
+\subsubsection*{5.2 Token lifecycle}
+\addcontentsline{toc}{subsubsection}{5.2 Token lifecycle}
+\begin{enumerate}[leftmargin=*]
+\item Login returns a JWT signed with \texttt{JWT\_SECRET} (HS256), expiring after \texttt{JWT\_EXPIRES\_IN} (default 8h).
+\item Payload: \texttt{\{ sub: userId, role, ver: tokenVersion \}}.
+\item Every protected request verifies the signature and expiry, loads the user, and compares \texttt{ver} with the database value.
+\item Logout increments \texttt{User.tokenVersion}. Every token issued before logout now fails with \texttt{401 TOKEN\_REVOKED}.
+\item There are no refresh tokens. After expiry the user logs in again.
+\item The client stores the token in \texttt{localStorage} for refresh persistence and clears it on 401 or logout. This is an accepted trade-off for the course; XSS risk is reduced with a strict CSP and no \texttt{dangerouslySetInnerHTML}. HttpOnly cookies are recorded as future work.
+\end{enumerate}
+
+\phantomsection
+\subsubsection*{5.3 Role and ownership matrix}
+\addcontentsline{toc}{subsubsection}{5.3 Role and ownership matrix}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\scriptsize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.10144\textwidth}>{\raggedright\arraybackslash}p{0.12129\textwidth}>{\raggedright\arraybackslash}p{0.09303\textwidth}>{\raggedright\arraybackslash}p{0.19192\textwidth}>{\raggedright\arraybackslash}p{0.16322\textwidth}>{\raggedright\arraybackslash}p{0.26254\textwidth}@{}}
+\toprule
+\textbf{Operation} & \textbf{Unauthenticated} & \textbf{RESPONDENT} & \textbf{SURVEY\_OWNER (non-owner)} & \textbf{SURVEY\_OWNER (owner)} & \textbf{Respondent (other user's receipt)} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Operation} & \textbf{Unauthenticated} & \textbf{RESPONDENT} & \textbf{SURVEY\_OWNER (non-owner)} & \textbf{SURVEY\_OWNER (owner)} & \textbf{Respondent (other user's receipt)} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{6}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+Login & Allowed & Allowed & Allowed & Allowed & Allowed \\
+\texttt{/auth/me}, \texttt{/auth/logout} & 401 & Allowed & Allowed & Allowed & Allowed \\
+List/create own surveys & 401 & 403 & Allowed & Allowed & 403 \\
+Get/update/delete own draft & 401 & 403 & 403 & Allowed & 403 \\
+Publish/close own survey & 401 & 403 & 403 & Allowed & 403 \\
+View own summary & 401 & 403 & 403 & Allowed & 403 \\
+Browse active surveys & 401 & Allowed & 403 & 403 & Allowed \\
+Get published form & 401 & Allowed & 403 & 403 & Allowed \\
+Submit response & 401 & Allowed, if eligible and not already submitted & 403 & 403 & Allowed \\
+Get own receipt & 401 & Allowed & 403 & 403 & 403 \\
+\end{longtable}}
+
+Key correction from the previous draft: owners are \textbf{not} allowed to open or submit survey forms. Roles are exclusive.
+
+\phantomsection
+\subsubsection*{5.4 Authorization rules}
+\addcontentsline{toc}{subsubsection}{5.4 Authorization rules}
+\begin{itemize}[leftmargin=*]
+\item Role guard first: wrong role $\rightarrow$ \texttt{403 FORBIDDEN\_ROLE}.
+\item Ownership check second: wrong owner $\rightarrow$ \texttt{403 FORBIDDEN\_OWNERSHIP}.
+\item For receipt access: if the response belongs to another user $\rightarrow$ \texttt{403 FORBIDDEN\_CROSS\_RESPONSE\_ACCESS}.
+\item For unknown ids $\rightarrow$ \texttt{404 NOT\_FOUND}.
+\item A forbidden response never includes record data.
+\item UI hiding is not treated as authorization; tests call the API directly.
+\end{itemize}
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsection*{6. Configuration and Delivery Design}
+\addcontentsline{toc}{subsection}{6. Configuration and Delivery Design}
+\phantomsection
+\subsubsection*{6.1 Environment variables}
+\addcontentsline{toc}{subsubsection}{6.1 Environment variables}
+\begin{lstlisting}
+# Server
+PORT=4000
+NODE_ENV=development
+
+# Database
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/surveyhub?schema=public"
+DATABASE_URL_TEST="postgresql://postgres:postgres@localhost:5432/surveyhub_test?schema=public"
+
+# Authentication
+JWT_SECRET="replace-with-a-long-random-value"
+JWT_EXPIRES_IN="8h"
+
+# Client
+CLIENT_ORIGIN="http://localhost:5173"
+VITE_API_BASE_URL="http://localhost:4000/api"
+\end{lstlisting}
+
+The example uses the default port 5432. The actual port is whatever the local PostgreSQL instance uses; it is configured only through \texttt{DATABASE\_URL} and \texttt{DATABASE\_URL\_TEST}.
+
+Rules:
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{.env} is ignored by Git. \texttt{.env.example} contains placeholders only.
+\item The server validates required variables at startup and refuses to start in production with a missing or default \texttt{JWT\_SECRET}.
+\item CORS allows only \texttt{CLIENT\_ORIGIN}.
+\item \texttt{helmet} sets security headers; JSON body size is limited.
+\item No secret is logged.
+\end{itemize}
+
+\phantomsection
+\subsubsection*{6.2 Local reproduction}
+\addcontentsline{toc}{subsubsection}{6.2 Local reproduction}
+\begin{lstlisting}
+npm install
+cp server/.env.example server/.env
+npm run db:migrate
+npm run db:seed
+npm run dev
+\end{lstlisting}
+
+The client runs on \texttt{http://localhost:5173}; the API runs on \texttt{http://localhost:4000}.
+
+\phantomsection
+\subsubsection*{6.3 Docker Compose local environment (Sprint 1)}
+\addcontentsline{toc}{subsubsection}{6.3 Docker Compose local environment (Sprint 1)}
+Sprint 1 Issue \href{https://github.com/Snnn3/SurveyHub/issues/2}{\#2} provides a root-level Compose setup with one application service and one PostgreSQL service.
+
+\begin{itemize}[leftmargin=*]
+\item A multi-stage application image builds the React client and Express/TypeScript server. In the container environment, Express serves \texttt{/api} and the built client from the same origin.
+\item PostgreSQL has a health check. Compose starts the application only after the database reports healthy. A fresh database volume initialization creates both \texttt{surveyhub} and the separate \texttt{surveyhub\_test} database.
+\item A named database volume preserves data when containers restart or are recreated. Removing the volume is a separate destructive operation and is not part of the normal reset workflow.
+\item \texttt{DATABASE\_URL} targets the development database and \texttt{DATABASE\_URL\_TEST} targets the distinct test database. Inside Compose, both use the database service hostname; host-run tests use the published local port. Automated tests must never point at the seeded development database.
+\item Migration and seed commands are explicit, repeatable commands documented in the root README; application startup does not silently reset or seed persistent data.
+\item The application exposes public \texttt{/api/health} for readiness checks.
+\item Compose uses placeholder/local values only. Real secrets are kept outside Git.
+\end{itemize}
+
+\phantomsection
+\subsubsection*{6.4 CI/CD and GCP delivery plan (Lab 5)}
+\addcontentsline{toc}{subsubsection}{6.4 CI/CD and GCP delivery plan (Lab 5)}
+\begin{itemize}[leftmargin=*]
+\item GitHub Actions on pull requests: install, lint, typecheck, migrate the test database, run tests and build.
+\item A required check blocks merge when it fails.
+\item The release workflow on \texttt{main} builds and pushes an image, runs migrations, and deploys to Cloud Run.
+\item Cloud Run uses the \texttt{PORT} environment variable and \texttt{/api/health} probe. Cloud SQL provides production database durability; secrets come from GCP Secret Manager or Cloud Run environment variables, never from the image.
+\item Deployment records the image tag and commit SHA and is repeatable from the same commit.
+\end{itemize}
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsection*{7. Anonymous-Mode Privacy Design (Sprint 2)}
+\addcontentsline{toc}{subsection}{7. Anonymous-Mode Privacy Design (Sprint 2)}
+This section exists now because the schema must not need a breaking migration later.
+
+\phantomsection
+\subsubsection*{7.1 Separation}
+\addcontentsline{toc}{subsubsection}{7.1 Separation}
+\begin{itemize}[leftmargin=*]
+\item \texttt{Survey.mode = ANONYMOUS}.
+\item \texttt{SurveyResponse.respondentId = NULL}.
+\item \texttt{ResponseClaim} stores \texttt{(surveyId, userId)} only. It has no \texttt{responseId} column.
+\item The system knows \textbf{that} a user submitted, not \textbf{which} response is theirs.
+\item No IP address, user agent or other request metadata is stored with a response.
+\item The response id is a random UUID and is not derivable from the user id.
+\end{itemize}
+
+\phantomsection
+\subsubsection*{7.2 What the owner sees}
+\addcontentsline{toc}{subsubsection}{7.2 What the owner sees}
+\begin{itemize}[leftmargin=*]
+\item Aggregate counts and percentages.
+\item Rating and integer statistics and date counts.
+\item Unlinked short- and long-text answers.
+\item No respondent names, emails or ids.
+\item Export for an anonymous survey contains aggregates and unlinked text only.
+\end{itemize}
+
+\phantomsection
+\subsubsection*{7.3 Residual risk}
+\addcontentsline{toc}{subsubsection}{7.3 Residual risk}
+A database administrator could correlate \texttt{ResponseClaim.createdAt} with \texttt{SurveyResponse.submittedAt}. To reduce this, the claim row does \textbf{not} store a timestamp in Sprint 2; only the unique key is kept. Even so, an administrator with access to database transaction logs could correlate activity. The product does not claim cryptographic unlinkability against a privileged database operator. This limitation is disclosed rather than overclaimed.
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsection*{8. Forward-Compatibility Checklist}
+\addcontentsline{toc}{subsection}{8. Forward-Compatibility Checklist}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.19792\textwidth}>{\raggedright\arraybackslash}p{0.51110\textwidth}>{\raggedright\arraybackslash}p{0.26435\textwidth}@{}}
+\toprule
+\textbf{Future need} & \textbf{Present in Sprint 1 schema} & \textbf{Later work} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Future need} & \textbf{Present in Sprint 1 schema} & \textbf{Later work} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+Expanded question types & \texttt{QuestionType}; \texttt{AnswerOption}; \texttt{textValue}; \texttt{numberValue}; \texttt{dateValue}; \texttt{minSelections}, \texttt{maxSelections}, \texttt{numberMin}, \texttt{numberMax} & Sprint 2 validation, authoring UI, response UI and summary for multi-choice, long text, yes/no, Likert, rating, integer and date \\
+Anonymous mode & \texttt{SurveyMode.ANONYMOUS}, nullable \texttt{respondentId}, \texttt{ResponseClaim} without response link & Endpoints, privacy tests, UI \\
+Eligibility & \texttt{SurveyEligibility} table & Management API and UI \\
+Scheduled close & \texttt{closesAt} & Date picker and server check \\
+Export & Existing models and summary service & CSV/JSON serializers \\
+Raw response browser & Identified responses already linked & Owner-only endpoints and UI \\
+\end{longtable}}
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsection*{9. Traceability}
+\addcontentsline{toc}{subsection}{9. Traceability}
+\begin{itemize}[leftmargin=*]
+\item Requirements: Part A.
+\item Feature allocation: Part B.
+\item Sprint plan: Part D.
+\item Sprint 1 contracts and tests: Part E.
+\item Verification evidence: Part F.
+\end{itemize}
+
+No design decision in this document is considered implemented until the corresponding code and tests exist on the assessed commit.
+
+
+
+\label{part-c-end}
+\clearpage
+
+\section{Part D: Three-Sprint Product Development Plan}
+
+\label{part-d-start}
+
+
+\begin{quote}
+Planning baseline dated 5 November 2026. The sprint goals and outcomes below are targets; current Sprint 1 implementation and verification evidence appears in Part F.
+
+\end{quote}
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsection*{1. Product Vision and Sprint Allocation}
+\addcontentsline{toc}{subsection}{1. Product Vision and Sprint Allocation}
+SurveyHub must be a complete survey product by 13 December 2026: owners create and publish surveys, eligible respondents submit validated answers, owners read trustworthy aggregates, and later sprints add anonymous mode, richer question types, eligibility control, export and raw-response browsing.
+
+
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsection*{2. Sprint Matrix}
+\addcontentsline{toc}{subsection}{2. Sprint Matrix}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\scriptsize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.06046\textwidth}>{\raggedright\arraybackslash}p{0.06375\textwidth}>{\raggedright\arraybackslash}p{0.19785\textwidth}>{\raggedright\arraybackslash}p{0.10154\textwidth}>{\raggedright\arraybackslash}p{0.22788\textwidth}>{\raggedright\arraybackslash}p{0.28195\textwidth}@{}}
+\toprule
+\textbf{Sprint} & \textbf{Dates} & \textbf{Goal} & \textbf{Features} & \textbf{Requirements} & \textbf{Target outcome} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Sprint} & \textbf{Dates} & \textbf{Goal} & \textbf{Features} & \textbf{Requirements} & \textbf{Target outcome} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{6}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\textbf{Sprint 1} & 5-8 Nov 2026 & Working vertical slice through UI, API and database with authentication, ownership and tested rules & F-01, F-02, F-03, F-04 & FR-01..FR-10; BR-01..BR-09; BR-11 (aggregate privacy portion); NFR-SEC-01..04, NFR-PERF-01, NFR-DATA-01 & Feature PRs merged to \texttt{sprint-1-staging}; approved release PR to \texttt{main}, tag \texttt{v0.1.0-sprint1}, tests and demo evidence, D1 PDF \\
+\textbf{Sprint 2} & 9-29 Nov 2026 & Complete the core product: anonymous mode, advanced question types, eligibility, deployment and independent UAT & F-05, F-06 (\href{https://github.com/Snnn3/SurveyHub/issues/9}{Issue \#9}), F-07 & FR-11, FR-12, FR-14, FR-15; BR-02 (scheduled close), BR-08 (allowlist), BR-10, NFR-PRIV-01 & Deployed integrated release candidate on GCP; D2; Lab 5 and Lab 6 complete \\
+\textbf{Sprint 3} & 30 Nov-13 Dec 2026 & Finish analytics/export, harden, fix defects and release the complete product & F-08 plus hardening & FR-13, FR-16; BR-11 (raw/export policy) & Final release, Lab 7 change, final report and video \\
+\end{longtable}}
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsection*{3. Sprint 1 Scope}
+\addcontentsline{toc}{subsection}{3. Sprint 1 Scope}
+\phantomsection
+\subsubsection*{3.1 In scope}
+\addcontentsline{toc}{subsubsection}{3.1 In scope}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.20627\textwidth}>{\raggedright\arraybackslash}p{0.78042\textwidth}@{}}
+\toprule
+\textbf{Feature} & \textbf{Included behaviour} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Feature} & \textbf{Included behaviour} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{2}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+F-01 Auth \& RBAC & Login, \texttt{/me}, logout with \texttt{tokenVersion} revocation, bcrypt cost 10, role guard, 401/403 errors \\
+F-02 Survey lifecycle & List own surveys, create draft, get detail, replace draft questions, delete draft, publish, close, ownership and immutability guards \\
+F-03 Response rules & Browse published surveys, load form, submit one response, persisted receipt, duplicate guard, state guard, required/type/option validation, cross-response privacy \\
+F-04 Aggregate summary & Total responses, answered count per question, option counts and percentages, unlinked text answers, owner-only access, empty state \\
+E2E & One normal journey and one rejection journey \\
+\end{longtable}}
+
+\phantomsection
+\subsubsection*{3.2 Out of scope for Sprint 1}
+\addcontentsline{toc}{subsubsection}{3.2 Out of scope for Sprint 1}
+\begin{itemize}[leftmargin=*]
+\item Anonymous mode (F-05) - Sprint 2.
+\item Multi-choice, long text, yes/no, Likert, rating, integer and date (F-06) - Sprint 2.
+\item Eligibility allowlist management and scheduled close (F-07) - Sprint 2.
+\item CSV/JSON export, charts, raw-response browser (F-08) - Sprint 3.
+\item CI/CD and GCP deployment - Lab 5, after D1. Docker Compose local setup is included in Sprint 1 Issue \href{https://github.com/Snnn3/SurveyHub/issues/2}{\#2}.
+\item Self-registration, password reset, email invitations - excluded.
+\end{itemize}
+
+\phantomsection
+\subsubsection*{3.3 Sprint 1 completion criteria}
+\addcontentsline{toc}{subsubsection}{3.3 Sprint 1 completion criteria}
+\begin{itemize}[leftmargin=*]
+\item All Sprint 1 acceptance criteria in Part E are implemented and verified, or explicitly disclosed as incomplete.
+\item The full test command runs on the release commit and counts are recorded.
+\item The normal journey, a rule rejection, a forbidden operation and logout are demonstrated with real evidence.
+\item The release is on \texttt{main}, tagged, and reproducible from the README.
+\item Part F contains no invented results.
+\end{itemize}
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsection*{4. Dependencies and Critical Path}
+\addcontentsline{toc}{subsection}{4. Dependencies and Critical Path}
+\phantomsection
+\subsubsection*{4.1 Feature dependencies}
+\addcontentsline{toc}{subsubsection}{4.1 Feature dependencies}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.19687\textwidth}>{\raggedright\arraybackslash}p{0.30948\textwidth}>{\raggedright\arraybackslash}p{0.46702\textwidth}@{}}
+\toprule
+\textbf{Feature} & \textbf{Depends on} & \textbf{Reason} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Feature} & \textbf{Depends on} & \textbf{Reason} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+F-01 & None & Identity and role are the foundation for every protected operation \\
+F-02 & F-01 & Only an authenticated owner can manage surveys \\
+F-03 & F-01, F-02 & A published survey must exist before a response can be submitted \\
+F-04 & F-01, F-02, F-03 & Summary needs stored responses \\
+F-05 & F-01, F-03, F-04 & Anonymous mode changes response storage and summary output \\
+F-06 & F-02, F-03, F-04 & Authoring, submission and summary must all understand the new types \\
+F-07 & F-02, F-03 & Eligibility and scheduled close modify publish and submit rules \\
+F-08 & F-04, F-06 & Export and charts depend on summary data and question types \\
+\end{longtable}}
+
+\phantomsection
+\subsubsection*{4.2 Critical path for Sprint 1}
+\addcontentsline{toc}{subsubsection}{4.2 Critical path for Sprint 1}
+
+
+The critical path is \textbf{schema $\rightarrow$ auth $\rightarrow$ lifecycle $\rightarrow$ responses $\rightarrow$ verification}. A delay in the schema delays everything, so the schema and migration are completed before UI work.
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsubsection*{4.3 Sprint 1 issue map}
+\addcontentsline{toc}{subsubsection}{4.3 Sprint 1 issue map}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.14109\textwidth}>{\raggedright\arraybackslash}p{0.37398\textwidth}>{\raggedright\arraybackslash}p{0.45830\textwidth}@{}}
+\toprule
+\textbf{Issue} & \textbf{Work} & \textbf{Feature/contract} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Issue} & \textbf{Work} & \textbf{Feature/contract} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\href{https://github.com/Snnn3/SurveyHub/issues/1}{\#1} & Scope, requirements, feature inventory, design and Sprint 1 contracts & Parts A-E \\
+\href{https://github.com/Snnn3/SurveyHub/issues/2}{\#2} & Application/database scaffold, migrations, seed and Docker Compose & Foundation \\
+\href{https://github.com/Snnn3/SurveyHub/issues/3}{\#3} & Authentication, sessions and RBAC & F-01 \\
+\href{https://github.com/Snnn3/SurveyHub/issues/4}{\#4} & Survey lifecycle and authoring & F-02 \\
+\href{https://github.com/Snnn3/SurveyHub/issues/5}{\#5} & Survey response submission and business rules & F-03 \\
+\href{https://github.com/Snnn3/SurveyHub/issues/6}{\#6} & Owner aggregate summary & F-04 \\
+\href{https://github.com/Snnn3/SurveyHub/issues/7}{\#7} & Integration, verification evidence, release and deliverable & Part F and release \\
+\end{longtable}}
+
+
+\label{part-d-end}
+\clearpage
+
+\section{Part E: Sprint 1 Feature Contracts and Software Test Specifications}
+
+\label{part-e-start}
+
+
+\begin{quote}
+Contract status: this is the versioned Sprint 1 baseline. Acceptance criteria and STS define expected behavior; test outcomes and remaining evidence gaps are recorded in Part F.
+
+\end{quote}
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsection*{1. Product Definition of Done (DoD)}
+\addcontentsline{toc}{subsection}{1. Product Definition of Done (DoD)}
+A Sprint 1 feature is Done only when all of the following are true and evidenced:
+
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Behaviour:} every acceptance criterion is implemented through the UI, API and database.
+\item \textbf{Rules:} business rules are enforced on the server, not only in the client.
+\item \textbf{Tests:} planned unit, API/database integration and selected E2E tests exist and run.
+\item \textbf{Negative cases:} boundary, invalid and forbidden cases are tested, not only happy paths.
+\item \textbf{Persistence:} data is written to PostgreSQL and can be retrieved after a reload and a restart.
+\item \textbf{Review:} a teammate reviewed the PR and left a specific technical check, question or finding.
+\item \textbf{Integration:} the feature was merged into \texttt{sprint-1-staging} and the full suite passed there.
+\item \textbf{Documents:} the contract, API shape and README are current.
+\item \textbf{Disclosure:} any failed, skipped or incomplete work is listed in Part F.
+\item \textbf{Evidence:} test output, screenshots and commit ids are real and identify the same version.
+\end{enumerate}
+
+A feature is \textbf{not} Done because an AI agent says so, because a screenshot exists, or because an old test run passed.
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+
+
+\clearpage
+
+\phantomsection
+\subsection*{Part E - F-01 Authentication, Session and RBAC}
+\addcontentsline{toc}{subsection}{Part E - F-01 Authentication, Session and RBAC}
+
+\phantomsection
+\subsubsection*{2. Contract F-01: Authentication, Session and RBAC}
+\addcontentsline{toc}{subsubsection}{2. Contract F-01: Authentication, Session and RBAC}
+\phantomsection
+\paragraph*{2.1 Scope and linked requirements}
+\begin{itemize}[leftmargin=*]
+\item \textbf{Requirements:} FR-01, FR-02
+\item \textbf{NFRs:} NFR-SEC-01, NFR-SEC-02, NFR-SEC-03, NFR-SEC-04
+\item \textbf{Feature:} F-01
+\item \textbf{Dependencies:} none
+\item \textbf{Sprint:} 1
+\end{itemize}
+
+\phantomsection
+\paragraph*{2.2 Behaviour}
+\begin{itemize}[leftmargin=*]
+\item A seeded user logs in with email and password.
+\item The server normalizes the email (trim, lowercase), verifies the bcrypt hash and returns a JWT.
+\item The token contains \texttt{sub}, \texttt{role} and \texttt{ver} (token version) and expires after 8 hours.
+\item Every protected request verifies the token, loads the user and compares \texttt{ver}.
+\item Logout increments \texttt{tokenVersion}, revoking every existing token for that account.
+\item \texttt{GET /api/auth/me} returns the current identity and role.
+\item Passwords are hashed with bcrypt cost 10. No endpoint returns \texttt{passwordHash}.
+\item There is no self-registration, password reset or refresh token in this sprint.
+\end{itemize}
+
+\phantomsection
+\paragraph*{2.3 UI behaviour}
+\textbf{\texttt{/login}}
+
+\begin{itemize}[leftmargin=*]
+\item Email and password fields with visible labels.
+\item Client-side validity checks show inline field messages, set \texttt{aria-invalid} and focus the first invalid field; server validation details use the same behavior.
+\item Client-side check for a non-empty email and password; server remains authoritative.
+\item Submit button disabled and spinner shown while the request is pending.
+\item \texttt{401} shows "Invalid email or password." in an alert banner with \texttt{aria-live}.
+\item Success stores the token, loads the current user and redirects:
+\begin{itemize}[leftmargin=*]
+\item \texttt{SURVEY\_OWNER} $\rightarrow$ \texttt{/owner/surveys}
+\item \texttt{RESPONDENT} $\rightarrow$ \texttt{/surveys}
+\end{itemize}
+\item An expired or revoked token on any request clears the session and redirects to \texttt{/login}.
+\item \texttt{/} waits for the current-user check, then redirects authenticated users by role and unauthenticated users to \texttt{/login}, as specified in system SDS \S{}3.1.
+\end{itemize}
+
+\textbf{Navbar}
+
+\begin{itemize}[leftmargin=*]
+\item Shows full name and role.
+\item "Log out" calls the API, clears local state and redirects to \texttt{/login}.
+\item If the logout request fails, the client still clears local state; the server-side revocation is tested separately.
+\end{itemize}
+
+\phantomsection
+\paragraph*{2.4 Data specification}
+Table \texttt{users}:
+
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.25748\textwidth}>{\raggedright\arraybackslash}p{0.18710\textwidth}>{\raggedright\arraybackslash}p{0.52879\textwidth}@{}}
+\toprule
+\textbf{Field} & \textbf{Type} & \textbf{Constraint} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Field} & \textbf{Type} & \textbf{Constraint} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\texttt{id} & UUID & Primary key \\
+\texttt{email} & text & Unique, stored lowercase \\
+\texttt{password\_hash} & text & bcrypt cost 10, \texttt{\$2b\$10\$} prefix \\
+\texttt{full\_name} & text & 1-120 characters \\
+\texttt{role} & enum & \texttt{SURVEY\_OWNER} or \texttt{RESPONDENT} \\
+\texttt{token\_version} & integer & Default 0, incremented on logout \\
+\texttt{created\_at}, \texttt{updated\_at} & timestamptz & Automatic \\
+\end{longtable}}
+
+No schema change is needed for RBAC beyond this table.
+
+\phantomsection
+\paragraph*{2.5 API specification}
+\phantomsection
+\subparagraph*{POST /api/auth/login (public)}
+Request:
+
+\begin{lstlisting}
+{ "email": "owner1@survey.local", "password": "<seeded-password>" }
+\end{lstlisting}
+
+Success \texttt{200}:
+
+\begin{lstlisting}
+{
+  "success": true,
+  "data": {
+    "token": "<jwt>",
+    "user": {
+      "id": "<uuid>",
+      "email": "owner1@survey.local",
+      "fullName": "Course Coordinator",
+      "role": "SURVEY_OWNER"
+    }
+  }
+}
+\end{lstlisting}
+
+Errors:
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{400 VALIDATION\_ERROR} - missing or malformed email/password, with field-level details that never include submitted values, as specified in system SDS \S{}4.5.
+\item \texttt{401 INVALID\_CREDENTIALS} - unknown email or wrong password. The message is identical for both to avoid account enumeration; unknown emails still perform a bcrypt comparison against a fixed dummy hash so response timing does not expose whether an account exists.
+\end{itemize}
+
+\phantomsection
+\subparagraph*{GET /api/auth/me (authenticated)}
+Success \texttt{200}:
+
+\begin{lstlisting}
+{
+  "success": true,
+  "data": {
+    "id": "<uuid>",
+    "email": "resp1@survey.local",
+    "fullName": "Student One",
+    "role": "RESPONDENT"
+  }
+}
+\end{lstlisting}
+
+Errors: \texttt{401 TOKEN\_REQUIRED}, \texttt{401 INVALID\_TOKEN}, \texttt{401 TOKEN\_REVOKED}.
+
+\phantomsection
+\subparagraph*{POST /api/auth/logout (authenticated)}
+Success \texttt{200}:
+
+\begin{lstlisting}
+{ "success": true, "data": { "message": "Successfully logged out." } }
+\end{lstlisting}
+
+Side effect: \texttt{token\_version = token\_version + 1}.
+
+Errors: \texttt{401 TOKEN\_REQUIRED}, \texttt{401 INVALID\_TOKEN}, \texttt{401 TOKEN\_REVOKED}.
+
+\phantomsection
+\paragraph*{2.6 Acceptance criteria}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.11656\textwidth}>{\raggedright\arraybackslash}p{0.87013\textwidth}@{}}
+\toprule
+\textbf{AC} & \textbf{Observable outcome} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{AC} & \textbf{Observable outcome} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{2}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\textbf{AC-F01-01} & Valid credentials return \texttt{200}, a signed JWT and a user object without \texttt{passwordHash}. \\
+\textbf{AC-F01-02} & A wrong password returns \texttt{401 INVALID\_CREDENTIALS} and no token. \\
+\textbf{AC-F01-03} & \texttt{GET /api/auth/me} with a valid token returns the id, email, full name and role stored in the database. \\
+\textbf{AC-F01-04} & \texttt{POST /api/auth/logout} returns \texttt{200} and increments the user's \texttt{tokenVersion}. \\
+\textbf{AC-F01-05} & A token used before logout returns \texttt{401 TOKEN\_REVOKED} on the next protected request. \\
+\textbf{AC-F01-06} & Every seeded password hash starts with \texttt{\$2b\$10\$}; no plaintext password or hash appears in any API response. \\
+\textbf{AC-F01-07} & Malformed login input returns \texttt{400 VALIDATION\_ERROR} with field-level details and no submitted values. \\
+\textbf{AC-F01-08} & Unauthenticated \texttt{GET /api/auth/me} and \texttt{POST /api/auth/logout} return \texttt{401 TOKEN\_REQUIRED}. \\
+\textbf{AC-F01-09} & A request to a role-protected route by the wrong role returns \texttt{403 FORBIDDEN\_ROLE}. \\
+\end{longtable}}
+
+\phantomsection
+\paragraph*{2.7 Software Test Specification}
+File: \texttt{server/tests/auth.test.ts}
+
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\scriptsize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.10110\textwidth}>{\raggedright\arraybackslash}p{0.05465\textwidth}>{\raggedright\arraybackslash}p{0.08307\textwidth}>{\raggedright\arraybackslash}p{0.27462\textwidth}>{\raggedright\arraybackslash}p{0.15630\textwidth}>{\raggedright\arraybackslash}p{0.26369\textwidth}@{}}
+\toprule
+\textbf{Test ID} & \textbf{AC} & \textbf{Level} & \textbf{Precondition / input} & \textbf{Action} & \textbf{Expected result} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Test ID} & \textbf{AC} & \textbf{Level} & \textbf{Precondition / input} & \textbf{Action} & \textbf{Expected result} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{6}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\textbf{STS-F01-01} & AC-F01-01 & Integration & Seeded owner account & POST login with correct password & \texttt{200}, token present, role \texttt{SURVEY\_OWNER}, no \texttt{passwordHash} \\
+\textbf{STS-F01-02} & AC-F01-02 & Integration & Seeded owner account & POST login with wrong password & \texttt{401 INVALID\_CREDENTIALS}, no token \\
+\textbf{STS-F01-03} & AC-F01-03 & Integration & Valid respondent token & GET \texttt{/api/auth/me} & \texttt{200}, email and role match the database \\
+\textbf{STS-F01-04} & AC-F01-04 & Integration & Valid token, \texttt{tokenVersion = 0} & POST logout, then read the user row & \texttt{200}; \texttt{tokenVersion = 1} \\
+\textbf{STS-F01-05} & AC-F01-05 & Integration & Token obtained before logout & Call \texttt{/api/auth/me} with the old token after logout & \texttt{401 TOKEN\_REVOKED} \\
+\textbf{STS-F01-06} & AC-F01-06 & Integration / DB & Seeded users & Query \texttt{users.password\_hash}; inspect login and \texttt{/me} responses & Every hash starts \texttt{\$2b\$10\$}; no response contains a hash or plaintext \\
+\textbf{STS-F01-07} & AC-F01-07 & Integration & Malformed and missing login bodies & POST login & \texttt{400 VALIDATION\_ERROR}, field details, no submitted values \\
+\textbf{STS-F01-08} & AC-F01-08 & Integration & No bearer token & GET \texttt{/api/auth/me}; POST \texttt{/api/auth/logout} & Both return \texttt{401 TOKEN\_REQUIRED} \\
+\textbf{STS-F01-09} & AC-F01-09 & Integration & Valid token for each role & Call a SURVEY\_OWNER-only route with owner and respondent tokens & Owner allowed; respondent gets \texttt{403 FORBIDDEN\_ROLE} \\
+\end{longtable}}
+
+\phantomsection
+\paragraph*{2.8 Version history}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.14501\textwidth}>{\raggedright\arraybackslash}p{0.12165\textwidth}>{\raggedright\arraybackslash}p{0.53940\textwidth}>{\raggedright\arraybackslash}p{0.15401\textwidth}@{}}
+\toprule
+\textbf{Version} & \textbf{Date} & \textbf{Change} & \textbf{Status} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Version} & \textbf{Date} & \textbf{Change} & \textbf{Status} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{4}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+v3 & 5 Nov 2026 & Aligned the F-01 contract with team decisions and the shared Kanban issue & Superseded \\
+v4 & 7 Nov 2026 & Clarified SDS root-route and login-validation behavior, equal-cost unknown-user login checks, and issue \#3 acceptance-test traceability & Current \\
+\end{longtable}}
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+
+
+\clearpage
+
+\phantomsection
+\subsection*{Part E - F-02 Survey Lifecycle and Authoring}
+\addcontentsline{toc}{subsection}{Part E - F-02 Survey Lifecycle and Authoring}
+
+\phantomsection
+\subsubsection*{3. Contract F-02: Survey Lifecycle and Authoring}
+\addcontentsline{toc}{subsubsection}{3. Contract F-02: Survey Lifecycle and Authoring}
+\phantomsection
+\paragraph*{3.1 Scope and linked requirements}
+\begin{itemize}[leftmargin=*]
+\item \textbf{Requirements:} FR-03, FR-04, FR-05, FR-06
+\item \textbf{Business rules:} BR-04, BR-06, BR-07, BR-09
+\item \textbf{Feature:} F-02
+\item \textbf{Dependencies:} F-01
+\item \textbf{Sprint:} 1
+\end{itemize}
+
+\phantomsection
+\paragraph*{3.2 Lifecycle}
+\begin{lstlisting}
+DRAFT --publish---> PUBLISHED --close---> CLOSED
+  |                                        |
+  +--delete (draft only)                   +-- terminal
+\end{lstlisting}
+
+Allowed operations:
+
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\scriptsize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.34048\textwidth}>{\raggedright\arraybackslash}p{0.14333\textwidth}>{\raggedright\arraybackslash}p{0.14333\textwidth}>{\raggedright\arraybackslash}p{0.19825\textwidth}>{\raggedright\arraybackslash}p{0.12136\textwidth}@{}}
+\toprule
+\textbf{Current status} & \textbf{Update} & \textbf{Delete} & \textbf{Publish} & \textbf{Close} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Current status} & \textbf{Update} & \textbf{Delete} & \textbf{Publish} & \textbf{Close} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{5}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+DRAFT & Yes & Yes & Yes, if structure valid & No \\
+PUBLISHED & No & No & No & Yes \\
+CLOSED & No & No & No & No \\
+\end{longtable}}
+
+Any other transition returns \texttt{400 INVALID\_STATE\_TRANSITION}.
+
+\phantomsection
+\paragraph*{3.3 UI behaviour}
+\textbf{\texttt{/owner/surveys}}
+
+\begin{itemize}[leftmargin=*]
+\item Lists only the owner's surveys with title, status badge, question count and response count.
+\item Actions depend on status:
+\begin{itemize}[leftmargin=*]
+\item DRAFT: Edit, Delete, Publish, View summary
+\item PUBLISHED: Close, View summary
+\item CLOSED: View summary
+\end{itemize}
+\item Empty state: "No surveys yet. Create your first survey."
+\item Loading skeleton while fetching.
+\end{itemize}
+
+\textbf{\texttt{/owner/surveys/new} and \texttt{/owner/surveys/:id/edit}}
+
+\begin{itemize}[leftmargin=*]
+\item Title (required, 1-120 characters), description (optional, $\leq$2,000 characters).
+\item Dynamic question list:
+\begin{itemize}[leftmargin=*]
+\item Type: single-choice or short text (Sprint 1).
+\item Required toggle.
+\item Prompt (1-500 characters).
+\item For single-choice: 2-20 option labels, each 1-200 characters.
+\item Reorder with up/down buttons.
+\item Remove question with confirmation.
+\end{itemize}
+\item Client prevents obvious invalid publish, but the server revalidates.
+\item Publish button shows a validation summary if the structure is invalid.
+\item Close opens a confirmation dialog.
+\end{itemize}
+
+\textbf{\texttt{/owner/surveys/:id/summary}} - defined in F-04.
+
+\phantomsection
+\paragraph*{3.4 Data specification}
+Tables: \texttt{surveys}, \texttt{questions}, \texttt{options}.
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{surveys.title}: 1-120 characters (SQL check).
+\item \texttt{surveys.status}: enum, default \texttt{DRAFT}.
+\item \texttt{surveys.mode}: enum, default \texttt{IDENTIFIED}.
+\item \texttt{surveys.owner\_id}: FK to \texttt{users.id}, \texttt{onDelete: Restrict}.
+\item \texttt{published\_at}, \texttt{closed\_at}: nullable timestamps.
+\item \texttt{questions.prompt}: 1-500 characters (SQL check).
+\item \texttt{questions.question\_type}: enum.
+\item \texttt{questions.is\_required}: default true.
+\item \texttt{questions.order\_index}: non-negative; ordered by \texttt{orderIndex, id}.
+\item \texttt{options.label}: 1-200 characters; unique per question.
+\item \texttt{options.order\_index}: ordered by \texttt{orderIndex, id}.
+\end{itemize}
+
+\texttt{PUT /api/surveys/:id} replaces the question set in a transaction:
+
+\begin{enumerate}[leftmargin=*]
+\item Verify owner and \texttt{DRAFT}.
+\item Validate the full new structure.
+\item Delete existing questions (cascades options) and recreate them with stable order.
+\item Update title and description.
+\item Return the full updated survey.
+\end{enumerate}
+
+No migration change is required for Sprint 1 beyond the initial schema.
+
+\phantomsection
+\paragraph*{3.5 API specification}
+All routes require \texttt{SURVEY\_OWNER}.
+
+\phantomsection
+\subparagraph*{GET /api/surveys}
+Success \texttt{200}:
+
+\begin{lstlisting}
+{
+  "success": true,
+  "data": [
+    {
+      "id": "<uuid>",
+      "title": "CPE 334 Midterm Feedback",
+      "status": "PUBLISHED",
+      "mode": "IDENTIFIED",
+      "questionCount": 2,
+      "responseCount": 12,
+      "createdAt": "2026-11-05T10:00:00.000Z",
+      "updatedAt": "2026-11-05T10:30:00.000Z"
+    }
+  ]
+}
+\end{lstlisting}
+
+Only surveys with \texttt{ownerId = currentUser.id}.
+
+\phantomsection
+\subparagraph*{POST /api/surveys}
+Request:
+
+\begin{lstlisting}
+{
+  "title": "CPE 334 Midterm Feedback",
+  "description": "Please give honest feedback.",
+  "questions": [
+    {
+      "prompt": "How satisfied are you with the course?",
+      "questionType": "SINGLE_CHOICE",
+      "isRequired": true,
+      "options": [
+        { "label": "Very satisfied" },
+        { "label": "Neutral" },
+        { "label": "Unsatisfied" }
+      ]
+    },
+    {
+      "prompt": "What should improve?",
+      "questionType": "SHORT_TEXT",
+      "isRequired": false
+    }
+  ]
+}
+\end{lstlisting}
+
+Success \texttt{201}: the full draft survey, \texttt{status: "DRAFT"}.
+
+Errors: \texttt{400 VALIDATION\_ERROR}, \texttt{403 FORBIDDEN\_ROLE}.
+
+\phantomsection
+\subparagraph*{GET /api/surveys/:id}
+Success \texttt{200}: full survey with ordered questions and options.
+
+Errors: \texttt{403 FORBIDDEN\_OWNERSHIP}, \texttt{404 NOT\_FOUND}.
+
+\phantomsection
+\subparagraph*{PUT /api/surveys/:id}
+Same body as create. Replaces metadata and questions. Allowed only for \texttt{DRAFT}.
+
+Success \texttt{200}: updated full survey.
+
+Errors:
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{400 SURVEY\_NOT\_EDITABLE} - status is \texttt{PUBLISHED} or \texttt{CLOSED}.
+\item \texttt{400 VALIDATION\_ERROR} - invalid structure.
+\item \texttt{403 FORBIDDEN\_OWNERSHIP}, \texttt{404 NOT\_FOUND}.
+\end{itemize}
+
+\phantomsection
+\subparagraph*{DELETE /api/surveys/:id}
+Success \texttt{204} with no body. Cascades questions and options. Allowed only for \texttt{DRAFT}.
+
+Errors: \texttt{400 SURVEY\_NOT\_EDITABLE}, \texttt{403 FORBIDDEN\_OWNERSHIP}, \texttt{404 NOT\_FOUND}.
+
+\phantomsection
+\subparagraph*{PATCH /api/surveys/:id/publish}
+Success \texttt{200}: status \texttt{PUBLISHED}, \texttt{publishedAt} set.
+
+Errors:
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{400 INVALID\_QUESTION\_STRUCTURE} - no questions; a single-choice question has fewer than two options; empty prompt; duplicate option labels.
+\item \texttt{400 INVALID\_STATE\_TRANSITION} - not \texttt{DRAFT}.
+\item \texttt{403 FORBIDDEN\_OWNERSHIP}, \texttt{404 NOT\_FOUND}.
+\end{itemize}
+
+\phantomsection
+\subparagraph*{PATCH /api/surveys/:id/close}
+Success \texttt{200}: status \texttt{CLOSED}, \texttt{closedAt} set.
+
+Errors: \texttt{400 INVALID\_STATE\_TRANSITION} - not \texttt{PUBLISHED}; \texttt{403 FORBIDDEN\_OWNERSHIP}, \texttt{404 NOT\_FOUND}.
+
+\phantomsection
+\paragraph*{3.6 Acceptance criteria}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.11565\textwidth}>{\raggedright\arraybackslash}p{0.87103\textwidth}@{}}
+\toprule
+\textbf{AC} & \textbf{Observable outcome} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{AC} & \textbf{Observable outcome} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{2}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\textbf{AC-F02-01} & \texttt{GET /api/surveys} returns only the current owner's surveys, with status and counts. \\
+\textbf{AC-F02-02} & \texttt{POST /api/surveys} creates a \texttt{DRAFT} with ordered questions and options, stored in PostgreSQL. \\
+\textbf{AC-F02-03} & \texttt{GET /api/surveys/:id} returns the owner's full survey detail. \\
+\textbf{AC-F02-04} & \texttt{PUT /api/surveys/:id} updates a draft's title, description and questions atomically. \\
+\textbf{AC-F02-05} & \texttt{DELETE /api/surveys/:id} deletes a draft and cascades its structure; no questions or options remain. \\
+\textbf{AC-F02-06} & Publishing a valid draft returns \texttt{200} and sets \texttt{status = PUBLISHED} and \texttt{publishedAt}. \\
+\textbf{AC-F02-07} & Publishing an invalid structure returns \texttt{400 INVALID\_QUESTION\_STRUCTURE} and leaves the status \texttt{DRAFT}. \\
+\textbf{AC-F02-08} & Closing a published survey returns \texttt{200} and sets \texttt{status = CLOSED} and \texttt{closedAt}. \\
+\textbf{AC-F02-09} & A non-owner gets \texttt{403 FORBIDDEN\_OWNERSHIP} for get, update, delete, publish and close; data is unchanged. \\
+\textbf{AC-F02-10} & Updating or deleting a published/closed survey returns \texttt{400 SURVEY\_NOT\_EDITABLE}. \\
+\textbf{AC-F02-11} & Publishing a published/closed survey or closing a draft/closed survey returns \texttt{400 INVALID\_STATE\_TRANSITION}. \\
+\end{longtable}}
+
+\phantomsection
+\paragraph*{3.7 Software Test Specification}
+File: \texttt{server/tests/survey-lifecycle.test.ts}
+
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\scriptsize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.10536\textwidth}>{\raggedright\arraybackslash}p{0.05695\textwidth}>{\raggedright\arraybackslash}p{0.08631\textwidth}>{\raggedright\arraybackslash}p{0.29373\textwidth}>{\raggedright\arraybackslash}p{0.12239\textwidth}>{\raggedright\arraybackslash}p{0.26870\textwidth}@{}}
+\toprule
+\textbf{Test ID} & \textbf{AC} & \textbf{Level} & \textbf{Precondition / input} & \textbf{Action} & \textbf{Expected result} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Test ID} & \textbf{AC} & \textbf{Level} & \textbf{Precondition / input} & \textbf{Action} & \textbf{Expected result} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{6}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\textbf{STS-F02-01} & AC-F02-01 & Integration & Owner A has 2 surveys; Owner B has 1 & GET \texttt{/api/surveys} as A & \texttt{200}, exactly A's 2 surveys \\
+\textbf{STS-F02-02} & AC-F02-02 & Integration & Owner A authenticated & POST a survey with 2 questions & \texttt{201}, \texttt{DRAFT}, persisted questions/options \\
+\textbf{STS-F02-03} & AC-F02-03 & Integration & Own draft with questions & GET \texttt{/api/surveys/:id} & \texttt{200}, ordered questions and options \\
+\textbf{STS-F02-04} & AC-F02-04 & Integration & Own draft & PUT with changed title/questions & \texttt{200}, new structure persisted, old questions removed \\
+\textbf{STS-F02-05} & AC-F02-05 & Integration / DB & Own draft with questions & DELETE & \texttt{204}; survey, questions and options absent \\
+\textbf{STS-F02-06} & AC-F02-06 & Integration & Valid draft & PATCH publish & \texttt{200}, \texttt{PUBLISHED}, \texttt{publishedAt} set \\
+\textbf{STS-F02-07} & AC-F02-07 & Integration & Draft with no questions; draft with 1 option & PATCH publish & \texttt{400 INVALID\_QUESTION\_STRUCTURE}; status remains \texttt{DRAFT} \\
+\textbf{STS-F02-08} & AC-F02-08 & Integration & Published survey & PATCH close & \texttt{200}, \texttt{CLOSED}, \texttt{closedAt} set \\
+\textbf{STS-F02-09} & AC-F02-09 & Integration & Survey owned by A; authenticated as B & GET, PUT, DELETE, publish, close & \texttt{403 FORBIDDEN\_OWNERSHIP} for each; database unchanged \\
+\textbf{STS-F02-10} & AC-F02-10 & Integration & Published survey & PUT and DELETE & \texttt{400 SURVEY\_NOT\_EDITABLE} for both \\
+\textbf{STS-F02-11} & AC-F02-11 & Integration & Published survey; draft survey; closed survey & Publish again; close draft; close closed & \texttt{400 INVALID\_STATE\_TRANSITION} for each \\
+\end{longtable}}
+
+Supporting unit tests for structure validation are in section 7.
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+
+
+\clearpage
+
+\phantomsection
+\subsection*{Part E - F-03 Survey Taking, Submission and Response Rules}
+\addcontentsline{toc}{subsection}{Part E - F-03 Survey Taking, Submission and Response Rules}
+
+\phantomsection
+\subsubsection*{4. Contract F-03: Survey Taking, Submission and Response Rules}
+\addcontentsline{toc}{subsubsection}{4. Contract F-03: Survey Taking, Submission and Response Rules}
+\phantomsection
+\paragraph*{4.1 Scope and linked requirements}
+\begin{itemize}[leftmargin=*]
+\item \textbf{Requirements:} FR-07, FR-08, FR-09
+\item \textbf{Business rules:} BR-01, BR-02, BR-03, BR-05, BR-08
+\item \textbf{NFRs:} NFR-PERF-01, NFR-DATA-01
+\item \textbf{Feature:} F-03
+\item \textbf{Dependencies:} F-01, F-02
+\item \textbf{Sprint:} 1
+\end{itemize}
+
+\phantomsection
+\paragraph*{4.2 Behaviour}
+\begin{itemize}[leftmargin=*]
+\item A respondent sees only published surveys.
+\item \texttt{hasSubmitted} is computed from \texttt{ResponseClaim}.
+\item When \texttt{hasSubmitted} is true, the active-survey item includes that respondent's \texttt{responseId} for opening their receipt; otherwise \texttt{responseId} is omitted.
+\item The form endpoint returns ordered questions and options for a published survey.
+\item Submission validates the whole payload before writing.
+\item The response, answers, selected options and claim are written in one transaction.
+\item A second submission is rejected with \texttt{409 DUPLICATE\_SUBMISSION}; exactly one response remains.
+\item The receipt endpoint returns only the caller's own response.
+\item In Sprint 1, every authenticated respondent is eligible. The \texttt{SurveyEligibility} table is present but empty; Sprint 2 adds allowlist management.
+\end{itemize}
+
+\phantomsection
+\paragraph*{4.3 UI behaviour}
+\textbf{\texttt{/surveys}}
+
+\begin{itemize}[leftmargin=*]
+\item Cards for published surveys with title, description and a status badge:
+\begin{itemize}[leftmargin=*]
+\item "Not submitted" $\rightarrow$ Start survey
+\item "Completed" $\rightarrow$ View receipt, disabled start
+\end{itemize}
+\item Empty state if no published surveys exist.
+\item Loading skeleton.
+\end{itemize}
+
+\textbf{\texttt{/surveys/:id/take}}
+
+\begin{itemize}[leftmargin=*]
+\item Renders questions in \texttt{orderIndex} order.
+\item Single-choice: radio group.
+\item Short text: textarea with a character counter and a 2,000-character limit.
+\item Required questions show a visible "Required" marker.
+\item Submit disabled while pending.
+\item Client validates required answers for convenience; server revalidates.
+\item \texttt{409} shows "You have already submitted a response to this survey."
+\item \texttt{400 SURVEY\_NOT\_ACCEPTING\_RESPONSES} shows "This survey is no longer accepting responses."
+\item \texttt{400 MISSING\_REQUIRED\_QUESTIONS} highlights the missing questions.
+\end{itemize}
+
+\textbf{\texttt{/surveys/:id/confirmation/:responseId}}
+
+\begin{itemize}[leftmargin=*]
+\item Green confirmation card with response id and submitted time.
+\item A "View receipt" action re-fetches the persisted receipt from the API, proving persistence.
+\end{itemize}
+
+\phantomsection
+\paragraph*{4.4 Data specification}
+Tables: \texttt{survey\_responses}, \texttt{answers}, \texttt{answer\_options}, \texttt{response\_claims}.
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{survey\_responses.respondent\_id}: nullable; non-null in Sprint 1 identified mode.
+\item \texttt{survey\_responses.submitted\_at}: server time.
+\item \texttt{response\_claims(survey\_id, user\_id)} unique.
+\item \texttt{answers(response\_id, question\_id)} unique; one answer row per question per response.
+\item \texttt{answer\_options(answer\_id, option\_id)} unique.
+\item \texttt{answers.text\_value}: nullable, $\leq$10,000 characters in the forward-compatible schema; Sprint 1 short-text validation remains $\leq$2,000 characters.
+\item \texttt{answers.number\_value}: nullable integer; Sprint 2 rating is 1-5 and integer questions use configured bounds.
+\item \texttt{answers.date\_value}: nullable date-only value for Sprint 2 date questions.
+\end{itemize}
+
+Submission transaction:
+
+\begin{lstlisting}
+BEGIN
+  verify survey exists, is PUBLISHED, and (Sprint 2) is before closesAt
+  verify role is RESPONDENT and eligibility if configured
+  insert response_claim (unique survey_id + user_id)
+  insert survey_response (respondent_id = current user)
+  insert answers and answer_options
+COMMIT
+\end{lstlisting}
+
+If the claim insert fails with \texttt{P2002}, return \texttt{409} and roll back. No partial response is stored.
+
+\phantomsection
+\paragraph*{4.5 API specification}
+All routes require \texttt{RESPONDENT}.
+
+\phantomsection
+\subparagraph*{GET /api/surveys/active}
+Success \texttt{200}:
+
+\begin{lstlisting}
+{
+  "success": true,
+  "data": [
+    {
+      "id": "<uuid>",
+      "title": "CPE 334 Midterm Feedback",
+      "description": "Please give honest feedback.",
+      "status": "PUBLISHED",
+      "questionCount": 2,
+      "hasSubmitted": false
+    }
+  ]
+}
+\end{lstlisting}
+
+Only \texttt{PUBLISHED} surveys. \texttt{hasSubmitted} is true when a claim exists for the current user. If true, \texttt{responseId} is the current user's persisted response id, used by the catalogue's receipt link; it is omitted otherwise.
+
+\phantomsection
+\subparagraph*{GET /api/surveys/:id/form}
+Success \texttt{200}: survey metadata plus ordered questions and options.
+
+Errors: \texttt{400 SURVEY\_NOT\_ACCEPTING\_RESPONSES} for draft/closed; \texttt{404 NOT\_FOUND}.
+
+\phantomsection
+\subparagraph*{POST /api/surveys/:id/responses}
+Request:
+
+\begin{lstlisting}
+{
+  "answers": [
+    { "questionId": "<uuid-1>", "selectedOptionIds": ["<uuid-option>"] },
+    { "questionId": "<uuid-2>", "textValue": "More lab time, please." }
+  ]
+}
+\end{lstlisting}
+
+Rules:
+
+\begin{itemize}[leftmargin=*]
+\item Each question appears at most once. Duplicate question ids $\rightarrow$ \texttt{400 INVALID\_ANSWER}.
+\item Unknown question ids $\rightarrow$ \texttt{400 INVALID\_ANSWER}.
+\item Single-choice: exactly one selected option, belonging to that question.
+\item Short text: non-empty when required; trimmed; $\leq$2,000 characters.
+\item Required questions missing $\rightarrow$ \texttt{400 MISSING\_REQUIRED\_QUESTIONS} with the missing ids.
+\item A question must not mix option and text/number values.
+\item Optional unanswered questions may be omitted.
+\end{itemize}
+
+Success \texttt{201}:
+
+\begin{lstlisting}
+{
+  "success": true,
+  "data": {
+    "responseId": "<uuid>",
+    "surveyId": "<uuid>",
+    "submittedAt": "2026-11-06T14:30:00.000Z",
+    "message": "Survey response successfully recorded."
+  }
+}
+\end{lstlisting}
+
+Errors:
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{409 DUPLICATE\_SUBMISSION}
+\item \texttt{400 SURVEY\_NOT\_ACCEPTING\_RESPONSES}
+\item \texttt{400 MISSING\_REQUIRED\_QUESTIONS}
+\item \texttt{400 INVALID\_ANSWER}
+\item \texttt{403 FORBIDDEN\_ROLE}
+\item \texttt{403 NOT\_ELIGIBLE} (Sprint 2)
+\item \texttt{404 NOT\_FOUND}
+\end{itemize}
+
+\phantomsection
+\subparagraph*{GET /api/surveys/:id/responses/:responseId}
+Success \texttt{200}: the caller's own receipt with answer content and \texttt{submittedAt}.
+
+Errors:
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{403 FORBIDDEN\_CROSS\_RESPONSE\_ACCESS} when the response belongs to another user.
+\item \texttt{403 FORBIDDEN\_ROLE} for an owner account.
+\item \texttt{404 NOT\_FOUND} when the response id does not exist for that survey.
+\end{itemize}
+
+\phantomsection
+\paragraph*{4.6 Acceptance criteria}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.10737\textwidth}>{\raggedright\arraybackslash}p{0.87932\textwidth}@{}}
+\toprule
+\textbf{AC} & \textbf{Observable outcome} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{AC} & \textbf{Observable outcome} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{2}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\textbf{AC-F03-01} & \texttt{GET /api/surveys/active} returns published surveys only and a correct \texttt{hasSubmitted} flag; submitted items include only the current respondent's \texttt{responseId}. \\
+\textbf{AC-F03-02} & \texttt{GET /api/surveys/:id/form} returns ordered questions and options for a published survey. \\
+\textbf{AC-F03-03} & A valid submission returns \texttt{201} and persists one response, its answers, selected options and claim in PostgreSQL. \\
+\textbf{AC-F03-04} & A second submission returns \texttt{409 DUPLICATE\_SUBMISSION}; exactly one response exists. Under two concurrent submissions, one succeeds and one gets \texttt{409}. \\
+\textbf{AC-F03-05} & Submitting to a \texttt{DRAFT} or \texttt{CLOSED} survey returns \texttt{400 SURVEY\_NOT\_ACCEPTING\_RESPONSES}. \\
+\textbf{AC-F03-06} & Missing required answers return \texttt{400 MISSING\_REQUIRED\_QUESTIONS} with the missing question ids. \\
+\textbf{AC-F03-07} & Wrong answer type, a foreign option, duplicate question ids or text over 2,000 characters returns \texttt{400 INVALID\_ANSWER}. \\
+\textbf{AC-F03-08} & A respondent requesting another respondent's receipt gets \texttt{403 FORBIDDEN\_CROSS\_RESPONSE\_ACCESS} with no answer data. \\
+\textbf{AC-F03-09} & A \texttt{SURVEY\_OWNER} token submitting a response gets \texttt{403 FORBIDDEN\_ROLE}. \\
+\textbf{AC-F03-10} & The respondent can retrieve their own persisted receipt after a reload, with the same answers and timestamp. \\
+\end{longtable}}
+
+\phantomsection
+\paragraph*{4.7 Software Test Specification}
+File: \texttt{server/tests/response-submission.test.ts}
+
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\scriptsize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.09358\textwidth}>{\raggedright\arraybackslash}p{0.05058\textwidth}>{\raggedright\arraybackslash}p{0.08313\textwidth}>{\raggedright\arraybackslash}p{0.31387\textwidth}>{\raggedright\arraybackslash}p{0.11556\textwidth}>{\raggedright\arraybackslash}p{0.27672\textwidth}@{}}
+\toprule
+\textbf{Test ID} & \textbf{AC} & \textbf{Level} & \textbf{Precondition / input} & \textbf{Action} & \textbf{Expected result} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Test ID} & \textbf{AC} & \textbf{Level} & \textbf{Precondition / input} & \textbf{Action} & \textbf{Expected result} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{6}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\textbf{STS-F03-01} & AC-F03-01 & Integration & 1 published, 1 draft, 1 closed survey; resp1 and resp2 have submitted to different surveys & GET \texttt{/api/surveys/active} as resp1 & \texttt{200}, only published surveys, correct \texttt{hasSubmitted}; only resp1's own completed survey includes \texttt{responseId} \\
+\textbf{STS-F03-02} & AC-F03-02 & Integration & Published survey with 2 questions & GET \texttt{/api/surveys/:id/form} & \texttt{200}, ordered questions and options \\
+\textbf{STS-F03-03} & AC-F03-03 & Integration / DB & Published survey; resp1 has not submitted & POST valid answers & \texttt{201}; one response, 2 answers, option links and claim exist \\
+\textbf{STS-F03-04} & AC-F03-04 & Integration (TDD core) & resp1 already submitted; repeat sequentially, then two concurrent requests for resp2 & POST again; POST twice in parallel & \texttt{409 DUPLICATE\_SUBMISSION}; DB count remains 1; concurrent case yields one \texttt{201} and one \texttt{409} \\
+\textbf{STS-F03-05} & AC-F03-05 & Integration & Draft survey; closed survey & POST answers to each & \texttt{400 SURVEY\_NOT\_ACCEPTING\_RESPONSES} \\
+\textbf{STS-F03-06} & AC-F03-06 & Integration & Required question omitted; optional omitted & POST & \texttt{400 MISSING\_REQUIRED\_QUESTIONS} with id; optional omission succeeds \\
+\textbf{STS-F03-07} & AC-F03-07 & Integration & Foreign option; duplicate question id; mixed text/option; 2,001-character text & POST each payload & \texttt{400 INVALID\_ANSWER} for each \\
+\textbf{STS-F03-08} & AC-F03-08 & Integration (privacy) & resp1 has a response; authenticated as resp2 & GET \texttt{/api/surveys/:id/responses/:resp1Id} & \texttt{403 FORBIDDEN\_CROSS\_RESPONSE\_ACCESS}, no answer data \\
+\textbf{STS-F03-09} & AC-F03-09 & Integration (role) & Owner token; valid published survey & POST a response & \texttt{403 FORBIDDEN\_ROLE}; no response stored \\
+\textbf{STS-F03-10} & AC-F03-10 & Integration & resp1 submitted & GET own receipt; reload and GET again & \texttt{200}, same response id, submitted time and answers \\
+\end{longtable}}
+
+Concurrency note: STS-F03-04 sends two requests with \texttt{Promise.all} and asserts the multiset of statuses is \texttt{\{201, 409\}}. This is the test that must be shown red before the claim/unique guard and green after.
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+
+
+\clearpage
+
+\phantomsection
+\subsection*{Part E - F-04 Aggregate Summary}
+\addcontentsline{toc}{subsection}{Part E - F-04 Aggregate Summary}
+
+\phantomsection
+\subsubsection*{5. Contract F-04: Aggregate Summary}
+\addcontentsline{toc}{subsubsection}{5. Contract F-04: Aggregate Summary}
+\phantomsection
+\paragraph*{5.1 Scope and linked requirements}
+\begin{itemize}[leftmargin=*]
+\item \textbf{Requirements:} FR-10
+\item \textbf{Business rules:} BR-04, BR-05, BR-11
+\item \textbf{NFRs:} NFR-SEC-02
+\item \textbf{Feature:} F-04
+\item \textbf{Dependencies:} F-01, F-02, F-03
+\item \textbf{Sprint:} 1
+\end{itemize}
+
+\phantomsection
+\paragraph*{5.2 Behaviour}
+\begin{itemize}[leftmargin=*]
+\item Only the owner of a survey can view its summary.
+\item A respondent, or another owner, receives \texttt{403} with no summary data.
+\item The summary reports:
+\begin{itemize}[leftmargin=*]
+\item \texttt{totalResponses} - number of response rows for the survey.
+\item Per question: \texttt{answeredCount}, option counts and percentages.
+\item Short- and long-text answers as unlinked lists of strings.
+\item Rating and integer count, average, minimum and maximum; rating also has a 1-5 distribution (Sprint 2).
+\item Date answer counts grouped by calendar date (Sprint 2; F-06 Issue \href{https://github.com/Snnn3/SurveyHub/issues/9}{\#9}).
+\end{itemize}
+\item Percentage denominator is \texttt{answeredCount} for that question, not \texttt{totalResponses}. This is correct when a question is optional and some respondents skip it.
+\item For multi-choice, each option percentage is the share of answerers selecting that option; totals may exceed 100\% because one answer can select several options.
+\item Percentages are rounded to two decimals.
+\item No respondent name, email, user id or response id appears in the summary payload.
+\item A survey with zero responses returns zero counts and empty lists, not an error.
+\end{itemize}
+
+\phantomsection
+\paragraph*{5.3 UI behaviour}
+\textbf{\texttt{/owner/surveys/:id/summary}}
+
+\begin{itemize}[leftmargin=*]
+\item Header: title, description, status badge, created date.
+\item KPI card: total responses.
+\item For each question:
+\begin{itemize}[leftmargin=*]
+\item Single-choice, multi-choice, yes/no and Likert: option label, progress bar, count and percentage.
+\item Short and long text: list of unlinked answers, or "No text answers yet."
+\item Rating (Sprint 2): count, average, observed minimum/maximum and distribution across 1-5.
+\item Integer (Sprint 2): count, average, minimum and maximum.
+\item Date (Sprint 2): count by calendar date.
+\end{itemize}
+\item Empty state when \texttt{totalResponses = 0}: "No responses submitted yet."
+\item Loading skeleton and error banner.
+\item Access denied page for 403 without rendering any data.
+\end{itemize}
+
+\phantomsection
+\paragraph*{5.4 Data specification}
+Read-only aggregation over \texttt{survey\_responses}, \texttt{answers}, \texttt{answer\_options}, \texttt{options} and \texttt{questions}. F-06 supplies the typed answer fields; aggregation queries are scoped by \texttt{surveyId} and authorized by \texttt{ownerId}.
+
+Percentage formula:
+
+\begin{lstlisting}
+percentage = answeredCount > 0 ? round(optionCount / answeredCount * 100, 2) : 0
+\end{lstlisting}
+
+\phantomsection
+\paragraph*{5.5 API specification}
+\phantomsection
+\subparagraph*{GET /api/surveys/:id/summary}
+Success \texttt{200}:
+
+\begin{lstlisting}
+{
+  "success": true,
+  "data": {
+    "surveyId": "<uuid>",
+    "title": "CPE 334 Midterm Feedback",
+    "status": "PUBLISHED",
+    "mode": "IDENTIFIED",
+    "totalResponses": 15,
+    "questions": [
+      {
+        "questionId": "<uuid-1>",
+        "prompt": "How satisfied are you with the course?",
+        "questionType": "SINGLE_CHOICE",
+        "answeredCount": 15,
+        "options": [
+          { "optionId": "<uuid-opt-1>", "label": "Very satisfied", "count": 10, "percentage": 66.67 },
+          { "optionId": "<uuid-opt-2>", "label": "Neutral", "count": 4, "percentage": 26.67 },
+          { "optionId": "<uuid-opt-3>", "label": "Unsatisfied", "count": 1, "percentage": 6.67 }
+        ]
+      },
+      {
+        "questionId": "<uuid-2>",
+        "prompt": "What should improve?",
+        "questionType": "SHORT_TEXT",
+        "answeredCount": 8,
+        "textAnswers": ["More lab time, please.", "Clearer grading rubric."]
+      }
+    ]
+  }
+}
+\end{lstlisting}
+
+Errors:
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{403 FORBIDDEN\_ROLE} - respondent.
+\item \texttt{403 FORBIDDEN\_OWNERSHIP} - another owner.
+\item \texttt{404 NOT\_FOUND} - unknown survey.
+\end{itemize}
+
+\phantomsection
+\paragraph*{5.6 Acceptance criteria}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.11603\textwidth}>{\raggedright\arraybackslash}p{0.87066\textwidth}@{}}
+\toprule
+\textbf{AC} & \textbf{Observable outcome} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{AC} & \textbf{Observable outcome} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{2}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\textbf{AC-F04-01} & Counts, percentages and text answers match the database; percentages use \texttt{answeredCount} and are rounded to two decimals; no respondent identity field is present. \\
+\textbf{AC-F04-02} & A respondent receives \texttt{403 FORBIDDEN\_ROLE} and no summary data. \\
+\textbf{AC-F04-03} & A non-owner owner receives \texttt{403 FORBIDDEN\_OWNERSHIP} and no summary data. \\
+\textbf{AC-F04-04} & A survey with zero responses returns \texttt{totalResponses = 0}, zero counts, empty text lists and \texttt{200}. \\
+\end{longtable}}
+
+\phantomsection
+\paragraph*{5.7 Software Test Specification}
+File: \texttt{server/tests/survey-summary.test.ts}
+
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\scriptsize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.09758\textwidth}>{\raggedright\arraybackslash}p{0.05274\textwidth}>{\raggedright\arraybackslash}p{0.09309\textwidth}>{\raggedright\arraybackslash}p{0.30710\textwidth}>{\raggedright\arraybackslash}p{0.09474\textwidth}>{\raggedright\arraybackslash}p{0.28818\textwidth}@{}}
+\toprule
+\textbf{Test ID} & \textbf{AC} & \textbf{Level} & \textbf{Precondition / input} & \textbf{Action} & \textbf{Expected result} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Test ID} & \textbf{AC} & \textbf{Level} & \textbf{Precondition / input} & \textbf{Action} & \textbf{Expected result} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{6}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\textbf{STS-F04-01} & AC-F04-01 & Integration / DB & 2 responses; option A chosen once, B once; one optional text answer & GET summary as owner & \texttt{200}, counts 1/1, percentages 50/50, \texttt{answeredCount} correct, text list present, no identity keys \\
+\textbf{STS-F04-02} & AC-F04-02 & Integration (role) & Authenticated respondent & GET summary & \texttt{403 FORBIDDEN\_ROLE}, empty error data \\
+\textbf{STS-F04-03} & AC-F04-03 & Integration (ownership) & Survey owned by A; authenticated as B & GET summary & \texttt{403 FORBIDDEN\_OWNERSHIP}, no statistics \\
+\textbf{STS-F04-04} & AC-F04-04 & Integration & Published survey with no responses & GET summary & \texttt{200}, zero totals, empty option counts and text list \\
+\end{longtable}}
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+
+
+\clearpage
+
+\phantomsection
+\subsection*{Part E (continued): Shared System Contracts and Test Specifications}
+\addcontentsline{toc}{subsection}{Part E (continued): Shared System Contracts and Test Specifications}
+
+\phantomsection
+\subsubsection*{6. Health Endpoint Reference}
+\addcontentsline{toc}{subsubsection}{6. Health Endpoint Reference}
+The scaffold's public \texttt{GET /api/health} contract is defined in \textcolor{blue}{Part C \S{}4.4}. Issue \href{https://github.com/Snnn3/SurveyHub/issues/2}{\#2} verifies it; it is outside the feature-test count below and its latency is not evidence for NFR-PERF-01.
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsubsection*{7. Supporting Unit Tests}
+\addcontentsline{toc}{subsubsection}{7. Supporting Unit Tests}
+These tests cover pure functions so important logic is verified without HTTP or database setup. They supplement, not replace, the integration tests.
+
+File: \texttt{server/tests/unit/rules.test.ts}
+
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.18835\textwidth}>{\raggedright\arraybackslash}p{0.22955\textwidth}>{\raggedright\arraybackslash}p{0.25920\textwidth}>{\raggedright\arraybackslash}p{0.28296\textwidth}@{}}
+\toprule
+\textbf{Test ID} & \textbf{Target} & \textbf{Input} & \textbf{Expected} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Test ID} & \textbf{Target} & \textbf{Input} & \textbf{Expected} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{4}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\textbf{STS-U-01} & Survey structure validator & Draft with zero questions & Invalid with \texttt{NO\_QUESTIONS} \\
+\textbf{STS-U-02} & Survey structure validator & Single-choice with one option & Invalid with \texttt{TOO\_FEW\_OPTIONS} \\
+\textbf{STS-U-03} & Answer validator & Missing required question & Invalid with the missing id \\
+\textbf{STS-U-04} & Answer validator & 2,001-character text; empty required text & Invalid in both cases \\
+\textbf{STS-U-05} & Percentage calculator & 0 answered; 1/3 answered; 2/3 answered & \texttt{0}; \texttt{33.33}; \texttt{66.67} \\
+\end{longtable}}
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsubsection*{8. Security Matrix Tests}
+\addcontentsline{toc}{subsubsection}{8. Security Matrix Tests}
+Planned file: \texttt{server/tests/security-matrix.test.ts} (not present in the reviewed source snapshot).
+
+Acceptance criteria:
+
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.10332\textwidth}>{\raggedright\arraybackslash}p{0.88337\textwidth}@{}}
+\toprule
+\textbf{AC} & \textbf{Observable outcome} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{AC} & \textbf{Observable outcome} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{2}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\textbf{AC-SEC-01} & Every protected endpoint rejects a missing, malformed or expired token with \texttt{401} and returns no private data. \\
+\textbf{AC-SEC-02} & Every forbidden role or ownership operation returns \texttt{403} with the correct code and leaves the database unchanged. \\
+\end{longtable}}
+
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.13947\textwidth}>{\raggedright\arraybackslash}p{0.25330\textwidth}>{\raggedright\arraybackslash}p{0.27366\textwidth}>{\raggedright\arraybackslash}p{0.29364\textwidth}@{}}
+\toprule
+\textbf{Test ID} & \textbf{Target} & \textbf{Method} & \textbf{Expected} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Test ID} & \textbf{Target} & \textbf{Method} & \textbf{Expected} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{4}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\textbf{STS-SEC-01} & Every protected route (all 16 except login and health) & Call with no token, malformed token and expired token & \texttt{401} with \texttt{TOKEN\_REQUIRED} or \texttt{INVALID\_TOKEN}; no private data \\
+\textbf{STS-SEC-02} & Role and ownership matrix from Part C \S{}5.3 & Call each operation with the wrong role and a non-owner & \texttt{403} with the correct code; database unchanged \\
+\end{longtable}}
+
+The role matrix must include endpoints added after Sprint 1; the test enumerates the route table rather than a hand-written list that can drift.
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsubsection*{9. End-to-End Tests}
+\addcontentsline{toc}{subsubsection}{9. End-to-End Tests}
+Planned file: \texttt{e2e/sprint1-survey-flow.spec.ts} (not present in the reviewed source snapshot).
+
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.14077\textwidth}>{\raggedright\arraybackslash}p{0.47632\textwidth}>{\raggedright\arraybackslash}p{0.35629\textwidth}@{}}
+\toprule
+\textbf{Test ID} & \textbf{Journey} & \textbf{Expected} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Test ID} & \textbf{Journey} & \textbf{Expected} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\textbf{STS-E2E-01} & Owner logs in, creates a survey, publishes it; respondent logs in, submits; owner views the summary & Survey published, response persisted, summary shows 1 response and 100\% for the chosen option \\
+\textbf{STS-E2E-02} & Respondent tries to submit twice, then opens another respondent's receipt URL, then logs out and reuses the old token & \texttt{409}, \texttt{403}, and \texttt{401 TOKEN\_REVOKED} respectively \\
+\end{longtable}}
+
+E2E tests run against a clean seeded database and a production-like build.
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsubsection*{10. Test Count Summary}
+\addcontentsline{toc}{subsubsection}{10. Test Count Summary}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.22562\textwidth}>{\raggedright\arraybackslash}p{0.31828\textwidth}>{\raggedright\arraybackslash}p{0.42948\textwidth}@{}}
+\toprule
+\textbf{Suite} & \textbf{File} & \textbf{Planned tests} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Suite} & \textbf{File} & \textbf{Planned tests} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+F-01 & \texttt{server/tests/auth.test.ts} & 6 \\
+F-02 & \texttt{server/tests/survey-lifecycle.test.ts} & 11 \\
+F-03 & \texttt{server/tests/response-submission.test.ts} & 10 \\
+F-04 & \texttt{server/tests/survey-summary.test.ts} & 4 \\
+Security & \texttt{server/tests/security-matrix.test.ts} & 2 \\
+\textbf{Integration subtotal} &  & \textbf{33} \\
+Unit & \texttt{server/tests/unit/rules.test.ts} & 5 \\
+E2E & \texttt{e2e/sprint1-survey-flow.spec.ts} & 2 \\
+\textbf{Total planned automated tests} &  & \textbf{40} \\
+\end{longtable}}
+
+This is the planned total. The dedicated security-matrix and E2E files were not present in the reviewed source snapshot; Part F records the implemented suites and reported results.
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsubsection*{11. TDD Protocol for BR-01}
+\addcontentsline{toc}{subsubsection}{11. TDD Protocol for BR-01}
+BR-01 is the required TDD demonstration because it is a rule with a real concurrency risk.
+
+\phantomsection
+\paragraph*{Red stage}
+\begin{enumerate}[leftmargin=*]
+\item Confirm the frozen contract in \texttt{docs/sprints/sprint-1/f-03.md} and Issue \href{https://github.com/Snnn3/SurveyHub/issues/1}{\#1}. On the Issue \href{https://github.com/Snnn3/SurveyHub/issues/5}{\#5} branch, commit the failing test before implementation.
+\item Test: submit once (expect \texttt{201}), submit again (expect \texttt{409}), and submit two concurrent requests (expect one \texttt{201} and one \texttt{409}).
+\item Run \texttt{npm test -- response-submission.test.ts}.
+\item Record the real failure output. The expected failure is \texttt{409} received but \texttt{201} returned.
+\item Commit message: \texttt{test(rules): add failing BR-01 duplicate submission test (red)}.
+\end{enumerate}
+
+\phantomsection
+\paragraph*{Green stage}
+\begin{enumerate}[leftmargin=*]
+\item Add the \texttt{ResponseClaim} check, unique constraint and \texttt{P2002} mapping.
+\item Use a transaction so no partial response is stored.
+\item Re-run the test until it passes.
+\item Record the real passing output.
+\item Commit message: \texttt{feat(rules): enforce BR-01 duplicate submission guard (green)}.
+\end{enumerate}
+
+\phantomsection
+\paragraph*{Refactor}
+\begin{itemize}[leftmargin=*]
+\item Extract the claim creation and error mapping into the response service.
+\item Keep the test unchanged; it must still pass.
+\end{itemize}
+
+Part F must include the two commit SHAs and the actual terminal excerpts. If the red stage cannot be reproduced, the team must say so rather than fabricate it.
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+\phantomsection
+\subsubsection*{12. Contract Version History}
+\addcontentsline{toc}{subsubsection}{12. Contract Version History}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.12664\textwidth}>{\raggedright\arraybackslash}p{0.10624\textwidth}>{\raggedright\arraybackslash}p{0.56094\textwidth}>{\raggedright\arraybackslash}p{0.16624\textwidth}@{}}
+\toprule
+\textbf{Version} & \textbf{Date} & \textbf{Change} & \textbf{Status} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Version} & \textbf{Date} & \textbf{Change} & \textbf{Status} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{4}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+v1 & 4 Nov 2026 & Original Thai draft; F-01..F-04 outlined; no edit/delete endpoints; single \texttt{selectedOptionId}; client-only logout; fabricated execution log & Superseded \\
+v2 & 5 Nov 2026 & English rewrite; added draft detail/update/delete endpoints; \texttt{AnswerOption} and \texttt{numberValue}; \texttt{ResponseClaim}; \texttt{tokenVersion}; corrected BR IDs; defined 40-test plan; removed fabricated evidence & Superseded \\
+v3 & 5 Nov 2026 & Aligned repository paths and issue links with the shared Kanban; included Docker Compose in Sprint 1; documented feature PRs to staging and release PRs to main & Superseded \\
+v4 & 5 Nov 2026 & Expanded the F-06 answer catalog; aligned rating range to 1-5 and documented text, integer and date value shapes and summaries & Superseded by v5 \\
+v5 & 6 Nov 2026 & Moved the health endpoint contract to Part C; added shared unit and E2E test specifications; kept all F-06 acceptance criteria deferred under FR-12 & Current baseline; implementation evidence is in Part F \\
+\end{longtable}}
+
+The version history is kept so the change is visible. Contracts are not silently rewritten after implementation.
+
+\medskip\noindent\rule{\linewidth}{0.4pt}\medskip
+
+
+\label{part-e-end}
+\clearpage
+
+\clearpage
+\section{Part F: Sprint 1 Verification and Engineering Evidence}
+
+\label{part-f-start}
+
+\begin{quote}
+\textbf{Evidence status: release promoted; Issue \#7 worktree verification is complete, with manual and historical provenance items still open.} Five Issue \#7 screenshots were added by PR \href{https://github.com/Snnn3/SurveyHub/pull/16}{\#16}, from commit \texttt{b0e58eb9\allowbreak fbf066bc\allowbreak 56ef5197\allowbreak ea5d3917\allowbreak 4f6afe76}. PR \href{https://github.com/Snnn3/SurveyHub/pull/17}{\#17} was approved and merged from staging head \texttt{00494b26\allowbreak df898920\allowbreak 66c2680e\allowbreak 0a3e0cc0\allowbreak 3c905a7} to main as \texttt{827ed220\allowbreak e6d22901\allowbreak 93df7d52\allowbreak 34ed3b75\allowbreak 7ec38988}; tag \texttt{v0.1.0-sprint1} points to that commit. PR \#17 reports typecheck, build, 56 tests, Compose image build and manual API checks passed on staging. Sprint 1 has no CI configured, so GitHub status checks are not expected; PR \#17 is the recorded release verification and says source/test files match the release tree. The full browser flow was not rerun during release verification. The Issue \#7 worktree based on \texttt{00494b26df89892066c2680e0a03e0cc03c905a7} ran on 13 November against a loopback-only PostgreSQL 18.1 \texttt{surveyhub\_test}: \texttt{npm test} passed 7 suites / 60 tests; the focused security matrix passed 4/4 tests; \texttt{npm run test:e2e} passed both journeys; and 50 sequential reads measured p50 7.693 ms, p95 13.249 ms, p99 22.422 ms. These worktree results do not change the tagged release.
+\end{quote}
+
+\subsection*{1. Version and reproduction summary}
+\addcontentsline{toc}{subsection}{1. Version and reproduction summary}
+\textbf{Repository:} \href{https://github.com/Snnn3/SurveyHub}{SurveyHub}\\
+\textbf{Screenshot commit:} \href{https://github.com/Snnn3/SurveyHub/commit/b0e58eb9fbf066bc56ef5197ea5d39174f6afe76}{\texttt{b0e58eb9fbf0}} (PR \href{https://github.com/Snnn3/SurveyHub/pull/16}{\#16}, branch \texttt{feature/7-verify-release-deliverable-1}; screenshot-only change).\\\textbf{Prior application base:} \href{https://github.com/Snnn3/SurveyHub/commit/2fda094fe9867a701228f2412fcb37e8f9454d52}{\texttt{2fda094fe986}}.\\\textbf{Staging verification head:} \href{https://github.com/Snnn3/SurveyHub/commit/00494b26df89892066c2680e0a03e0cc03c905a7}{\texttt{00494b26df89}}.\\\textbf{Release PR:} \href{https://github.com/Snnn3/SurveyHub/pull/17}{\#17}, approved by YummieGG and merged to main on 13 November 2026 (Bangkok time).\\\textbf{Release tag:} \href{https://github.com/Snnn3/SurveyHub/commit/827ed220e6d2290193df7d5234ed3b757ec38988}{\texttt{v0.1.0-sprint1}} points to merge commit \texttt{827ed220e6d2}.
+
+The repository \texttt{README.md} contains full Docker and local setup instructions. The brief container path is:
+
+\begin{lstlisting}
+cp .env.example .env
+# Set local values in .env; do not commit secrets.
+docker compose build app
+docker compose up -d db
+docker compose run --rm app npm run db:migrate:deploy
+docker compose run --rm app npm run db:seed
+docker compose up -d app
+curl http://localhost:4000/api/health
+\end{lstlisting}
+
+\subsection*{2. Build and test results recorded by feature PRs}
+\addcontentsline{toc}{subsection}{2. Build and test results recorded by feature PRs}
+The results below are recorded in merged PR descriptions. PR \#17 reports checks on staging head \texttt{00494b26df89}; it states that source and test files match the release tree. These are PR-recorded results, not independent reruns for this report.
+
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\scriptsize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.15\textwidth}>{\raggedright\arraybackslash}p{0.58\textwidth}>{\raggedright\arraybackslash}p{0.23\textwidth}@{}}
+\toprule
+\textbf{Work} & \textbf{Result recorded in PR} & \textbf{Evidence} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Work} & \textbf{Result recorded in PR} & \textbf{Evidence} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+Scaffold (Issue \#2) & Typecheck, build, health tests, Compose startup, health endpoint and restart-persistence checks reported passed & PR \href{https://github.com/Snnn3/SurveyHub/pull/10}{\#10} \\
+F-01 Authentication & Targeted auth suite (9 tests) reported passed in PR \#11; later full suite of 6 suites / 56 tests reported passed in PR \#17 & PRs \href{https://github.com/Snnn3/SurveyHub/pull/11}{\#11} and \href{https://github.com/Snnn3/SurveyHub/pull/17}{\#17} \\
+F-02 Survey lifecycle & 32/32 tests across four suites, typecheck, build and repeatable seed reported passed & PR \href{https://github.com/Snnn3/SurveyHub/pull/12}{\#12} \\
+F-03 Response rules & Five suites / 50 tests passed in PR \#13; later full suite passed. PR \#16 reports manual production-build checks for persistence, duplicate 409, cross-account 403 and revoked-token 401 & PRs \href{https://github.com/Snnn3/SurveyHub/pull/13}{\#13} and \href{https://github.com/Snnn3/SurveyHub/pull/16}{\#16} \\
+F-04 Aggregate summary & Six suites / 54 tests reported passed in PR \#14; later full suite passed in PR \#17 & PRs \href{https://github.com/Snnn3/SurveyHub/pull/14}{\#14} and \href{https://github.com/Snnn3/SurveyHub/pull/17}{\#17} \\
+Release verification & On staging head \texttt{00494b26df89}: typecheck, build, 6 suites / 56 tests, \texttt{docker compose build app}, manual API checks including receipt persistence after app-container recreation; browser login smoke passed. Full browser flow not rerun. Isolated \texttt{surveyhub\_test} used & PR \href{https://github.com/Snnn3/SurveyHub/pull/17}{\#17} \\
+\end{longtable}}
+
+PR \#17 reports build, regression tests and manual staging API/persistence checks on head \texttt{00494b26df89}, and says source/test files match the release tree. Sprint 1 has no CI configured, so the lack of GitHub status checks is expected. The recorded staging verification is the release evidence; no separate run on the merge/tag commit is recorded. The Issue \#7 worktree based on that staging head was rechecked on 13 November against an isolated loopback PostgreSQL 18.1 test database: \texttt{npm test} passed 7 suites / 60 tests; the focused security matrix passed 4/4 tests; \texttt{npm run test:e2e} passed 2/2 journeys; and the 50-request benchmark measured p50 7.693 ms, p95 13.249 ms, and p99 22.422 ms. Node was \texttt{v24.14.1} on Windows 10.0.26200 x64. Outputs are in \path{docs/evidence/npm-test-run.txt}, \path{docs/evidence/e2e-run.txt}, \path{docs/evidence/security-matrix-run.txt}, and \path{docs/evidence/nfr-perf-01-run.txt}. These are worktree results, not a separate run on the release tag.
+
+\subsection*{3. Acceptance criteria to test results}
+\addcontentsline{toc}{subsection}{3. Acceptance criteria to test results}
+\texttt{VERIFIED (PR report)} means a merged PR reports the mapped tests passing. PR \#17 reports checks on staging head \texttt{00494b26df89} and says source/test files match the release tree. Sprint 1 has no CI configured; the PR's staging results are the available release verification, with no separate run on the merge commit recorded.
+
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\scriptsize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.19\textwidth}>{\raggedright\arraybackslash}p{0.32\textwidth}>{\raggedright\arraybackslash}p{0.29\textwidth}>{\raggedright\arraybackslash}p{0.15\textwidth}@{}}
+\toprule
+\textbf{Acceptance criteria} & \textbf{Test source} & \textbf{Recorded result} & \textbf{Status} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Acceptance criteria} & \textbf{Test source} & \textbf{Recorded result} & \textbf{Status} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{4}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+AC-F01-01--AC-F01-06 & \path{server/tests/auth.test.ts} & 9 targeted tests in PR \#11; later full suite: 6 suites / 56 tests in PR \#17 & VERIFIED (PR report) \\
+AC-F02-01--AC-F02-11 & \path{server/tests/survey-lifecycle.test.ts}; \path{server/tests/unit/rules.test.ts} & 32/32 tests reported passed in PR \#12 & VERIFIED (PR report) \\
+AC-F03-01--AC-F03-10 & \path{server/tests/response-submission.test.ts} & Full suite 6 / 56 passed per PR \#17; PR \#16 captures selected manual production-build checks & VERIFIED (PR report; selected manual flows) \\
+AC-F04-01--AC-F04-04 & \path{server/tests/survey-summary.test.ts} & 54 targeted tests reported in PR \#14; later full suite 6 / 56 passed per PR \#17 & VERIFIED (PR report) \\
+AC-SEC-01--AC-SEC-02 & \path{server/tests/security-matrix.test.ts} & All 4 matrix tests passed across the 14 protected route registrations; wrong-role and non-owner calls returned 403 without private data or database changes & PASS \\
+AC-F01-06 / NFR-SEC-03 & \path{server/tests/auth.test.ts} & Full suite passed the bcrypt cost-10 assertion and password-hash response privacy checks & PASS \\
+AC-PERF-01 & \path{server/scripts/benchmark-read.ts} & 50 sequential reads: p50 7.693 ms, p95 13.249 ms, p99 22.422 ms; p95 is below the 300 ms target & PASS \\
+AC-DATA-01 & Migration, submission tests and PR \#17 manual staging API checks & Receipt and summary persisted after app-container recreation; database-container restart was not reported in release pass; tagged commit not separately rerun & PARTIAL (staging report) \\
+STS-E2E-01--STS-E2E-02 & \path{e2e/sprint1-survey-flow.spec.ts}; PRs \#16 and \#17 & Production build and clean test-database setup completed; both Playwright journeys passed (2/2) & PASS \\
+\end{longtable}}
+
+\subsection*{4. Demonstration scenarios}
+\addcontentsline{toc}{subsection}{4. Demonstration scenarios}
+Five Issue \#7 captures from PR \#16 are embedded below. PR \#17 separately reports manual staging API checks, including receipt persistence after app-container recreation. The full browser flow was not rerun during release verification, and the tagged merge commit has no separate test run.
+
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.30\textwidth}>{\raggedright\arraybackslash}p{0.30\textwidth}>{\raggedright\arraybackslash}p{0.32\textwidth}@{}}
+\toprule
+\textbf{Journey} & \textbf{Expected result} & \textbf{Evidence attached} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Journey} & \textbf{Expected result} & \textbf{Evidence attached} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+Owner publishes a survey; respondent submits; owner opens summary & Persisted receipt and summary counts after app recreation & Figures~\ref{fig:persistence-response} and~\ref{fig:persistence-summary} \\
+Respondent submits twice & Duplicate rejected with \texttt{409 } \path{DUPLICATE_SUBMISSION} & Figure~\ref{fig:duplicate-409}; closed-survey rejection remains in source tests \\
+Another respondent opens a receipt; user logs out and reuses the old token & \texttt{403 } \path{FORBIDDEN_CROSS_RESPONSE_ACCESS}; then \texttt{401 } \path{TOKEN_REVOKED} & Figures~\ref{fig:forbidden-403} and~\ref{fig:logout-401} \\
+\end{longtable}}
+
+\clearpage
+\begin{figure}[p]
+\centering
+\includegraphics[width=0.92\textwidth,height=0.70\textheight,keepaspectratio]{evidence/issue-7-response-after-app-recreation.png}
+\caption{Respondent receipt and answer remain visible after app-container recreation.}
+\label{fig:persistence-response}
+\end{figure}
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=0.92\textwidth,height=0.70\textheight,keepaspectratio]{evidence/issue-7-owner-summary-after-app-recreation.png}
+\caption{Owner summary after app-container recreation: one persisted response and its aggregate count.}
+\label{fig:persistence-summary}
+\end{figure}
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=0.92\textwidth,height=0.70\textheight,keepaspectratio]{evidence/issue-7-duplicate-submission-409.png}
+\caption{Duplicate submission is rejected with HTTP 409 \texttt{DUPLICATE\_SUBMISSION}.}
+\label{fig:duplicate-409}
+\end{figure}
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=0.92\textwidth,height=0.70\textheight,keepaspectratio]{evidence/issue-7-forbidden-receipt-403.png}
+\caption{Cross-account receipt access is denied with HTTP 403 and no response data.}
+\label{fig:forbidden-403}
+\end{figure}
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=0.92\textwidth,height=0.70\textheight,keepaspectratio]{evidence/issue-7-logout-token-revoked-401.png}
+\caption{A pre-logout token is rejected with HTTP 401 \texttt{TOKEN\_REVOKED}.}
+\label{fig:logout-401}
+\end{figure}
+\clearpage
+
+\subsection*{5. Actual test excerpts}
+\addcontentsline{toc}{subsection}{5. Actual test excerpts}
+These are excerpts from committed test source, not terminal output.
+
+\textbf{Duplicate and concurrent submission} -- \href{https://github.com/Snnn3/SurveyHub/blob/2fda094fe9867a701228f2412fcb37e8f9454d52/server/tests/response-submission.test.ts\#L161-L178}{\texttt{response-submission.test.ts}, lines 161--178}:
+
+\begin{lstlisting}
+expect(first.status).toBe(201);
+expect(duplicate.status).toBe(409);
+expect(duplicate.body.error.code).toBe('DUPLICATE_SUBMISSION');
+expect(await prisma.surveyResponse.count({ where: { surveyId: survey.id, respondentId } })).toBe(1);
+\end{lstlisting}
+
+\textbf{Respondent denied aggregate summary} -- \href{https://github.com/Snnn3/SurveyHub/blob/2fda094fe9867a701228f2412fcb37e8f9454d52/server/tests/survey-summary.test.ts\#L159-L168}{\texttt{survey-summary.test.ts}, lines 159--168}:
+
+\begin{lstlisting}
+expect(res.status).toBe(403);
+expect(res.body.error?.code).toBe('FORBIDDEN_ROLE');
+expect(res.body.data).toBeUndefined();
+\end{lstlisting}
+
+\subsection*{6. TDD evidence for BR-01}
+\addcontentsline{toc}{subsection}{6. TDD evidence for BR-01}
+Issue \href{https://github.com/Snnn3/SurveyHub/issues/5\#issuecomment-6767760438}{\#5 TDD evidence} records the corrected red/green sequence:
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{Red:} with the claim insert disabled and the duplicate indexes temporarily removed from the dedicated test database, \texttt{STS-F03-04} returned \texttt{201} instead of the expected \texttt{409}.
+\item \textbf{Green:} after restoring the claim transaction and both indexes, the same test passed with one \texttt{201}, one \texttt{409 DUPLICATE\_SUBMISSION}, and one response/claim per respondent. The test database indexes were restored before the green run.
+\item An earlier red run failed with \texttt{404} because the submission route did not yet exist; the issue record says this was replaced because it did not isolate the duplicate guard.
+\end{itemize}
+
+The following terminal excerpts were recovered from the SEProject Codex chat for Issue \#5. Both runs used the focused \texttt{STS-F03-04} test; the red setup disabled the claim insert and temporarily removed the unique indexes from the dedicated test database, while the green setup restored the claim transaction and indexes first.
+
+\textbf{Red run:}
+\begin{lstlisting}
+npm test --prefix server -- --runInBand --cacheDirectory .jest-cache --testTimeout=60000 tests/response-submission.test.ts -t "STS-F03-04"
+FAIL tests/response-submission.test.ts (14.624 s)
+  × STS-F03-04: returns one duplicate conflict sequentially and under concurrent submissions (1327 ms)
+    Expected: 409
+    Received: 201
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 9 skipped, 10 total
+Ran all test suites matching /tests\\response-submission.test.ts/i with tests matching "STS-F03-04".
+\end{lstlisting}
+
+\textbf{Green run:}
+\begin{lstlisting}
+npm test --prefix server -- --runInBand --cacheDirectory .jest-cache --testTimeout=60000 tests/response-submission.test.ts -t "STS-F03-04"
+PASS tests/response-submission.test.ts (16.355 s)
+  √ STS-F03-04: returns one duplicate conflict sequentially and under concurrent submissions (1676 ms)
+Test Suites: 1 passed, 1 total
+Tests:       9 skipped, 1 passed, 10 total
+Ran all test suites matching /tests\\response-submission.test.ts/i with tests matching "STS-F03-04".
+\end{lstlisting}
+
+These are terminal-output excerpts captured in the project chat, not a separately archived raw log. Issue \#5 comments and the reachable Git history do not associate either run with a commit SHA, so the exact red and green SHAs remain unavailable and are not inferred from nearby feature-branch commits. The corrected red/green summaries are preserved as reported evidence; no new controlled TDD red/green reproduction was run, and the passing regression suite does not recreate the historical database changes used for the red stage.
+
+\subsection*{7. Selected issue, PR, review and merge chains}
+\addcontentsline{toc}{subsection}{7. Selected issue, PR, review and merge chains}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\scriptsize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.08\textwidth}>{\raggedright\arraybackslash}p{0.20\textwidth}>{\raggedright\arraybackslash}p{0.18\textwidth}>{\raggedright\arraybackslash}p{0.28\textwidth}>{\raggedright\arraybackslash}p{0.18\textwidth}@{}}
+\toprule
+\textbf{Issue / PR} & \textbf{Branch; author / reviewer} & \textbf{Review history} & \textbf{Merge / release} & \textbf{Evidence} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Issue / PR} & \textbf{Branch; author / reviewer} & \textbf{Review history} & \textbf{Merge / release} & \textbf{Evidence} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{5}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\href{https://github.com/Snnn3/SurveyHub/issues/5}{\#5} / \href{https://github.com/Snnn3/SurveyHub/pull/13}{\#13} & \path{feature/5-one-response-per-survey}; Snnn3 / YummieGG & Changes requested; approved after validation, accessibility and UI fixes & 10 Nov 2026; merge \href{https://github.com/Snnn3/SurveyHub/commit/8b609073f5f34e492a35a1d84408283a6e9ceef7}{\texttt{8b609073}} & PR checks passed; no manual browser test \\
+\href{https://github.com/Snnn3/SurveyHub/issues/6}{\#6} / \href{https://github.com/Snnn3/SurveyHub/pull/14}{\#14} & \path{feature/6-show-aggregate-results}; YummieGG / Snnn3 & Three change requests; approved after authorization, race and refresh fixes & 10 Nov 2026; merge \href{https://github.com/Snnn3/SurveyHub/commit/2fda094fe9867a701228f2412fcb37e8f9454d52}{\texttt{2fda094}} & Final reviewer did not rerun tests, build or CI \\
+\href{https://github.com/Snnn3/SurveyHub/issues/7}{\#7} / \href{https://github.com/Snnn3/SurveyHub/pull/16}{\#16} & \path{feature/7-verify-release-deliverable-1}; Snnn3 / YummieGG & Approved; screenshot-only change & 12 Nov 2026; staging merge \href{https://github.com/Snnn3/SurveyHub/commit/00494b26df89892066c2680e0a03e0cc03c905a7}{\texttt{00494b26}} & Five screenshots; manual checks \\
+\href{https://github.com/Snnn3/SurveyHub/pull/17}{PR \#17 release} & \texttt{sprint-1-staging}; Snnn3 / YummieGG & Approved; merged to main & 13 Nov 2026; merge/tag \href{https://github.com/Snnn3/SurveyHub/commit/827ed220e6d2290193df7d5234ed3b757ec38988}{\texttt{827ed220}} & Tag \texttt{v0.1.0-sprint1}; staging verification recorded; Sprint 1 has no CI \\
+\end{longtable}}
+
+\subsection*{8. Contribution record}
+\addcontentsline{toc}{subsection}{8. Contribution record}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.26\textwidth}>{\raggedright\arraybackslash}p{0.22\textwidth}>{\raggedright\arraybackslash}p{0.40\textwidth}@{}}
+\toprule
+\textbf{Workstream} & \textbf{PR author} & \textbf{Evidence} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Workstream} & \textbf{PR author} & \textbf{Evidence} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+Parts A--E baseline & Snnn3 & PR \href{https://github.com/Snnn3/SurveyHub/pull/8}{\#8} \\
+Scaffold, schema and seed & YummieGG & PR \href{https://github.com/Snnn3/SurveyHub/pull/10}{\#10} \\
+F-01 Authentication & Snnn3 & PR \href{https://github.com/Snnn3/SurveyHub/pull/11}{\#11} \\
+F-02 Survey lifecycle & YummieGG & PR \href{https://github.com/Snnn3/SurveyHub/pull/12}{\#12} \\
+F-03 Response rules & Snnn3 & PR \href{https://github.com/Snnn3/SurveyHub/pull/13}{\#13}; reviewed by YummieGG \\
+F-04 Aggregate summary & YummieGG & PR \href{https://github.com/Snnn3/SurveyHub/pull/14}{\#14}; reviewed by Snnn3 \\
+Screenshot and release evidence & Snnn3 & PR \href{https://github.com/Snnn3/SurveyHub/pull/16}{\#16}; approved by YummieGG \\
+Staging-to-main release & Snnn3 & PR \href{https://github.com/Snnn3/SurveyHub/pull/17}{\#17}; approved by YummieGG \\
+\end{longtable}}
+
+This is a PR-authorship summary, not an effort-percentage estimate. Work done outside these PRs and the review attribution for other workstreams are not established by the records cited here.
+
+\subsection*{9. Sprint 1 evidence gaps, failures and disclosures}
+\addcontentsline{toc}{subsection}{9. Sprint 1 evidence gaps, failures and disclosures}
+{\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.08}\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.30\textwidth}>{\raggedright\arraybackslash}p{0.60\textwidth}@{}}
+\toprule
+\textbf{Item} & \textbf{Status} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Item} & \textbf{Status} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{2}{r}{\footnotesize\textit{Continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+NFR-PERF-01 & 50 sequential requests measured p50 7.693 ms, p95 13.249 ms, p99 22.422 ms against the 300 ms p95 target; see \path{docs/evidence/nfr-perf-01.json} \\
+E2E automation and run output & Both Playwright journeys passed against a clean seeded test database after the production build; see \path{docs/evidence/e2e-run.txt} \\
+Security matrix & All 4 focused matrix tests passed. The 14 protected routes returned the required 401/403 responses without private data or database changes; the bcrypt cost-10 assertion also passed in the full suite \\
+Versioned verification record & The Issue \#7 worktree records passing E2E/security/performance results and evidence paths; remaining manual scenarios and release-tag verification are pending \\
+Release evidence & PR \#17 approved/merged; \texttt{v0.1.0-sprint1} points to \texttt{827ed220e6d2}. PR \#17 reports checks on staging head \texttt{00494b26df89} and says source/test files match the release tree. Sprint 1 has no CI; no separate post-merge run is recorded \\
+TDD artifacts & Red/green terminal-output excerpts are recovered from the Issue \#5 Codex project chat and included above; a separately archived raw log and exact per-stage commit SHAs are unavailable \\
+\end{longtable}}
+
+{\small
+PR \#13's transient Prisma DLL \texttt{EPERM} passed on sequential rerun; PR \#17 reports 56 tests passed on its staging head. PRs \#16/\#17 cover selected flows only. The Issue \#7 worktree now records typecheck/build, 7 suites / 60 tests, 2/2 E2E journeys, the 4/4 security matrix, and the measured 50-request benchmark. Manual scenarios and separate release-tag verification remain pending.
+
+\textbf{AI-use disclosure:} Codex chats document Sprint 1 assistance with Issues \#3 (F-01) and \#5 (F-03), test/debug work, review of PR \#10, and this report's LaTeX. Each student must confirm their own AI use and review; these chats do not establish use by other members.
+
+\textbf{Evidence still needed:} the test and benchmark runs above are worktree results, not a separate run on the release tag. Manual scenarios not covered by saved screenshots and the students' contribution, review, and AI-use statements remain pending. Historical TDD stage SHAs remain unavailable after Git and Issue \#5 searches; the excerpts are chat-recovered, not archived raw logs.
+}
+\label{part-f-end}
+\end{document}
