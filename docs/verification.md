@@ -8,11 +8,13 @@
 
 > **Status: Issue #7 worktree evidence captured on 13 November 2026.**
 > The release results from PR #17 are historical PR-reported evidence. The latest test and E2E
-> runs below were executed on PR head `947370798d4852bc4868b5c70b53ebffa9e626a1`, based on
-> `00494b26df89892066c2680e0a03e0cc03c905a7`; the route-enumeration fix is code commit
-> `3592af27a8e78541a552b94d09caacc4a4129a2a`. Runs used the isolated, loopback-only PostgreSQL
-> test database `surveyhub_test`. `npm test` passed 7 suites / 60 tests, including the recursively
-> enumerated security matrix; the guarded production build and both E2E journeys passed.
+> runs below were executed against tested PR revision `947370798d4852bc4868b5c70b53ebffa9e626a1`,
+> based on `00494b26df89892066c2680e0a03e0cc03c905a7`; the route-enumeration fix is code commit
+> `3592af27a8e78541a552b94d09caacc4a4129a2a`. Evidence-only commit
+> `fa079a8b865ec9033fa4af9b4b317cdfc07b6490` refreshes the captured outputs and this record. Runs
+> used the isolated, loopback-only PostgreSQL test database `surveyhub_test`. `npm test` passed 7
+> suites / 60 tests, including the recursively enumerated security matrix; the guarded production
+> build and both E2E journeys passed.
 > The 50-request benchmark earlier measured p95 at 13.249 ms. These are worktree results, not a
 > separate run on the release tag. Manual demo scenarios not run here remain PLANNED.
 >
@@ -30,9 +32,9 @@
 | E2E run (earlier verification) | `npm run test:e2e` | Production build passed; both STS-E2E journeys passed (2/2) against a clean seeded test database before the local-database guard was added | Earlier result retained in Git history |
 | E2E reset safety (PR review follow-up) | `node e2e/start-server.test.js` | Passed for a remote authority, `host`/`hostaddr`/`service` overrides, the wrong database name, and an unsupported scheme; none invoked the reset command | `docs/evidence/e2e-guard-review-run.txt` |
 | E2E rerun (earlier blocked attempt) | `npm run test:e2e` | Guard and build passed; Playwright could not start because PostgreSQL ports were unreachable and Prisma could not reset the test database | `docs/evidence/e2e-guard-review-run.txt` |
-| Security matrix (included in full suite below) | `npm test` | Passed 1 suite / 4 tests on PR head `9473707`; enumerates the full API router recursively, covering 14 protected routes, token failures, wrong roles, non-owner access, private-data absence, and unchanged database state | `docs/evidence/npm-test-run.txt` |
-| Full server suite | `npm test` | Passed 7 suites / 60 tests on PR head `9473707`, including bcrypt cost 10 and logout revocation assertions | `docs/evidence/npm-test-run.txt` |
-| Latest E2E rerun | `npm run test:e2e` | Database guard passed, client/server production builds passed, and both Playwright journeys passed (2/2) on PR head `9473707` | `docs/evidence/e2e-run.txt` |
+| Security matrix (included in full suite below) | `npm test` | Passed 1 suite / 4 tests on tested revision `9473707`; enumerates the full API router recursively, covering 14 protected routes, token failures, wrong roles, non-owner access, private-data absence, and unchanged database state | `docs/evidence/npm-test-run.txt` |
+| Full server suite | `npm test` | Passed 7 suites / 60 tests on tested revision `9473707`, including bcrypt cost 10 and logout revocation assertions | `docs/evidence/npm-test-run.txt` |
+| Latest E2E rerun | `npm run test:e2e` | Database guard passed, client/server production builds passed, and both Playwright journeys passed (2/2) on tested revision `9473707` | `docs/evidence/e2e-run.txt` |
 | Performance | `npm run bench:read --prefix server` | 50 sequential authenticated form reads; p50 7.693 ms, p95 13.249 ms, p99 22.422 ms; p95 below the 300 ms target | `docs/evidence/nfr-perf-01-run.txt`, `docs/evidence/nfr-perf-01.json` |
 | LaTeX report | `xelatex -interaction=nonstopmode -halt-on-error -file-line-error Deliverable_1.tex` (final two passes) | Both final passes exited 0; final PDF has 76 pages. Pages 64–76 were rendered; updated evidence pages were inspected with no clipping or overlap | `docs/evidence/report-compile-run.txt`, `docs/evidence/deliverable-1/Deliverable_1.pdf` |
 | Issue #5 TDD provenance | Git history plus Issue #5 comments | Corrected red/green summaries exist in the issue/chat record; neither run has a provable SHA or separately archived raw log | See §5 below and the report source |
