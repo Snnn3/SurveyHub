@@ -27,6 +27,8 @@ SurveyHub is a full-stack survey management system built with React, Express, Ty
 | **Node.js** | 20 LTS or later | `node --version` |
 | **npm** | Compatible with Node 20 | `npm --version` |
 
+Playwright E2E tests use the locally installed Google Chrome Stable browser (`channel: 'chrome'`).
+
 ---
 
 ### Option A: Docker Compose Path (Recommended)
