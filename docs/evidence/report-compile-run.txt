@@ -1,0 +1,6 @@
+Command: xelatex -interaction=nonstopmode -halt-on-error -file-line-error Deliverable_1.tex
+Passes recorded: final two passes (both exited 0)
+Final output:
+Output written on Deliverable_1.pdf (76 pages).
+Transcript written on Deliverable_1.log.
+Visual check: Poppler rendered pages 64-76; no clipped or overlapping content observed.

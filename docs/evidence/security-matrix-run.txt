@@ -1,0 +1,126 @@
+
+> surveyhub-server@0.1.0 test
+> jest --runInBand --detectOpenHandles --forceExit --runTestsByPath tests/security-matrix.test.ts
+
+  console.log
+    prisma:error
+    Invalid `prisma.$queryRaw()` invocation:
+
+
+    Can't reach database server at `127.0.0.1:15432`
+
+    Please make sure your database server is running at `127.0.0.1:15432`.
+
+      at Object.zc (../node_modules/@prisma/internals/src/logger.ts:13:11)
+
+  console.error
+    Test database setup failed. Is PostgreSQL running? PrismaClientInitializationError:
+    Invalid `prisma.$queryRaw()` invocation:
+
+
+    Can't reach database server at `127.0.0.1:15432`
+
+    Please make sure your database server is running at `127.0.0.1:15432`.
+        at ei.handleRequestError (C:\KMUTT\Y3T1\CPE334\SEProject\node_modules\@prisma\client\src\runtime\RequestHandler.ts:242:13)
+        at ei.handleAndLogRequestError (C:\KMUTT\Y3T1\CPE334\SEProject\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+        at ei.request (C:\KMUTT\Y3T1\CPE334\SEProject\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+        at async a (C:\KMUTT\Y3T1\CPE334\SEProject\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:833:24)
+        at async Object.<anonymous> (C:\KMUTT\Y3T1\CPE334\SEProject\server\tests\setup.ts:27:5) {
+      clientVersion: '6.19.3',
+      errorCode: undefined,
+      retryable: undefined
+    }
+
+      38 |     await truncateTestDatabase();
+      39 |   } catch (err) {
+    > 40 |     console.error('Test database setup failed. Is PostgreSQL running?', err);
+         |             ^
+      41 |     throw err;
+      42 |   }
+      43 | });
+
+      at Object.<anonymous> (tests/setup.ts:40:13)
+
+FAIL tests/security-matrix.test.ts (8.712 s)
+  Sprint 1 security matrix (STS-SEC-01/02)
+    × rejects missing, malformed, and expired tokens on every protected route without returning data (2 ms)
+    × rejects each wrong role on every role-guarded route without changing the database
+    × denies non-owner survey operations and cross-respondent receipts without data or database changes
+
+  ● Sprint 1 security matrix (STS-SEC-01/02) › rejects missing, malformed, and expired tokens on every protected route without returning data
+
+    PrismaClientInitializationError:
+    Invalid `prisma.$queryRaw()` invocation:
+
+
+    Can't reach database server at `127.0.0.1:15432`
+
+    Please make sure your database server is running at `127.0.0.1:15432`.
+
+      25 |   // Ensure database is reachable, migrated, and truncated per SDS §2.6
+      26 |   try {
+    > 27 |     await prisma.$queryRaw`SELECT 1`;
+         |     ^
+      28 |
+      29 |     execSync('npx prisma migrate deploy', {
+      30 |       cwd: path.resolve(__dirname, '..'),
+
+      at ei.handleRequestError (../node_modules/@prisma/client/src/runtime/RequestHandler.ts:242:13)
+      at ei.handleAndLogRequestError (../node_modules/@prisma/client/src/runtime/RequestHandler.ts:174:12)
+      at ei.request (../node_modules/@prisma/client/src/runtime/RequestHandler.ts:143:12)
+      at async a (../node_modules/@prisma/client/src/runtime/getPrismaClient.ts:833:24)
+      at async Object.<anonymous> (tests/setup.ts:27:5)
+
+  ● Sprint 1 security matrix (STS-SEC-01/02) › rejects each wrong role on every role-guarded route without changing the database
+
+    PrismaClientInitializationError:
+    Invalid `prisma.$queryRaw()` invocation:
+
+
+    Can't reach database server at `127.0.0.1:15432`
+
+    Please make sure your database server is running at `127.0.0.1:15432`.
+
+      25 |   // Ensure database is reachable, migrated, and truncated per SDS §2.6
+      26 |   try {
+    > 27 |     await prisma.$queryRaw`SELECT 1`;
+         |     ^
+      28 |
+      29 |     execSync('npx prisma migrate deploy', {
+      30 |       cwd: path.resolve(__dirname, '..'),
+
+      at ei.handleRequestError (../node_modules/@prisma/client/src/runtime/RequestHandler.ts:242:13)
+      at ei.handleAndLogRequestError (../node_modules/@prisma/client/src/runtime/RequestHandler.ts:174:12)
+      at ei.request (../node_modules/@prisma/client/src/runtime/RequestHandler.ts:143:12)
+      at async a (../node_modules/@prisma/client/src/runtime/getPrismaClient.ts:833:24)
+      at async Object.<anonymous> (tests/setup.ts:27:5)
+
+  ● Sprint 1 security matrix (STS-SEC-01/02) › denies non-owner survey operations and cross-respondent receipts without data or database changes
+
+    PrismaClientInitializationError:
+    Invalid `prisma.$queryRaw()` invocation:
+
+
+    Can't reach database server at `127.0.0.1:15432`
+
+    Please make sure your database server is running at `127.0.0.1:15432`.
+
+      25 |   // Ensure database is reachable, migrated, and truncated per SDS §2.6
+      26 |   try {
+    > 27 |     await prisma.$queryRaw`SELECT 1`;
+         |     ^
+      28 |
+      29 |     execSync('npx prisma migrate deploy', {
+      30 |       cwd: path.resolve(__dirname, '..'),
+
+      at ei.handleRequestError (../node_modules/@prisma/client/src/runtime/RequestHandler.ts:242:13)
+      at ei.handleAndLogRequestError (../node_modules/@prisma/client/src/runtime/RequestHandler.ts:174:12)
+      at ei.request (../node_modules/@prisma/client/src/runtime/RequestHandler.ts:143:12)
+      at async a (../node_modules/@prisma/client/src/runtime/getPrismaClient.ts:833:24)
+      at async Object.<anonymous> (tests/setup.ts:27:5)
+
+Test Suites: 1 failed, 1 total
+Tests:       3 failed, 3 total
+Snapshots:   0 total
+Time:        9.357 s
+Ran all test suites within paths "tests/security-matrix.test.ts".

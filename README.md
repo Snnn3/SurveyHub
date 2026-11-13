@@ -102,6 +102,12 @@ npm test
 # Run a specific test suite
 npm test --prefix server -- tests/health.test.ts
 
+# Run the production-build E2E journeys (resets and seeds only surveyhub_test)
+npm run test:e2e
+
+# Measure 50 sequential GET /api/surveys/:id/form requests; writes docs/evidence/nfr-perf-01.json
+npm run bench:read --prefix server
+
 # Typecheck both frontend and backend
 npm run typecheck
 

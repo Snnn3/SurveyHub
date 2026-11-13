@@ -3,18 +3,37 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)
 **Course:** CPE 334 Software Engineering, Semester 1/2026
 **Deliverable:** Project Deliverable 1 — Part F (20 points)
-**Document status:** Verification guide v5, aligned with the Part E test plan on 6 November 2026
+**Document status:** Verification guide v5 with Issue #7 evidence update dated 13 November 2026
 **Related documents:** Part E (contracts and test specifications), Part C (design), Part B (traceability)
 
-> **Status: PLANNED.**
-> This document describes how Sprint 1 will be verified and which evidence must be captured. It is
-> not a test report. Every result field below contains a placeholder that must be replaced with real
-> output from the assessed commit before submission. Nothing in this document is marked PASS in
-> advance.
+> **Status: evidence update in progress.**
+> The release results from PR #17 are historical PR-reported evidence. The commands below were run
+> from the Issue #7 worktree based on `00494b26df89892066c2680e0a03e0cc03c905a7`. Build and
+> typecheck passed. Database-dependent E2E, Jest and benchmark runs could not reach the isolated
+> PostgreSQL test database at `127.0.0.1:15432`; those checks remain blocked or unmeasured as stated
+> below. Manual demo scenarios not run in this update remain PLANNED.
 >
 > The previous draft contained invented test counts, invented terminal logs, invented pull requests
 > and commit SHAs that never existed in the repository. All of that has been removed. If a check has
 > not been run, it stays `PLANNED`. If a check failed, it is recorded as `FAILED`, not hidden.
+
+### Issue #7 evidence run — 13 November 2026
+
+| Check | Command | Actual result | Evidence |
+|---|---|---|---|
+| Typecheck | `npm run typecheck` | Passed for server and client | `docs/evidence/static-checks-run.txt` |
+| Production build | `npm run build` | Passed for client and server | `docs/evidence/build-run.txt` |
+| E2E discovery | `npx playwright test --list` | Found the two specified E2E tests; this does not execute them | `e2e/sprint1-survey-flow.spec.ts` |
+| E2E run | `npm run test:e2e` | Production build passed; test server setup stopped at `npx prisma migrate deploy` because PostgreSQL was unreachable; no browser tests ran | `docs/evidence/e2e-run.txt` |
+| Security matrix | `npm run test --prefix server -- --runTestsByPath tests/security-matrix.test.ts` | Jest setup could not connect to `127.0.0.1:15432`; 1 suite and 3 tests are reported failed during setup, before the matrix assertions ran | `docs/evidence/security-matrix-run.txt` |
+| Full server suite | `npm test` | 7 suites and 59 tests reported failed at the same database setup step; this is not a passing regression run | `docs/evidence/npm-test-run.txt` |
+| Performance | `npm run bench:read --prefix server` | Migration/connectivity setup failed before sampling; 0 requests completed, so p50/p95/p99 are unmeasured | `docs/evidence/nfr-perf-01-run.txt`, `docs/evidence/nfr-perf-01.json` |
+| LaTeX report | `xelatex -interaction=nonstopmode -halt-on-error -file-line-error Deliverable_1.tex` (final two passes) | Both final passes exited 0; final PDF has 76 pages. Pages 64–76 were rendered and visually inspected | `docs/evidence/report-compile-run.txt`; report PDF beside its `.tex` source |
+| Issue #5 TDD provenance | Git history plus Issue #5 comments | Corrected red/green summaries exist in the issue/chat record; neither run has a provable SHA or separately archived raw log | See §5 below and the report source |
+
+Node was `v24.14.1`. PostgreSQL's version could not be observed because the database was unavailable.
+The Compose image is configured as PostgreSQL 16, but that is not a measurement of the running
+database. Sprint 1 has no CI; no CI gap is reported.
 
 ---
 
@@ -335,23 +354,29 @@ Record the actual run exactly below, including any tests added, failed or skippe
 
 | Field | Value |
 |---|---|
-| Command | `npm test` and `npm run test:e2e` |
-| Commit | `<full SHA>` |
-| Version | `v0.1.0-sprint1` |
-| Date | `<ISO 8601>` |
-| Unit/integration result | `<X passed, Y failed, Z skipped>` |
-| E2E result | `<X passed, Y failed, Z skipped>` |
-| Total time | `<from the real output>` |
-| Exit code | `<0 or non-zero>` |
+| Command | `npm test`; `npm run test:e2e` |
+| Commit | Local worktree based on `00494b26df89892066c2680e0a03e0cc03c905a7`; Issue #7 changes were uncommitted during these runs |
+| Version | Local Issue #7 worktree; not the release tag |
+| Date | 2026-11-13 |
+| Unit/integration result | `npm test`: 7 suites failed, 59 tests failed during shared database setup; no test suite completed |
+| E2E result | 0 browser tests ran; server setup failed while applying migrations to the unavailable test database |
+| Total time | Jest reported 17.813 s; E2E did not reach Playwright tests |
+| Exit code | `1` for both commands |
 
-Paste the real terminal tail below. Do not edit counts or timings.
+The complete outputs are saved at `docs/evidence/npm-test-run.txt` and
+`docs/evidence/e2e-run.txt`. The failures show that the configured `surveyhub_test` database could
+not be reached at `127.0.0.1:15432`; they do not establish that the application tests pass or fail.
 
 ```text
-<PASTE THE ACTUAL JEST SUMMARY HERE>
+Test Suites: 7 failed, 7 total
+Tests:       59 failed, 59 total
+Snapshots:   0 total
+Time:        17.813 s
+Ran all test suites.
 ```
 
 ```text
-<PASTE THE ACTUAL PLAYWRIGHT SUMMARY HERE>
+E2E: production build completed; `npx prisma migrate deploy` failed before any browser test ran.
 ```
 
 ### 3.3 Acceptance-criteria-to-test mapping
@@ -392,25 +417,25 @@ Every row stays `PLANNED` until the named test has run on the assessed commit. `
 | AC-F04-02 | STS-F04-02 | Integration (role) | `server/tests/survey-summary.test.ts` | PLANNED | `<fig/line>` |
 | AC-F04-03 | STS-F04-03 | Integration (ownership) | `server/tests/survey-summary.test.ts` | PLANNED | `<fig/line>` |
 | AC-F04-04 | STS-F04-04 | Integration | `server/tests/survey-summary.test.ts` | PLANNED | `<fig/line>` |
-| AC-SEC-01 | STS-SEC-01 | Integration (route matrix) | `server/tests/security-matrix.test.ts` | PLANNED | `<fig/line>` |
-| AC-SEC-02 | STS-SEC-02 | Integration (role matrix) | `server/tests/security-matrix.test.ts` | PLANNED | `<fig/line>` |
-| AC-PERF-01 | Benchmark `benchmark-read.ts` | Measurement | `server/scripts/benchmark-read.ts` | PLANNED | `<report path>` |
+| AC-SEC-01 | STS-SEC-01 | Integration (route matrix) | `server/tests/security-matrix.test.ts` | BLOCKED: database setup failed before assertions | `docs/evidence/security-matrix-run.txt` |
+| AC-SEC-02 | STS-SEC-02 | Integration (role matrix) | `server/tests/security-matrix.test.ts` | BLOCKED: database setup failed before assertions | `docs/evidence/security-matrix-run.txt` |
+| AC-PERF-01 | Benchmark `benchmark-read.ts` | Measurement | `server/scripts/benchmark-read.ts` | UNMEASURED: no requests sampled | `docs/evidence/nfr-perf-01.json` |
 | AC-DATA-01 | STS-F03-03 + restart check | Integration + manual | `server/tests/response-submission.test.ts` | PLANNED | `<fig/line>` |
 | BR-06 structure | STS-U-01, STS-U-02 | Unit | `server/tests/unit/rules.test.ts` | PLANNED | `<fig/line>` |
 | BR-03 validation | STS-U-03, STS-U-04 | Unit | `server/tests/unit/rules.test.ts` | PLANNED | `<fig/line>` |
 | Percentage logic | STS-U-05 | Unit | `server/tests/unit/rules.test.ts` | PLANNED | `<fig/line>` |
-| Journey 1 | STS-E2E-01 | E2E | `e2e/sprint1-survey-flow.spec.ts` | PLANNED | `<fig/line>` |
-| Journey 2 | STS-E2E-02 | E2E | `e2e/sprint1-survey-flow.spec.ts` | PLANNED | `<fig/line>` |
+| Journey 1 | STS-E2E-01 | E2E | `e2e/sprint1-survey-flow.spec.ts` | BLOCKED: test server setup failed before browser launch | `docs/evidence/e2e-run.txt` |
+| Journey 2 | STS-E2E-02 | E2E | `e2e/sprint1-survey-flow.spec.ts` | BLOCKED: test server setup failed before browser launch | `docs/evidence/e2e-run.txt` |
 
 ### 3.4 Non-functional verification plan
 
 | NFR | Target | Method | Observed value | Result |
 |---|---|---|---|---|
-| NFR-SEC-01 | Every protected route rejects missing, malformed and expired tokens with 401 and no data | `STS-SEC-01` route-matrix test | `<record>` | PLANNED |
-| NFR-SEC-02 | Every forbidden role/ownership operation returns 403 and leaves data unchanged | `STS-SEC-02` plus the feature-level 403 tests | `<record>` | PLANNED |
-| NFR-SEC-03 | bcrypt cost 10; no plaintext password or hash in any response | `STS-F01-06`; inspect hashes and response bodies | `<record>` | PLANNED |
-| NFR-SEC-04 | Logout revokes existing tokens | `STS-F01-05`; old token returns 401 `TOKEN_REVOKED` | `<record>` | PLANNED |
-| NFR-PERF-01 | p95 of `GET /api/surveys/:id/form` < 300 ms over 50 requests on the local development environment | `server/scripts/benchmark-read.ts` writes p50/p95/p99 JSON | `<record p95>` | PLANNED |
+| NFR-SEC-01 | Every protected route rejects missing, malformed and expired tokens with 401 and no data | `STS-SEC-01` dynamically enumerates protected router registrations | 14 protected route registrations are targeted by the test source; execution blocked at shared DB setup | BLOCKED |
+| NFR-SEC-02 | Every forbidden role/ownership operation returns 403 and leaves data unchanged | `STS-SEC-02` plus the feature-level 403 tests | Role and ownership assertions are implemented; execution blocked at shared DB setup | BLOCKED |
+| NFR-SEC-03 | bcrypt cost 10; no plaintext password or hash in any response | Existing dedicated assertion in `server/tests/auth.test.ts` checks `$2b$10$` | Assertion exists in source; test run blocked at shared DB setup | BLOCKED |
+| NFR-SEC-04 | Logout revokes existing tokens | `STS-F01-05`; old token returns 401 `TOKEN_REVOKED` | Existing auth test and E2E path are present; this run did not reach assertions | BLOCKED |
+| NFR-PERF-01 | p95 of `GET /api/surveys/:id/form` < 300 ms over 50 requests on the local development environment | `server/scripts/benchmark-read.ts` writes p50/p95/p99 JSON | Node `v24.14.1`; PostgreSQL unavailable; 0 requests completed; no p95 | UNMEASURED |
 | NFR-DATA-01 | Foreign keys and unique constraints exist; data survives API and database restart | Inspect migration SQL; `STS-F03-03`; restart check in Scenario 1 | `<record>` | PLANNED |
 | NFR-PRIV-01 | Anonymous responses carry no identity link | Deferred to Sprint 2 with `STS-PRIV-01` | — | DEFERRED |
 
@@ -422,13 +447,12 @@ latency measurement and must not be reported as one.
 | Field | Value |
 |---|---|
 | Command | `npm run bench:read --prefix server` |
-| Commit | `<full SHA>` |
-| Requests | 50 |
-| p50 | `<ms>` |
-| p95 | `<ms>` |
-| p99 | `<ms>` |
-| Result file | `<path to committed JSON>` |
-| Pass/fail | `<p95 < 300 ms>` |
+| Commit | Local worktree based on `00494b26df89892066c2680e0a03e0cc03c905a7`; changes were uncommitted during the attempt |
+| Target requests | 50 sequential reads |
+| Completed requests | 0; migration/connectivity setup failed before sampling |
+| p50 / p95 / p99 | Unmeasured |
+| Result file | `docs/evidence/nfr-perf-01.json` (blocker record; no latency values) |
+| Pass/fail | UNMEASURED; test database unreachable at `localhost:15432` |
 
 ---
 
@@ -523,30 +547,40 @@ constraint, not only a service check.
 | Green | `feat(rules): enforce BR-01 duplicate submission guard (green)` | Same test passes after claim constraint and `P2002` mapping |
 | Refactor | `refactor(rules): extract response claim handling` | Test still passes unchanged |
 
+Historical evidence search on 13 November 2026 found no red-stage or green-stage commit SHA in the
+reachable Git history. The feature implementation commit `ca501838cb2c0e2579b70eed42ce3baf545d2753`
+is not evidence for either test stage and is not assigned to them. [Issue #5's corrected comment](https://github.com/Snnn3/SurveyHub/issues/5#issuecomment-6767760438)
+records the expected duplicate-accepted red (`201` instead of `409`) and a passing green summary,
+but does not name either SHA or contain a separately archived terminal log. The earlier [Issue #5
+comment](https://github.com/Snnn3/SurveyHub/issues/5#issuecomment-6767457565) records a `404` red
+run that was replaced because the endpoint did not yet exist. The supplied LaTeX report contains
+chat-recovered output excerpts; those excerpts are not raw archived logs. No new TDD reproduction
+was run in this update because the test database was unavailable.
+
 ### 5.2 Red run record
 
 | Field | Value |
 |---|---|
-| Command | `npm test --prefix server -- tests/response-submission.test.ts` |
-| Commit | `<full SHA of the red commit>` |
-| Failed test | `<exact test name>` |
-| Expected vs received | `<e.g. expected 409, received 201>` |
-| Failure reason is the intended one | `<yes/no and why>` |
+| Command | Chat excerpt: `npm test --prefix server -- --runInBand --cacheDirectory .jest-cache --testTimeout=60000 tests/response-submission.test.ts -t "STS-F03-04"` |
+| Commit | Unavailable; Issue #5 and Git history do not associate the run with a SHA |
+| Failed test | `STS-F03-04`, as reported in Issue #5 and the chat excerpt |
+| Expected vs received | Corrected red summary: expected `409`, received `201`; an earlier `404` run was explicitly superseded |
+| Failure reason is the intended one | Issue #5 says yes for the corrected red: the duplicate guard was disabled and duplicate indexes were temporarily removed on the test database |
 
 ```text
-<PASTE THE REAL RED-STAGE OUTPUT>
+The report's red output is recovered from the project chat, not a raw archived log.
 ```
 
 ### 5.3 Green run record
 
 | Field | Value |
 |---|---|
-| Command | `npm test --prefix server -- tests/response-submission.test.ts` |
-| Commit | `<full SHA of the green commit>` |
-| Result | `<X passed, Y failed, Z skipped>` |
+| Command | Chat excerpt: `npm test --prefix server -- --runInBand --cacheDirectory .jest-cache --testTimeout=60000 tests/response-submission.test.ts -t "STS-F03-04"` |
+| Commit | Unavailable; Issue #5 and Git history do not associate the run with a SHA |
+| Result | Issue #5 and the chat excerpt report the test passed with one `201`, one `409 DUPLICATE_SUBMISSION`, and one response/claim per respondent; raw test totals are not independently archived |
 
 ```text
-<PASTE THE REAL GREEN-STAGE OUTPUT>
+The report's green output is recovered from the project chat, not a raw archived log.
 ```
 
 If the red stage cannot be reproduced, record that fact. Do not reconstruct a plausible failure log
