@@ -27,6 +27,8 @@ SurveyHub is a full-stack survey management system built with React, Express, Ty
 | **Node.js** | 20 LTS or later | `node --version` |
 | **npm** | Compatible with Node 20 | `npm --version` |
 
+Playwright E2E tests use the locally installed Google Chrome Stable browser (`channel: 'chrome'`).
+
 ---
 
 ### Option A: Docker Compose Path (Recommended)
@@ -101,6 +103,12 @@ npm test
 
 # Run a specific test suite
 npm test --prefix server -- tests/health.test.ts
+
+# Run the production-build E2E journeys (resets and seeds only surveyhub_test)
+npm run test:e2e
+
+# Measure 50 sequential GET /api/surveys/:id/form requests; writes docs/evidence/nfr-perf-01.json
+npm run bench:read --prefix server
 
 # Typecheck both frontend and backend
 npm run typecheck

@@ -1,0 +1,32 @@
+
+> surveyhub@0.1.0 build
+> npm run build --prefix client && npm run build --prefix server
+
+
+> surveyhub-client@0.1.0 build
+> tsc && vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 100 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.56 kB │ gzip:  0.37 kB
+dist/assets/index-BBd11mzi.css   20.11 kB │ gzip:  4.31 kB
+dist/assets/index-CzKupfJd.js   277.68 kB │ gzip: 87.72 kB
+✓ built in 2.70s
+
+> surveyhub-server@0.1.0 build
+> prisma generate && tsc && tsc prisma/seed.ts --outDir dist/prisma --module commonjs --target ES2022 --moduleResolution node --skipLibCheck --esModuleInterop
+
+warn The configuration property `package.json#prisma` is deprecated and will be removed in Prisma 7. Please migrate to a Prisma config file (e.g., `prisma.config.ts`).
+For more information, see: https://pris.ly/prisma-config
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+
+✔ Generated Prisma Client (v6.19.3) to .\..\node_modules\@prisma\client in 185ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Interested in query caching in just a few lines of code? Try Accelerate today! https://pris.ly/tip-3-accelerate

@@ -1,0 +1,46 @@
+const { execSync } = require('child_process');
+const { randomBytes } = require('crypto');
+const dotenv = require('dotenv');
+const path = require('path');
+
+const root = path.resolve(__dirname, '..');
+const server = path.join(root, 'server');
+dotenv.config({ path: path.join(root, '.env') });
+
+const testDatabaseUrl = process.env.DATABASE_URL_TEST;
+let testDatabase;
+try {
+  if (testDatabaseUrl) testDatabase = new URL(testDatabaseUrl);
+} catch {}
+if (
+  !testDatabase ||
+  !['postgres:', 'postgresql:'].includes(testDatabase.protocol) ||
+  !['localhost', '127.0.0.1', '[::1]'].includes(testDatabase.hostname.toLowerCase()) ||
+  ['host', 'hostaddr', 'service'].some((key) => testDatabase.searchParams.has(key)) ||
+  testDatabase.pathname.replace(/^\//, '') !== 'surveyhub_test'
+) {
+  throw new Error('E2E setup only runs against local DATABASE_URL_TEST for surveyhub_test.');
+}
+
+const childEnv = { ...process.env, DATABASE_URL: testDatabaseUrl };
+execSync('npm run db:reset', { cwd: server, env: childEnv, stdio: 'inherit' });
+
+function start() {
+  process.env.NODE_ENV = 'production';
+  process.env.PORT = '4173';
+  process.env.DATABASE_URL = testDatabaseUrl;
+  process.env.JWT_SECRET = process.env.JWT_SECRET || randomBytes(32).toString('hex');
+  process.env.CLIENT_ORIGIN = 'http://127.0.0.1:4173';
+  const app = require(path.join(server, 'dist', 'app.js')).default;
+  const listener = app.listen(4173, '127.0.0.1', () => console.log('[E2E] Test server listening on 4173.'));
+  for (const signal of ['SIGINT', 'SIGTERM']) {
+    process.on(signal, () => listener.close(() => process.exit(0)));
+  }
+}
+
+try {
+  start();
+} catch (error) {
+  console.error(error);
+  process.exitCode = 1;
+}
