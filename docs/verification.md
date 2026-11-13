@@ -26,7 +26,7 @@
 | Production build | `npm run build` | Passed for client and server | `docs/evidence/build-run.txt` |
 | E2E discovery | `npx playwright test --list` | Found the two specified E2E tests; this does not execute them | `e2e/sprint1-survey-flow.spec.ts` |
 | E2E run (earlier verification) | `npm run test:e2e` | Production build passed; both STS-E2E journeys passed (2/2) against a clean seeded test database before the local-database guard was added | `docs/evidence/e2e-run.txt` |
-| E2E reset safety (PR review follow-up) | `node e2e/start-server.test.js` | Passed for a remote authority host, a remote `host=` override, and an unsupported database scheme; none invoked the reset command | `docs/evidence/e2e-guard-review-run.txt` |
+| E2E reset safety (PR review follow-up) | `node e2e/start-server.test.js` | Passed for a remote authority, `host`/`hostaddr`/`service` overrides, the wrong database name, and an unsupported scheme; none invoked the reset command | `docs/evidence/e2e-guard-review-run.txt` |
 | Latest E2E rerun (PR review follow-up) | `npm run test:e2e` | Guard and production build passed; Playwright did not start because the local PostgreSQL ports were unreachable and Prisma could not run the reset | `docs/evidence/e2e-guard-review-run.txt` |
 | Security matrix | `npm run test --prefix server -- --runTestsByPath tests/security-matrix.test.ts` | Passed 1 suite / 4 tests; covered 14 protected route registrations, missing/malformed/expired tokens, wrong roles, non-owner access, private-data absence, and unchanged database state | `docs/evidence/security-matrix-run.txt` |
 | Full server suite | `npm test` | Passed 7 suites / 60 tests, including bcrypt cost 10 and logout revocation assertions | `docs/evidence/npm-test-run.txt` |

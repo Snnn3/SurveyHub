@@ -88,3 +88,10 @@ Command: `node e2e/start-server.test.js`
 Exit code: `0`
 Output:
 `E2E remote database guard passed; reset command was not called.`
+
+Focused guard rerun after adding `hostaddr`, `service`, and wrong-database cases:
+
+Command: `node e2e/start-server.test.js`
+Exit code: `0`
+Output:
+`E2E database guard passed; unsafe reset command was never called.`

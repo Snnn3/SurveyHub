@@ -8,6 +8,9 @@ const script = fs.readFileSync(scriptPath, 'utf8');
 const testDatabaseUrls = [
   'postgresql://test:secret@db.example.com:5432/surveyhub_test',
   'postgresql://test:secret@127.0.0.1:5432/surveyhub_test?host=db.example.com',
+  'postgresql://test:secret@127.0.0.1:5432/surveyhub_test?hostaddr=203.0.113.7',
+  'postgresql://test:secret@127.0.0.1:5432/surveyhub_test?service=remote',
+  'postgresql://test:secret@127.0.0.1:5432/surveyhub_prod',
   'mysql://test:secret@localhost:3306/surveyhub_test',
 ];
 
@@ -28,6 +31,6 @@ for (const testDatabaseUrl of testDatabaseUrls) {
     }),
     { message: 'E2E setup only runs against local DATABASE_URL_TEST for surveyhub_test.' }
   );
-  assert.equal(resetCalls, 0, 'non-local test database must be rejected before the reset command');
+  assert.equal(resetCalls, 0, 'unsafe test database must be rejected before the reset command');
 }
-console.log('E2E remote database guard passed; reset command was not called.');
+console.log('E2E database guard passed; unsafe reset command was never called.');
