@@ -8,8 +8,18 @@ const server = path.join(root, 'server');
 dotenv.config({ path: path.join(root, '.env') });
 
 const testDatabaseUrl = process.env.DATABASE_URL_TEST;
-if (!testDatabaseUrl || new URL(testDatabaseUrl).pathname.replace(/^\//, '') !== 'surveyhub_test') {
-  throw new Error('E2E setup only runs against DATABASE_URL_TEST for surveyhub_test.');
+let testDatabase;
+try {
+  if (testDatabaseUrl) testDatabase = new URL(testDatabaseUrl);
+} catch {}
+if (
+  !testDatabase ||
+  !['postgres:', 'postgresql:'].includes(testDatabase.protocol) ||
+  !['localhost', '127.0.0.1', '[::1]'].includes(testDatabase.hostname.toLowerCase()) ||
+  ['host', 'hostaddr', 'service'].some((key) => testDatabase.searchParams.has(key)) ||
+  testDatabase.pathname.replace(/^\//, '') !== 'surveyhub_test'
+) {
+  throw new Error('E2E setup only runs against local DATABASE_URL_TEST for surveyhub_test.');
 }
 
 const childEnv = { ...process.env, DATABASE_URL: testDatabaseUrl };
