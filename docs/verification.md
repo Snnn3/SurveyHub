@@ -383,49 +383,51 @@ Running 2 tests using 1 worker
 
 ### 3.3 Acceptance-criteria-to-test mapping
 
-Every row stays `PLANNED` until the named test has run on the assessed commit. `PASS`, `FAILED`,
-`SKIPPED` and `BLOCKED` are the only valid outcomes once execution starts.
+Statuses below reflect the named checks in the saved test output. The database-restart row remains
+`PLANNED` because no restart check was run in this evidence update. `PASS`, `FAILED`, `SKIPPED` and
+`BLOCKED` are the valid outcomes once execution starts.
 
 | AC | Test ID | Level | File | Result | Evidence |
 |---|---|---|---|---|---|
-| AC-F01-01 | STS-F01-01 | Integration | `server/tests/auth.test.ts` | PLANNED | `<fig/line>` |
-| AC-F01-02 | STS-F01-02 | Integration | `server/tests/auth.test.ts` | PLANNED | `<fig/line>` |
-| AC-F01-03 | STS-F01-03 | Integration | `server/tests/auth.test.ts` | PLANNED | `<fig/line>` |
-| AC-F01-04 | STS-F01-04 | Integration/DB | `server/tests/auth.test.ts` | PLANNED | `<fig/line>` |
-| AC-F01-05 | STS-F01-05 | Integration | `server/tests/auth.test.ts` | PLANNED | `<fig/line>` |
-| AC-F01-06 | STS-F01-06 | Integration/DB | `server/tests/auth.test.ts` | PLANNED | `<fig/line>` |
-| AC-F02-01 | STS-F02-01 | Integration | `server/tests/survey-lifecycle.test.ts` | PLANNED | `<fig/line>` |
-| AC-F02-02 | STS-F02-02 | Integration | `server/tests/survey-lifecycle.test.ts` | PLANNED | `<fig/line>` |
-| AC-F02-03 | STS-F02-03 | Integration | `server/tests/survey-lifecycle.test.ts` | PLANNED | `<fig/line>` |
-| AC-F02-04 | STS-F02-04 | Integration | `server/tests/survey-lifecycle.test.ts` | PLANNED | `<fig/line>` |
-| AC-F02-05 | STS-F02-05 | Integration/DB | `server/tests/survey-lifecycle.test.ts` | PLANNED | `<fig/line>` |
-| AC-F02-06 | STS-F02-06 | Integration | `server/tests/survey-lifecycle.test.ts` | PLANNED | `<fig/line>` |
-| AC-F02-07 | STS-F02-07 | Integration | `server/tests/survey-lifecycle.test.ts` | PLANNED | `<fig/line>` |
-| AC-F02-08 | STS-F02-08 | Integration | `server/tests/survey-lifecycle.test.ts` | PLANNED | `<fig/line>` |
-| AC-F02-09 | STS-F02-09 | Integration | `server/tests/survey-lifecycle.test.ts` | PLANNED | `<fig/line>` |
-| AC-F02-10 | STS-F02-10 | Integration | `server/tests/survey-lifecycle.test.ts` | PLANNED | `<fig/line>` |
-| AC-F02-11 | STS-F02-11 | Integration | `server/tests/survey-lifecycle.test.ts` | PLANNED | `<fig/line>` |
-| AC-F03-01 | STS-F03-01 | Integration | `server/tests/response-submission.test.ts` | PLANNED | `<fig/line>` |
-| AC-F03-02 | STS-F03-02 | Integration | `server/tests/response-submission.test.ts` | PLANNED | `<fig/line>` |
-| AC-F03-03 | STS-F03-03 | Integration/DB | `server/tests/response-submission.test.ts` | PLANNED | `<fig/line>` |
-| AC-F03-04 | STS-F03-04 | Integration (TDD) | `server/tests/response-submission.test.ts` | PLANNED | `<fig/line>` |
-| AC-F03-05 | STS-F03-05 | Integration | `server/tests/response-submission.test.ts` | PLANNED | `<fig/line>` |
-| AC-F03-06 | STS-F03-06 | Integration | `server/tests/response-submission.test.ts` | PLANNED | `<fig/line>` |
-| AC-F03-07 | STS-F03-07 | Integration | `server/tests/response-submission.test.ts` | PLANNED | `<fig/line>` |
-| AC-F03-08 | STS-F03-08 | Integration (privacy) | `server/tests/response-submission.test.ts` | PLANNED | `<fig/line>` |
-| AC-F03-09 | STS-F03-09 | Integration (role) | `server/tests/response-submission.test.ts` | PLANNED | `<fig/line>` |
-| AC-F03-10 | STS-F03-10 | Integration | `server/tests/response-submission.test.ts` | PLANNED | `<fig/line>` |
-| AC-F04-01 | STS-F04-01 | Integration/DB | `server/tests/survey-summary.test.ts` | PLANNED | `<fig/line>` |
-| AC-F04-02 | STS-F04-02 | Integration (role) | `server/tests/survey-summary.test.ts` | PLANNED | `<fig/line>` |
-| AC-F04-03 | STS-F04-03 | Integration (ownership) | `server/tests/survey-summary.test.ts` | PLANNED | `<fig/line>` |
-| AC-F04-04 | STS-F04-04 | Integration | `server/tests/survey-summary.test.ts` | PLANNED | `<fig/line>` |
+| AC-F01-01 | STS-F01-01 | Integration | `server/tests/auth.test.ts` | PASS: auth suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F01-02 | STS-F01-02 | Integration | `server/tests/auth.test.ts` | PASS: auth suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F01-03 | STS-F01-03 | Integration | `server/tests/auth.test.ts` | PASS: auth suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F01-04 | STS-F01-04 | Integration/DB | `server/tests/auth.test.ts` | PASS: auth suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F01-05 | STS-F01-05 | Integration | `server/tests/auth.test.ts` | PASS: logout/revocation test passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F01-06 | STS-F01-06 | Integration/DB | `server/tests/auth.test.ts` | PASS: auth suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F02-01 | STS-F02-01 | Integration | `server/tests/survey-lifecycle.test.ts` | PASS: lifecycle suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F02-02 | STS-F02-02 | Integration | `server/tests/survey-lifecycle.test.ts` | PASS: lifecycle suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F02-03 | STS-F02-03 | Integration | `server/tests/survey-lifecycle.test.ts` | PASS: lifecycle suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F02-04 | STS-F02-04 | Integration | `server/tests/survey-lifecycle.test.ts` | PASS: lifecycle suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F02-05 | STS-F02-05 | Integration/DB | `server/tests/survey-lifecycle.test.ts` | PASS: lifecycle suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F02-06 | STS-F02-06 | Integration | `server/tests/survey-lifecycle.test.ts` | PASS: lifecycle suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F02-07 | STS-F02-07 | Integration | `server/tests/survey-lifecycle.test.ts` | PASS: lifecycle suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F02-08 | STS-F02-08 | Integration | `server/tests/survey-lifecycle.test.ts` | PASS: lifecycle suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F02-09 | STS-F02-09 | Integration | `server/tests/survey-lifecycle.test.ts` | PASS: lifecycle suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F02-10 | STS-F02-10 | Integration | `server/tests/survey-lifecycle.test.ts` | PASS: lifecycle suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F02-11 | STS-F02-11 | Integration | `server/tests/survey-lifecycle.test.ts` | PASS: lifecycle suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F03-01 | STS-F03-01 | Integration | `server/tests/response-submission.test.ts` | PASS: response suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F03-02 | STS-F03-02 | Integration | `server/tests/response-submission.test.ts` | PASS: response suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F03-03 | STS-F03-03 | Integration/DB | `server/tests/response-submission.test.ts` | PASS: response, answers, option, and claim persisted atomically | `docs/evidence/npm-test-run.txt` |
+| AC-F03-04 | STS-F03-04 | Integration (TDD) | `server/tests/response-submission.test.ts` | PASS: current regression passed; historical red/green SHAs remain unavailable (see §5) | `docs/evidence/npm-test-run.txt` |
+| AC-F03-05 | STS-F03-05 | Integration | `server/tests/response-submission.test.ts` | PASS: response suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F03-06 | STS-F03-06 | Integration | `server/tests/response-submission.test.ts` | PASS: response suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F03-07 | STS-F03-07 | Integration | `server/tests/response-submission.test.ts` | PASS: response suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F03-08 | STS-F03-08 | Integration (privacy) | `server/tests/response-submission.test.ts` | PASS: response suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F03-09 | STS-F03-09 | Integration (role) | `server/tests/response-submission.test.ts` | PASS: response suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F03-10 | STS-F03-10 | Integration | `server/tests/response-submission.test.ts` | PASS: receipt retrieval test passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F04-01 | STS-F04-01 | Integration/DB | `server/tests/survey-summary.test.ts` | PASS: summary suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F04-02 | STS-F04-02 | Integration (role) | `server/tests/survey-summary.test.ts` | PASS: summary suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F04-03 | STS-F04-03 | Integration (ownership) | `server/tests/survey-summary.test.ts` | PASS: summary suite passed in full run | `docs/evidence/npm-test-run.txt` |
+| AC-F04-04 | STS-F04-04 | Integration | `server/tests/survey-summary.test.ts` | PASS: summary suite passed in full run | `docs/evidence/npm-test-run.txt` |
 | AC-SEC-01 | STS-SEC-01 | Integration (route matrix) | `server/tests/security-matrix.test.ts` | PASS: 14 protected routes reject missing, malformed, and expired tokens with 401 and no data | `docs/evidence/security-matrix-run.txt` |
 | AC-SEC-02 | STS-SEC-02 | Integration (role matrix) | `server/tests/security-matrix.test.ts` | PASS: wrong-role and non-owner calls return 403 with no private data or database changes | `docs/evidence/security-matrix-run.txt` |
 | AC-PERF-01 | Benchmark `benchmark-read.ts` | Measurement | `server/scripts/benchmark-read.ts` | PASS: 50 requests; p95 13.249 ms (<300 ms) | `docs/evidence/nfr-perf-01.json` |
-| AC-DATA-01 | STS-F03-03 + restart check | Integration + manual | `server/tests/response-submission.test.ts` | PLANNED | `<fig/line>` |
-| BR-06 structure | STS-U-01, STS-U-02 | Unit | `server/tests/unit/rules.test.ts` | PLANNED | `<fig/line>` |
-| BR-03 validation | STS-U-03, STS-U-04 | Unit | `server/tests/unit/rules.test.ts` | PLANNED | `<fig/line>` |
-| Percentage logic | STS-U-05 | Unit | `server/tests/unit/rules.test.ts` | PLANNED | `<fig/line>` |
+| AC-DATA-01 | STS-F03-03 + restart check | Integration + manual | `server/tests/response-submission.test.ts` | PLANNED: STS-F03-03 passed; restart survival was not checked | `docs/evidence/npm-test-run.txt` |
+| STS-F03-03 persistence | STS-F03-03 | Integration/DB | `server/tests/response-submission.test.ts` | PASS: response, answers, option, and claim persisted atomically | `docs/evidence/npm-test-run.txt` |
+| BR-06 structure | STS-U-01, STS-U-02 | Unit | `server/tests/unit/rules.test.ts` | PASS: 8 unit tests passed in full run | `docs/evidence/npm-test-run.txt` |
+| BR-03 validation | STS-U-03, STS-U-04 | Unit | `server/tests/unit/rules.test.ts` | PASS: 8 unit tests passed in full run | `docs/evidence/npm-test-run.txt` |
+| Percentage logic | STS-U-05 | Unit | `server/tests/unit/rules.test.ts` | PASS: 8 unit tests passed in full run | `docs/evidence/npm-test-run.txt` |
 | Journey 1 | STS-E2E-01 | E2E | `e2e/sprint1-survey-flow.spec.ts` | PASS: owner creates/publishes; respondent submits and reloads receipt; owner sees 1 response / 100% | `docs/evidence/e2e-run.txt` |
 | Journey 2 | STS-E2E-02 | E2E | `e2e/sprint1-survey-flow.spec.ts` | PASS: duplicate 409, cross-response access 403 without answer data, logged-out token 401 `TOKEN_REVOKED` | `docs/evidence/e2e-run.txt` |
 
