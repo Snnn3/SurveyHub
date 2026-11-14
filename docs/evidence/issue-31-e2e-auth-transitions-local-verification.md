@@ -1,6 +1,6 @@
 # Issue #31: E2E authentication transition verification
 
-**Status:** Local verification recorded; [PR #32](https://github.com/Snnn3/SurveyHub/pull/32) is open against `sprint-1-staging`. No teammate review or merge has occurred.
+**Status snapshot (14 Nov 2026, before PR #33 merged):** [PR #32](https://github.com/Snnn3/SurveyHub/pull/32) had merged into `sprint-1-staging` at `f1b3c097d1107b7ea16469f31fe8a8a8a2d63f93`, and Issue [#31](https://github.com/Snnn3/SurveyHub/issues/31) had been closed after verification. [PR #33](https://github.com/Snnn3/SurveyHub/pull/33) was open to promote the change to `main`. This document records local verification, not a GitHub Actions or release result.
 
 ## Reproduction before the change
 
@@ -40,4 +40,4 @@ On the same source commit `ebfc6c533cba498ae807e1b5ce8f080433809e6b`:
 
 ## Limit
 
-This confirms the targeted fix across two consecutive local E2E runs and the server regression suite. It does not establish a GitHub Actions result or a merged release result. Issue [#31](https://github.com/Snnn3/SurveyHub/issues/31) remains open while PR #32 awaits teammate review and the normal merge workflow.
+This confirms the targeted fix across two consecutive local E2E runs and the server regression suite. It does not establish a GitHub Actions result or a merged release result. At the status snapshot above, Issue #31 was closed after PR #32 merged into staging, and PR #33 was pending promotion to `main`.
