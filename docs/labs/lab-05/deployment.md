@@ -32,7 +32,7 @@ The root and server `.env.example` files contain placeholders only. Never commit
 
 ## Compose setup and persistence check
 
-Use Docker Compose v2.30 or newer for `--env-from-file`. Starting from a clean checkout:
+Use Docker Compose v2.30 or newer for `--env-from-file`. This is the current Issue #19 setup; Part F §1.3 documents the older `v0.1.0-sprint1` release separately. Starting from a clean checkout containing these changes:
 
 ```bash
 cp .env.example .env
@@ -79,4 +79,4 @@ This changes the database role password in place; it does not remove or reinitia
 
 ## Cloud Run configuration
 
-Deploy the built image with `NODE_ENV=production`, Cloud Run's injected `PORT`, a valid PostgreSQL `DATABASE_URL` connected to managed Cloud SQL, and `JWT_SECRET` supplied from Secret Manager or a secret environment variable. For a Cloud SQL Unix socket, attach the instance to the Cloud Run service and use Prisma's localhost URL form, for example `postgresql://USER:PASSWORD@localhost/DB_NAME?host=/cloudsql/PROJECT:REGION:INSTANCE`; the `host` query value is the mounted socket directory. URL-encode reserved characters in the username or password. Set `CLIENT_ORIGIN` to the browser origin when the frontend is separate. Keep `DATABASE_URL_TEST` out of the app service. Configure `DEMO_USER_PASSWORD` only on an intentional one-off seed job; never bake it into the image or leave it in the running app service. Use `/api/health` as the readiness probe.
+Deploy the built image with `NODE_ENV=production`, Cloud Run's injected `PORT`, a valid PostgreSQL `DATABASE_URL` connected to managed Cloud SQL, and `JWT_SECRET` supplied from Secret Manager or a secret environment variable. For a Cloud SQL Unix socket, attach the instance to the Cloud Run service and use Prisma's localhost URL form, for example `postgresql://USER:PASSWORD@localhost/DB_NAME?host=/cloudsql/PROJECT:REGION:INSTANCE`; the `host` query value is the mounted socket directory. Include `@localhost` in the URL authority; production validation rejects hostless `@/DB_NAME` URLs. URL-encode reserved characters in the username or password. Set `CLIENT_ORIGIN` to the browser origin when the frontend is separate. Keep `DATABASE_URL_TEST` out of the app service. Configure `DEMO_USER_PASSWORD` only on an intentional one-off seed job; never bake it into the image or leave it in the running app service. Use `/api/health` as the readiness probe.

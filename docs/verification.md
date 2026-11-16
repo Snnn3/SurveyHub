@@ -71,42 +71,40 @@ are part of the assessment: the TA may follow them exactly.
 
 The SHA above was checked against the remote `main` branch and `v0.1.0-sprint1` tag after PR #28 merged. Confirm it locally with `git rev-parse v0.1.0-sprint1` after fetching tags.
 
-The tag records the original Sprint 1 release. The setup below verifies Issue #19's later Compose and environment changes, so it checks out PR #35, which contains the `.env.seed.example` and deployment commands used here.
+The table records the historical Sprint 1 release. The commands below reproduce that tag. For the current Issue #19 environment and `.env.seed` workflow, use the [Lab 5 deployment guide](../labs/lab-05/deployment.md) from a checkout containing those changes.
 
 ### 1.3 Setup commands
 
 ```bash
-# 1. Clone and check out the Issue #19 implementation
+# 1. Clone and check out the release tag
 git clone https://github.com/Snnn3/SurveyHub.git
 cd SurveyHub
-git fetch origin pull/35/head:verify-issue-19
-git checkout verify-issue-19
+git fetch --tags origin
+git checkout tags/v0.1.0-sprint1 -b verify-sprint1
 
-# 2. Confirm the PR commit being assessed
+# 2. Confirm the release commit being assessed
 git rev-parse HEAD
 
-# 3. Configure ignored local environment files
+# 3. Configure the release environment
 cp .env.example .env
-# Replace the placeholders with local secrets. Keep POSTGRES_PASSWORD,
-# DATABASE_URL, and DATABASE_URL_TEST on the same password; use a separate
-# database name for DATABASE_URL_TEST. README Option A shows secret generation.
-cp .env.seed.example .env.seed
-# Set its placeholder to the same DEMO_USER_PASSWORD value in .env.
-# Never commit either file.
+# The release tag needs a non-default JWT_SECRET; README Option A shows a safe generator.
+node -e "const fs = require('fs'); const secret = require('crypto').randomBytes(32).toString('hex'); fs.writeFileSync('.env', fs.readFileSync('.env', 'utf8').replace('replace-with-a-long-random-value', secret));"
 
 # 4. Build the app and start PostgreSQL
 docker compose build app
 docker compose up -d db
 
-# 5. Apply migrations and load the reproducible seed
+# 5. Apply migrations and load the release seed
 docker compose run --rm app npm run db:migrate:deploy
-docker compose run --rm --env-from-file .env.seed app npm run db:seed
+docker compose run --rm app npm run db:seed
 
 # 6. Start the application and check service health
 docker compose up -d app
 docker compose ps
 curl http://localhost:4000/api/health
 ```
+
+These commands reproduce `v0.1.0-sprint1`. The current Issue #19 commands are in the Lab 5 guide and use the operator-supplied seed password and `.env.seed` file.
 
 The Compose database uses a named volume for development data. Fresh database initialization must also create the separate `surveyhub_test` database, and the test runner must use it. Never point automated tests at the development database. If using the
 host-side test path, install its dependencies and follow the exact commands in the root README. That
@@ -130,7 +128,7 @@ npm run test:e2e
 
 ### 1.5 Seeded demo accounts
 
-All four synthetic demo accounts use the operator-supplied `DEMO_USER_PASSWORD` from the ignored root `.env`. Integration and E2E fixtures pass explicit test-only passwords; these demo credentials are for local verification, not production users.
+At the historical `v0.1.0-sprint1` tag, the four synthetic accounts use the local-only test password `Password123!`. Issue #19 removes that fixed seed default from the current implementation and requires `DEMO_USER_PASSWORD`; see the [Lab 5 deployment guide](../labs/lab-05/deployment.md). Integration and E2E fixtures continue to use explicit test-only passwords. None of these synthetic credentials are production credentials.
 
 | Role | Email | Purpose in verification |
 |---|---|---|
