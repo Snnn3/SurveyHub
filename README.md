@@ -23,7 +23,7 @@ SurveyHub is a full-stack survey management system built with React, Express, Ty
 
 | Tool | Version | Verification Command |
 |---|---|---|
-| **Docker Engine / Desktop** | Compose v2+ | `docker --version` && `docker compose version` |
+| **Docker Engine / Desktop** | Compose v2.30+ | `docker --version` && `docker compose version` |
 | **Node.js** | 20 LTS or later | `node --version` |
 | **npm** | Compatible with Node 20 | `npm --version` |
 
