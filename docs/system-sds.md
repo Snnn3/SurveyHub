@@ -376,10 +376,10 @@ to their question's configured bounds.
 
 | Role | Email | Password (demo only) | Purpose |
 |---|---|---|---|
-| SURVEY_OWNER | `owner1@survey.local` | `Password123!` | Main owner; publishes survey 1 |
-| SURVEY_OWNER | `owner2@survey.local` | `Password123!` | Ownership-boundary tests |
-| RESPONDENT | `resp1@survey.local` | `Password123!` | Normal submission; duplicate test |
-| RESPONDENT | `resp2@survey.local` | `Password123!` | Second respondent; cross-response test |
+| SURVEY_OWNER | `owner1@survey.local` | `DEMO_USER_PASSWORD` | Main owner; publishes survey 1 |
+| SURVEY_OWNER | `owner2@survey.local` | `DEMO_USER_PASSWORD` | Ownership-boundary tests |
+| RESPONDENT | `resp1@survey.local` | `DEMO_USER_PASSWORD` | Normal submission; duplicate test |
+| RESPONDENT | `resp2@survey.local` | `DEMO_USER_PASSWORD` | Second respondent; cross-response test |
 
 **Seeded surveys**
 
@@ -639,31 +639,38 @@ Roles are exclusive.
 ### 6.1 Environment variables
 
 ```env
-# Server
+# Server; Cloud Run supplies PORT at runtime
 PORT=4000
 NODE_ENV=development
 
-# Database
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/surveyhub?schema=public"
-DATABASE_URL_TEST="postgresql://postgres:postgres@localhost:5432/surveyhub_test?schema=public"
+# Database; local placeholders must be replaced to match the PostgreSQL instance
+DATABASE_URL="postgresql://postgres:<local-password>@localhost:5432/surveyhub?schema=public"
+DATABASE_URL_TEST="postgresql://postgres:<local-password>@localhost:5432/surveyhub_test?schema=public"
 
 # Authentication
-JWT_SECRET="replace-with-a-long-random-value"
+JWT_SECRET="<random-secret-of-at-least-32-characters>"
 JWT_EXPIRES_IN="8h"
+DEMO_USER_PASSWORD="<operator-supplied-seed-password>"
 
 # Client
 CLIENT_ORIGIN="http://localhost:5173"
 VITE_API_BASE_URL="http://localhost:4000/api"
+
+# Docker Compose only
+POSTGRES_PASSWORD="<local-password-matching-the-database-URLs>"
+POSTGRES_PORT=5432
 ```
 
-The example uses the default port 5432. The actual port is whatever the local PostgreSQL instance
-uses; it is configured only through `DATABASE_URL` and `DATABASE_URL_TEST`.
+The full purpose, source and secret status for each variable are in the [Lab 5 deployment guide](labs/lab-05/deployment.md). `POSTGRES_USER=postgres` and `POSTGRES_DB=surveyhub` are fixed local Compose container values; its initialization script creates the separate `surveyhub_test` database.
 
 Rules:
 
-- `.env` is ignored by Git. `.env.example` contains placeholders only.
-- The server validates required variables at startup and refuses to start in production with a
-  missing or default `JWT_SECRET`.
+- `.env` and `.env.seed` are ignored by Git. The example files contain placeholders only.
+- Production startup rejects missing/default `JWT_SECRET` and missing, malformed or default
+  `DATABASE_URL` values. It listens on Cloud Run's injected `PORT`.
+- `DATABASE_URL_TEST` is for host-run automated tests and is not configured on the Cloud Run app.
+- `DEMO_USER_PASSWORD` is required only when running the seed; production seed jobs receive it from
+  a secret source. Test fixtures pass an explicit synthetic password.
 - CORS allows only `CLIENT_ORIGIN`.
 - `helmet` sets security headers; JSON body size is limited.
 - No secret is logged.
@@ -672,7 +679,9 @@ Rules:
 
 ```bash
 npm install
-cp server/.env.example server/.env
+cp .env.example .env
+cp .env server/.env
+# Replace the example database and seed passwords in the ignored environment files.
 npm run db:migrate
 npm run db:seed
 npm run dev
@@ -687,7 +696,7 @@ Sprint 1 Issue [#2](https://github.com/Snnn3/SurveyHub/issues/2) provides a root
 - A multi-stage application image builds the React client and Express/TypeScript server. In the container environment, Express serves `/api` and the built client from the same origin.
 - PostgreSQL has a health check. Compose starts the application only after the database reports healthy. A fresh database volume initialization creates both `surveyhub` and the separate `surveyhub_test` database.
 - A named database volume preserves data when containers restart or are recreated. Removing the volume is a separate destructive operation and is not part of the normal reset workflow.
-- `DATABASE_URL` targets the development database and `DATABASE_URL_TEST` targets the distinct test database. Inside Compose, both use the database service hostname; host-run tests use the published local port. Automated tests must never point at the seeded development database.
+- `DATABASE_URL` targets the development database and `DATABASE_URL_TEST` targets the distinct test database. The Compose app receives only `DATABASE_URL`; host-run tests use `DATABASE_URL_TEST` through the published local port. Automated tests must never point at the seeded development database.
 - Migration and seed commands are explicit, repeatable commands documented in the root README; application startup does not silently reset or seed persistent data.
 - The application exposes public `/api/health` for readiness checks.
 - Compose uses placeholder/local values only. Real secrets are kept outside Git.

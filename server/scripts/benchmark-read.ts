@@ -17,6 +17,7 @@ const request = require('supertest') as typeof import('supertest');
 const { prisma } = require('../src/utils/prisma') as typeof import('../src/utils/prisma');
 const app = require('../src/app').default as typeof import('../src/app').default;
 const { seedUsers } = require('../prisma/seed-users') as typeof import('../prisma/seed-users');
+const testPassword = 'Password123!';
 
 async function main(): Promise<void> {
   execSync('npx prisma migrate deploy', {
@@ -26,7 +27,7 @@ async function main(): Promise<void> {
   });
   await prisma.$queryRaw`SELECT 1`;
   const postgres = await prisma.$queryRaw<Array<{ version: string }>>`SELECT version()`;
-  const users = await prisma.$transaction(seedUsers);
+  const users = await prisma.$transaction((tx) => seedUsers(tx, testPassword));
   const survey = await prisma.survey.create({
     data: {
       title: 'NFR-PERF-01 benchmark fixture',
@@ -46,7 +47,7 @@ async function main(): Promise<void> {
   try {
     const login = await request(app)
       .post('/api/auth/login')
-      .send({ email: 'resp1@survey.local', password: 'Password123!' });
+      .send({ email: 'resp1@survey.local', password: testPassword });
     if (login.status !== 200) throw new Error(`Login failed with status ${login.status}.`);
     const token = login.body.data.token as string;
     const samples: number[] = [];

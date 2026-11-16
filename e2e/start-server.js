@@ -22,7 +22,12 @@ if (
   throw new Error('E2E setup only runs against local DATABASE_URL_TEST for surveyhub_test.');
 }
 
-const childEnv = { ...process.env, DATABASE_URL: testDatabaseUrl };
+const childEnv = {
+  ...process.env,
+  NODE_ENV: 'test',
+  DATABASE_URL: testDatabaseUrl,
+  DEMO_USER_PASSWORD: 'Password123!',
+};
 execSync('npm run db:reset', { cwd: server, env: childEnv, stdio: 'inherit' });
 
 function start() {
