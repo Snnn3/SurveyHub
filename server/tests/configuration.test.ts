@@ -28,7 +28,7 @@ function loadEnvironment(overrides: Partial<Record<(typeof configKeys)[number], 
 
 describe('production configuration', () => {
   const validSecret = 'a'.repeat(32);
-  const validDatabaseUrl = 'postgresql://surveyhub:secure-db-pass@db:5432/surveyhub?schema=public';
+  const validDatabaseUrl = 'postgresql://surveyhub:secure-postgres-word-pass@db:5432/surveyhub?schema=public';
 
   it('rejects missing or default JWT secrets', () => {
     expect(() => loadEnvironment({ NODE_ENV: 'production', DATABASE_URL: validDatabaseUrl })).toThrow(
@@ -62,6 +62,14 @@ describe('production configuration', () => {
         NODE_ENV: 'production',
         JWT_SECRET: validSecret,
         DATABASE_URL: 'postgresql://surveyhub:postgres@db:5432/surveyhub',
+      })
+    ).toThrow(/DATABASE_URL/);
+    expect(() =>
+      loadEnvironment({
+        NODE_ENV: 'production',
+        JWT_SECRET: validSecret,
+        DATABASE_URL:
+          'postgresql://surveyhub:replace-with-a-local-database-password@db:5432/surveyhub',
       })
     ).toThrow(/DATABASE_URL/);
   });

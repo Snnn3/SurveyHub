@@ -118,7 +118,7 @@ npm run test:e2e
 
 ### 1.5 Seeded demo accounts
 
-All demo passwords are `Password123!`. These are synthetic course accounts, not real people.
+All four synthetic demo accounts use the operator-supplied `DEMO_USER_PASSWORD` from the ignored root `.env`. Integration and E2E fixtures pass explicit test-only passwords; these demo credentials are for local verification, not production users.
 
 | Role | Email | Purpose in verification |
 |---|---|---|
