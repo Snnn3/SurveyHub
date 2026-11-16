@@ -82,15 +82,23 @@ git checkout tags/v0.1.0-sprint1 -b verify-sprint1
 # 2. Confirm the commit being assessed
 git rev-parse HEAD
 
-# 3. Build the app and start PostgreSQL
+# 3. Configure ignored local environment files
+cp .env.example .env
+# Replace the placeholders with local secrets. Keep POSTGRES_PASSWORD,
+# DATABASE_URL, and DATABASE_URL_TEST on the same password; use a separate
+# database name for DATABASE_URL_TEST. README Option A shows secret generation.
+# Create .env.seed from .env.seed.example with the same DEMO_USER_PASSWORD
+# value used for local demo accounts. Never commit either file.
+
+# 4. Build the app and start PostgreSQL
 docker compose build app
 docker compose up -d db
 
-# 4. Apply migrations and load the reproducible seed
-docker compose run --rm app npm run db:migrate
-docker compose run --rm app npm run db:seed
+# 5. Apply migrations and load the reproducible seed
+docker compose run --rm app npm run db:migrate:deploy
+docker compose run --rm --env-from-file .env.seed app npm run db:seed
 
-# 5. Start the application and check service health
+# 6. Start the application and check service health
 docker compose up -d app
 docker compose ps
 curl http://localhost:4000/api/health
