@@ -53,7 +53,7 @@ are part of the assessment: the TA may follow them exactly.
 
 | Requirement | Version | Check |
 |---|---|---|
-| Docker Engine/Desktop | Compose v2 or later; required for the Sprint 1 container path | `docker --version` and `docker compose version` |
+| Docker Engine/Desktop | Compose v2.30 or later; required for the Sprint 1 container path | `docker --version` and `docker compose version` |
 | Git | Any recent version | `git --version` |
 | Node.js and npm | Node.js 20 LTS or later and compatible npm; needed only for host-side development or tests | `node --version`; `npm --version` |
 | PostgreSQL client | Optional with Compose; needed only for direct local-database checks | `psql --version` |
