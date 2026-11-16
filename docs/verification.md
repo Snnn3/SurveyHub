@@ -71,15 +71,18 @@ are part of the assessment: the TA may follow them exactly.
 
 The SHA above was checked against the remote `main` branch and `v0.1.0-sprint1` tag after PR #28 merged. Confirm it locally with `git rev-parse v0.1.0-sprint1` after fetching tags.
 
+The tag records the original Sprint 1 release. The setup below verifies Issue #19's later Compose and environment changes, so it checks out PR #35, which contains the `.env.seed.example` and deployment commands used here.
+
 ### 1.3 Setup commands
 
 ```bash
-# 1. Clone and check out the release tag
+# 1. Clone and check out the Issue #19 implementation
 git clone https://github.com/Snnn3/SurveyHub.git
 cd SurveyHub
-git checkout tags/v0.1.0-sprint1 -b verify-sprint1
+git fetch origin pull/35/head:verify-issue-19
+git checkout verify-issue-19
 
-# 2. Confirm the commit being assessed
+# 2. Confirm the PR commit being assessed
 git rev-parse HEAD
 
 # 3. Configure ignored local environment files
@@ -87,8 +90,9 @@ cp .env.example .env
 # Replace the placeholders with local secrets. Keep POSTGRES_PASSWORD,
 # DATABASE_URL, and DATABASE_URL_TEST on the same password; use a separate
 # database name for DATABASE_URL_TEST. README Option A shows secret generation.
-# Create .env.seed from .env.seed.example with the same DEMO_USER_PASSWORD
-# value used for local demo accounts. Never commit either file.
+cp .env.seed.example .env.seed
+# Set its placeholder to the same DEMO_USER_PASSWORD value in .env.
+# Never commit either file.
 
 # 4. Build the app and start PostgreSQL
 docker compose build app
