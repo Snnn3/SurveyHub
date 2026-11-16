@@ -68,6 +68,13 @@ describe('production configuration', () => {
       loadEnvironment({
         NODE_ENV: 'production',
         JWT_SECRET: validSecret,
+        DATABASE_URL: 'postgresql:/surveyhub',
+      })
+    ).toThrow(/DATABASE_URL/);
+    expect(() =>
+      loadEnvironment({
+        NODE_ENV: 'production',
+        JWT_SECRET: validSecret,
         DATABASE_URL:
           'postgresql://surveyhub:replace-with-a-local-database-password@db:5432/surveyhub',
       })

@@ -51,6 +51,7 @@ if (nodeEnv === 'production') {
     configuredDatabaseUrl === defaultDatabaseUrl ||
     !databaseUrl ||
     !['postgres:', 'postgresql:'].includes(databaseUrl.protocol) ||
+    !databaseUrl.hostname ||
     !databaseUrl.pathname.replace(/^\//, '') ||
     ['postgres', 'replace-with-a-local-database-password'].includes(databasePassword)
   ) {
