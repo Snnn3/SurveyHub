@@ -31,7 +31,7 @@ const childEnv = {
 execSync('npm run db:reset', { cwd: server, env: childEnv, stdio: 'inherit' });
 
 function start() {
-  process.env.NODE_ENV = 'test';
+  process.env.NODE_ENV = 'production';
   process.env.PORT = '4173';
   process.env.DATABASE_URL = testDatabaseUrl;
   process.env.JWT_SECRET = process.env.JWT_SECRET || randomBytes(32).toString('hex');

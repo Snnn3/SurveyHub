@@ -18,6 +18,7 @@ const nodeEnv = process.env.NODE_ENV || 'development';
 const defaultJwtSecret = 'dev-secret-key-surveyhub-cpe334-do-not-use-in-prod';
 const jwtSecret = process.env.JWT_SECRET?.trim() || defaultJwtSecret;
 const defaultDatabaseUrl = 'postgresql://postgres:postgres@localhost:5432/surveyhub?schema=public';
+const configuredDatabaseUrl = process.env.DATABASE_URL?.trim();
 
 if (nodeEnv === 'production') {
   const configuredJwtSecret = process.env.JWT_SECRET?.trim();
@@ -33,7 +34,6 @@ if (nodeEnv === 'production') {
     );
   }
 
-  const configuredDatabaseUrl = process.env.DATABASE_URL?.trim();
   let databaseUrl: URL | undefined;
   try {
     if (configuredDatabaseUrl) databaseUrl = new URL(configuredDatabaseUrl);
@@ -64,7 +64,7 @@ if (nodeEnv === 'production') {
 export const env: Environment = {
   PORT: parseInt(process.env.PORT || '4000', 10),
   NODE_ENV: nodeEnv,
-  DATABASE_URL: process.env.DATABASE_URL || defaultDatabaseUrl,
+  DATABASE_URL: configuredDatabaseUrl || defaultDatabaseUrl,
   DATABASE_URL_TEST: process.env.DATABASE_URL_TEST || 'postgresql://postgres:postgres@localhost:5432/surveyhub_test?schema=public',
   JWT_SECRET: jwtSecret,
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '8h',

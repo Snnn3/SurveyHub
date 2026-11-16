@@ -29,7 +29,7 @@ export default defineConfig({
     env: {
       ...process.env,
       PORT: '4173',
-      NODE_ENV: 'test',
+      NODE_ENV: 'production',
       DATABASE_URL: testDatabaseUrl,
       JWT_SECRET: randomBytes(32).toString('hex'),
       CLIENT_ORIGIN: 'http://127.0.0.1:4173',

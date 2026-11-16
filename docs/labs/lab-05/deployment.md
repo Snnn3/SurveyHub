@@ -37,6 +37,8 @@ Use Docker Compose v2.30 or newer for `--env-from-file`. Starting from a clean c
 ```bash
 cp .env.example .env
 # Replace the example values in the ignored .env; use distinct random JWT, database, and demo passwords.
+cp .env.seed.example .env.seed
+# Replace its placeholder with the same DEMO_USER_PASSWORD value from .env.
 docker compose build app
 docker compose up -d db
 docker compose run --rm app npm run db:migrate:deploy
@@ -45,7 +47,7 @@ docker compose up -d app
 curl http://localhost:4000/api/health
 ```
 
-Create `.env.seed` with only `DEMO_USER_PASSWORD=<your local synthetic-account password>`. The `.env.seed.example` file shows its format. The default database host port is `5432`; if it is busy, set `POSTGRES_PORT` and update the host in `DATABASE_URL` and `DATABASE_URL_TEST` in `.env`. Compose exposes PostgreSQL only on loopback.
+The ignored `.env.seed` contains only `DEMO_USER_PASSWORD`; its value must match the demo password in `.env`. The default database host port is `5432`; if it is busy, set `POSTGRES_PORT` and update the host in `DATABASE_URL` and `DATABASE_URL_TEST` in `.env`. Compose exposes PostgreSQL only on loopback.
 
 To verify the seeded data survives application recreation and a Compose stop/start, run:
 
@@ -77,4 +79,4 @@ This changes the database role password in place; it does not remove or reinitia
 
 ## Cloud Run configuration
 
-Deploy the built image with `NODE_ENV=production`, Cloud Run's injected `PORT`, a valid PostgreSQL `DATABASE_URL` connected to managed Cloud SQL, and `JWT_SECRET` supplied from Secret Manager or a secret environment variable. Set `CLIENT_ORIGIN` to the browser origin when the frontend is separate. Keep `DATABASE_URL_TEST` out of the app service. Configure `DEMO_USER_PASSWORD` only on an intentional one-off seed job; never bake it into the image or leave it in the running app service. Use `/api/health` as the readiness probe.
+Deploy the built image with `NODE_ENV=production`, Cloud Run's injected `PORT`, a valid PostgreSQL `DATABASE_URL` connected to managed Cloud SQL, and `JWT_SECRET` supplied from Secret Manager or a secret environment variable. For a Cloud SQL Unix socket, attach the instance to the Cloud Run service and use Prisma's localhost URL form, for example `postgresql://USER:PASSWORD@localhost/DB_NAME?host=/cloudsql/PROJECT:REGION:INSTANCE`; the `host` query value is the mounted socket directory. URL-encode reserved characters in the username or password. Set `CLIENT_ORIGIN` to the browser origin when the frontend is separate. Keep `DATABASE_URL_TEST` out of the app service. Configure `DEMO_USER_PASSWORD` only on an intentional one-off seed job; never bake it into the image or leave it in the running app service. Use `/api/health` as the readiness probe.

@@ -91,6 +91,18 @@ describe('production configuration', () => {
     expect(env.PORT).toBe(8080);
     expect(env.DATABASE_URL).toBe(validDatabaseUrl);
   });
+
+  it('accepts and trims a Cloud SQL Unix socket URL', () => {
+    const cloudSqlUrl =
+      'postgresql://surveyhub:secure-postgres-word-pass@localhost/surveyhub?host=/cloudsql/my-project:asia-southeast1:surveyhub-db';
+    const env = loadEnvironment({
+      NODE_ENV: 'production',
+      JWT_SECRET: validSecret,
+      DATABASE_URL: ` ${cloudSqlUrl} `,
+    });
+
+    expect(env.DATABASE_URL).toBe(cloudSqlUrl);
+  });
 });
 
 describe('seed password configuration', () => {

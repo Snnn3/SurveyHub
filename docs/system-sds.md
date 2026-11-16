@@ -696,7 +696,7 @@ Sprint 1 Issue [#2](https://github.com/Snnn3/SurveyHub/issues/2) provides a root
 - A multi-stage application image builds the React client and Express/TypeScript server. In the container environment, Express serves `/api` and the built client from the same origin.
 - PostgreSQL has a health check. Compose starts the application only after the database reports healthy. A fresh database volume initialization creates both `surveyhub` and the separate `surveyhub_test` database.
 - A named database volume preserves data when containers restart or are recreated. Removing the volume is a separate destructive operation and is not part of the normal reset workflow.
-- `DATABASE_URL` targets the development database and `DATABASE_URL_TEST` targets the distinct test database. Inside Compose, both use the database service hostname; host-run tests use the published local port. Automated tests must never point at the seeded development database.
+- `DATABASE_URL` targets the development database and `DATABASE_URL_TEST` targets the distinct test database. The Compose app receives only `DATABASE_URL`; host-run tests use `DATABASE_URL_TEST` through the published local port. Automated tests must never point at the seeded development database.
 - Migration and seed commands are explicit, repeatable commands documented in the root README; application startup does not silently reset or seed persistent data.
 - The application exposes public `/api/health` for readiness checks.
 - Compose uses placeholder/local values only. Real secrets are kept outside Git.
