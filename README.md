@@ -40,11 +40,10 @@ This reproduces the single-origin container deployment with persistent PostgreSQ
 git clone https://github.com/Snnn3/SurveyHub.git
 cd SurveyHub
 
-# 2. Configure environment variables (create .env and generate a secure JWT secret)
-# Copy template (PowerShell: Copy-Item .env.example .env)
+# 2. Configure environment variables (PowerShell: Copy-Item .env.example .env)
 cp .env.example .env
-# Replace default placeholder with a secure random secret using Node's built-in crypto (cross-platform):
-node -e "const fs = require('fs'); const s = require('crypto').randomBytes(32).toString('hex'); fs.writeFileSync('.env', fs.readFileSync('.env', 'utf8').replace('replace-with-a-long-random-value', s));"
+# Create ignored local passwords without printing them:
+node -e "const fs=require('fs'),c=require('crypto');let e=fs.readFileSync('.env','utf8');const db=c.randomBytes(32).toString('hex'),jwt=c.randomBytes(32).toString('hex'),demo=c.randomBytes(24).toString('hex');for(const [p,v] of [['replace-with-a-local-database-password',db],['replace-with-a-long-random-value',jwt],['replace-with-a-local-demo-password',demo]])e=e.split(p).join(v);fs.writeFileSync('.env',e);fs.writeFileSync('.env.seed','DEMO_USER_PASSWORD='+demo+String.fromCharCode(10));"
 
 # 3. Build the multi-stage application image and launch PostgreSQL
 docker compose build app
@@ -52,7 +51,7 @@ docker compose up -d db
 
 # 4. Apply database migrations and load reproducible synthetic seed data
 docker compose run --rm app npm run db:migrate:deploy
-docker compose run --rm app npm run db:seed
+docker compose run --rm --env-from-file .env.seed app npm run db:seed
 
 # 5. Start the application container
 docker compose up -d app
@@ -75,9 +74,10 @@ To run the client and server locally with hot-reloading:
 # 1. Install root monorepo dependencies
 npm install
 
-# 2. Configure environment variables from template
+# 2. Configure environment variables from template; set real local database credentials first
 cp .env.example .env
-cp server/.env.example server/.env
+# Replace the example database password in POSTGRES_PASSWORD and both URLs, and set DEMO_USER_PASSWORD.
+cp .env server/.env
 
 # 3. Ensure PostgreSQL is running (e.g. via Docker: docker compose up -d db)
 # 4. Run database migrations and seed data
@@ -121,14 +121,16 @@ npm run build
 
 ## Seeded Synthetic Demo Accounts
 
-All seeded demo accounts are initialized with password `Password123!` (bcrypt cost factor 10):
+The seed creates the same four synthetic accounts with the operator supplied `DEMO_USER_PASSWORD` (bcrypt cost factor 10). The value is read from the ignored root `.env` for host seeding, or passed through the one-off `.env.seed` file for Compose seeding. The app service never receives this seed-only password. Production seeds reject the test password and weak values.
 
-| Role | Email | Password | Purpose in Verification |
+| Role | Email | Password source | Purpose in Verification |
 |---|---|---|---|
-| `SURVEY_OWNER` | `owner1@survey.local` | `Password123!` | Primary owner; authors, publishes surveys and inspects aggregate summaries |
-| `SURVEY_OWNER` | `owner2@survey.local` | `Password123!` | Secondary owner; used for ownership isolation verification |
-| `RESPONDENT` | `resp1@survey.local` | `Password123!` | Primary respondent; takes surveys, tests duplicate submission guard |
-| `RESPONDENT` | `resp2@survey.local` | `Password123!` | Secondary respondent; tests cross-response privacy restrictions |
+| `SURVEY_OWNER` | `owner1@survey.local` | `DEMO_USER_PASSWORD` | Primary owner; authors, publishes surveys and inspects aggregate summaries |
+| `SURVEY_OWNER` | `owner2@survey.local` | `DEMO_USER_PASSWORD` | Secondary owner; used for ownership isolation verification |
+| `RESPONDENT` | `resp1@survey.local` | `DEMO_USER_PASSWORD` | Primary respondent; takes surveys, tests duplicate submission guard |
+| `RESPONDENT` | `resp2@survey.local` | `DEMO_USER_PASSWORD` | Secondary respondent; tests cross-response privacy restrictions |
+
+See [Lab 5 deployment and environment configuration](docs/labs/lab-05/deployment.md) for the variable matrix, Cloud Run settings, and persistent Compose verification.
 
 ---
 

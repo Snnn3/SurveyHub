@@ -68,7 +68,7 @@ describe('F-04 Aggregate Summary (STS-F04-01 to STS-F04-04)', () => {
 
   beforeEach(async () => {
     await truncateTestDatabase();
-    const users = await prisma.$transaction(seedUsers);
+    const users = await prisma.$transaction((tx) => seedUsers(tx, password));
     owner1Id = users['owner1@survey.local'].id;
     owner2Id = users['owner2@survey.local'].id;
     resp1Id = users['resp1@survey.local'].id;

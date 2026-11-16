@@ -17,7 +17,7 @@ describe('F-01 authentication and roles', () => {
 
   beforeEach(async () => {
     await truncateTestDatabase();
-    const users = await prisma.$transaction(seedUsers);
+    const users = await prisma.$transaction((tx) => seedUsers(tx, password));
     ownerId = users['owner1@survey.local'].id;
     respondentId = users['resp1@survey.local'].id;
   });

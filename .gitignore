@@ -9,9 +9,11 @@ build/
 
 # Environment files
 .env
+.env.seed
 .env.local
 .env.*.local
 !.env.example
+!.env.seed.example
 
 # Testing & Coverage
 coverage/

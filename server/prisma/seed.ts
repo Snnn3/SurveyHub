@@ -6,7 +6,7 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 import { PrismaClient, SurveyStatus, SurveyMode, QuestionType } from '@prisma/client';
-import { seedUsers } from './seed-users';
+import { getDemoUserPassword, seedUsers } from './seed-users';
 
 const prisma = new PrismaClient();
 
@@ -64,11 +64,12 @@ async function upsertQuestionOptions(
 }
 
 async function main() {
+  const demoUserPassword = getDemoUserPassword();
   console.log('Seeding database with reproducible synthetic test data...');
 
   // Execute all seed upserts within a single atomic transaction
   await prisma.$transaction(async (tx) => {
-    const users = await seedUsers(tx);
+    const users = await seedUsers(tx, demoUserPassword);
 
     const owner1 = users['owner1@survey.local'];
     const owner2 = users['owner2@survey.local'];

@@ -57,7 +57,7 @@ describe('F-03 survey submission and receipts (STS-F03-01 to STS-F03-10)', () =>
 
   beforeEach(async () => {
     await truncateTestDatabase();
-    const users = await prisma.$transaction(seedUsers);
+    const users = await prisma.$transaction((tx) => seedUsers(tx, password));
     ownerId = users['owner1@survey.local'].id;
     respondentId = users['resp1@survey.local'].id;
     otherRespondentId = users['resp2@survey.local'].id;
