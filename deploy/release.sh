@@ -6,10 +6,8 @@ set -euo pipefail
 : "${TEAM_PREFIX:?Required}"
 : "${IMAGE_TAG:?Required}"
 
-ARTIFACT_REPOSITORY="${ARTIFACT_REPOSITORY:-$TEAM_PREFIX}"
-IMAGE_NAME="${IMAGE_NAME:-$TEAM_PREFIX}"
-SERVICE_NAME="${SERVICE_NAME:-$TEAM_PREFIX}"
-MIGRATION_JOB_NAME="${MIGRATION_JOB_NAME:-${TEAM_PREFIX}-migrate}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/validate-resources.sh"
 ROLLBACK="${ROLLBACK:-false}"
 
 if [[ ! "$IMAGE_TAG" =~ ^[0-9a-f]{40}$ ]]; then
@@ -20,13 +18,6 @@ if [[ "$ROLLBACK" != "true" && "$ROLLBACK" != "false" ]]; then
   echo "ROLLBACK must be true or false." >&2
   exit 1
 fi
-
-for resource_name in "$ARTIFACT_REPOSITORY" "$IMAGE_NAME" "$SERVICE_NAME" "$MIGRATION_JOB_NAME"; do
-  if [[ "$resource_name" != "$TEAM_PREFIX"* ]]; then
-    echo "Resource name '$resource_name' is outside this team's prefix." >&2
-    exit 1
-  fi
-done
 
 IMAGE_URI="$REGION-docker.pkg.dev/$PROJECT_ID/$ARTIFACT_REPOSITORY/$IMAGE_NAME:$IMAGE_TAG"
 DIGEST_IMAGE="$(gcloud artifacts docker images describe "$IMAGE_URI" \

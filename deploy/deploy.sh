@@ -11,10 +11,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-ARTIFACT_REPOSITORY="${ARTIFACT_REPOSITORY:-$TEAM_PREFIX}"
-IMAGE_NAME="${IMAGE_NAME:-$TEAM_PREFIX}"
-SERVICE_NAME="${SERVICE_NAME:-$TEAM_PREFIX}"
-MIGRATION_JOB_NAME="${MIGRATION_JOB_NAME:-${TEAM_PREFIX}-migrate}"
+source "$SCRIPT_DIR/validate-resources.sh"
 HEAD_SHA="$(git -C "$REPO_ROOT" rev-parse --verify HEAD)"
 IMAGE_TAG="${IMAGE_TAG:-$HEAD_SHA}"
 
@@ -32,13 +29,6 @@ if [[ -n "$(git -C "$REPO_ROOT" status --porcelain)" ]]; then
   echo "Refusing to deploy a dirty checkout; commit the intended source first." >&2
   exit 1
 fi
-
-for resource_name in "$ARTIFACT_REPOSITORY" "$IMAGE_NAME" "$SERVICE_NAME" "$MIGRATION_JOB_NAME"; do
-  if [[ "$resource_name" != "$TEAM_PREFIX"* ]]; then
-    echo "Resource name '$resource_name' is outside this team's prefix." >&2
-    exit 1
-  fi
-done
 
 gcloud config set project "$PROJECT_ID" >/dev/null
 

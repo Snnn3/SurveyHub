@@ -74,15 +74,9 @@ jobs:
       - name: Build and push the commit image
         if: env.ROLLBACK != 'true'
         run: |
-          artifact_repository="${ARTIFACT_REPOSITORY:-$TEAM_PREFIX}"
-          image_name="${IMAGE_NAME:-$TEAM_PREFIX}"
-          service_name="${SERVICE_NAME:-$TEAM_PREFIX}"
-          migration_job_name="${MIGRATION_JOB_NAME:-${TEAM_PREFIX}-migrate}"
-          for resource_name in "$artifact_repository" "$image_name" "$service_name" "$migration_job_name"; do
-            [[ "$resource_name" == "$TEAM_PREFIX"* ]] || { echo "Resource is outside this team's prefix." >&2; exit 1; }
-          done
-          gcloud artifacts repositories describe "$artifact_repository" --location "$REGION" --project "$PROJECT_ID" >/dev/null
-          image="$REGION-docker.pkg.dev/$PROJECT_ID/$artifact_repository/$image_name:$IMAGE_TAG"
+          source deploy/validate-resources.sh
+          gcloud artifacts repositories describe "$ARTIFACT_REPOSITORY" --location "$REGION" --project "$PROJECT_ID" >/dev/null
+          image="$REGION-docker.pkg.dev/$PROJECT_ID/$ARTIFACT_REPOSITORY/$IMAGE_NAME:$IMAGE_TAG"
           gcloud auth configure-docker "$REGION-docker.pkg.dev" --quiet
           docker build --tag "$image" .
           docker push "$image"

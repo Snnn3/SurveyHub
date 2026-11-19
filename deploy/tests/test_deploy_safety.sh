@@ -48,7 +48,7 @@ chmod +x "$STUB_BIN/gcloud" "$STUB_BIN/docker" "$STUB_BIN/python3"
 # Build an isolated git checkout containing the deploy scripts so dirty-tree checks never mutate the repo.
 REPO_COPY="$TMP_DIR/repo"
 mkdir -p "$REPO_COPY/deploy"
-cp "$DEPLOY_DIR/deploy.sh" "$DEPLOY_DIR/release.sh" "$DEPLOY_DIR/smoke_test.py" "$REPO_COPY/deploy/"
+cp "$DEPLOY_DIR/deploy.sh" "$DEPLOY_DIR/release.sh" "$DEPLOY_DIR/validate-resources.sh" "$DEPLOY_DIR/smoke_test.py" "$REPO_COPY/deploy/"
 git -C "$REPO_COPY" init -q
 git -C "$REPO_COPY" config user.email "ci@example.com"
 git -C "$REPO_COPY" config user.name "CI Test"
@@ -88,13 +88,20 @@ assert_fails "dirty checkout from /tmp" \
 [[ ! -s "$STUB_LOG" ]] || { echo "FAIL (dirty checkout): stubs were called" >&2; exit 1; }
 rm -f "$REPO_COPY/untracked.txt"
 
-# 3. deploy.sh and release.sh reject out-of-team resource names before touching gcloud/docker.
+# 3. deploy.sh, release.sh, and validate-resources.sh reject out-of-team and overlapping prefixes before touching gcloud/docker.
 : >"$STUB_LOG"
 assert_fails "deploy.sh prefix guard" \
   env "${BASE_ENV[@]}" ARTIFACT_REPOSITORY="other-team" bash "$REPO_COPY/deploy/deploy.sh"
 assert_fails "release.sh prefix guard" \
   env "${BASE_ENV[@]}" IMAGE_TAG="$HEAD_SHA" SERVICE_NAME="other-team" bash "$REPO_COPY/deploy/release.sh"
+assert_fails "deploy.sh overlapping prefix guard" \
+  env "${BASE_ENV[@]}" TEAM_PREFIX="team-1" SERVICE_NAME="team-10-service" bash "$REPO_COPY/deploy/deploy.sh"
+assert_fails "release.sh overlapping prefix guard" \
+  env "${BASE_ENV[@]}" TEAM_PREFIX="team-1" IMAGE_TAG="$HEAD_SHA" SERVICE_NAME="team-10-service" bash "$REPO_COPY/deploy/release.sh"
+assert_fails "workflow guard overlapping prefix" \
+  env "${BASE_ENV[@]}" TEAM_PREFIX="team-1" ARTIFACT_REPOSITORY="team-10" bash -c 'source "$1"' _ "$REPO_COPY/deploy/validate-resources.sh"
 [[ ! -s "$STUB_LOG" ]] || { echo "FAIL (prefix guard): stubs were called" >&2; exit 1; }
+env TEAM_PREFIX="team-1" SERVICE_NAME="team-1-api" bash -c 'source "$1"' _ "$REPO_COPY/deploy/validate-resources.sh"
 
 # 4. release.sh aborts on migration failure before updating the Cloud Run service.
 : >"$STUB_LOG"
