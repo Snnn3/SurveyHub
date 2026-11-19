@@ -1,0 +1,91 @@
+name: CI & Docker Build
+
+on:
+  workflow_call:
+    inputs:
+      source_ref:
+        description: Commit SHA or ref to check out for release or rollback validation
+        type: string
+        required: false
+  pull_request:
+    branches:
+      - cloud-staging
+      - sprint-1-staging
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: surveyhub
+          POSTGRES_DB: surveyhub_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d surveyhub_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:surveyhub@127.0.0.1:5432/surveyhub_test?schema=public
+      DATABASE_URL_TEST: postgresql://postgres:surveyhub@127.0.0.1:5432/surveyhub_test?schema=public
+      JWT_SECRET: ci-only-secret-not-for-production-2026
+      DEMO_USER_PASSWORD: CI-only-Demo-Password-2026!
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.source_ref }}
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npm run prisma:generate --prefix server
+
+      - name: Apply migrations to the isolated test database
+        run: npm run db:migrate:deploy
+
+      - name: Seed the isolated test database
+        run: npm run db:seed
+
+      - name: Type-check and run automated tests
+        run: |
+          npm run typecheck
+          npm test
+
+      - name: Build client and server
+        run: npm run build
+
+      - name: Check and test deployment helpers
+        run: |
+          bash -n deploy/deploy.sh
+          bash -n deploy/release.sh
+          bash -n deploy/validate-resources.sh
+          bash -n deploy/tests/test_deploy_safety.sh
+          python3 -c "import ast, pathlib; ast.parse(pathlib.Path('deploy/smoke_test.py').read_text())"
+          bash deploy/tests/test_deploy_safety.sh
+
+      - name: Build the production container
+        run: docker build --tag "surveyhub-ci:${GITHUB_SHA}" .
