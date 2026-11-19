@@ -16,7 +16,7 @@ Keep `Backlog` unlimited. Move issues to `Ready` when their scope is clear and d
 
 ## Staging to main
 
-Run build, regression, and end-to-end checks on sprint staging before opening a release PR (for Lab 5 cloud/CI work tracked under Issues #18–#26 and #37 on `cloud-staging`, the `ci-docker.yml` build/test suite and release checks apply on `cloud-staging` and the release PR). All changes enter `main` through an approved release PR from the active staging branch (`sprint-1-staging`, or `cloud-staging` for Lab 5). If the release PR needs changes, move the release card to `Fixing`, land corrections through reviewed fix PRs into staging, and return the existing release PR to review. Verify the merged commit and record the actual check results (`v0.1.0-sprint1` tags the Sprint 1 baseline; Lab 5 deployments are traced by full commit SHA and Artifact Registry image digest). Mark the release issue `Done` when the required submission evidence is ready.
+Run build, regression, and end-to-end checks on the active staging branch (`sprint-1-staging`, or `cloud-staging` for Lab 5 work tracked under Issues #18–#26 and #37) before opening a release PR. All changes enter `main` through an approved release PR from that staging branch. If the release PR needs changes, move the release card to `Fixing`, land corrections through reviewed fix PRs into staging, and return the existing release PR to review. Verify the merged commit and record the actual check results (`v0.1.0-sprint1` tags the Sprint 1 baseline; Lab 5 deployments are traced by full commit SHA and Artifact Registry image digest). Mark the release issue `Done` when the required submission evidence is ready.
 
 ## Repository boundaries
 

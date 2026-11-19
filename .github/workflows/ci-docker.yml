@@ -75,8 +75,8 @@ jobs:
           npm run typecheck
           npm test
 
-      - name: Build client and server
-        run: npm run build
+      - name: Build client and server and run E2E tests
+        run: npm run test:e2e
 
       - name: Check and test deployment helpers
         run: |
