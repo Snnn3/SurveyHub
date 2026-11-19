@@ -4,7 +4,7 @@ Track issues for every sprint on the shared [SurveyHub Kanban](https://github.co
 
 ## Issue to staging
 
-1. Pick a `Ready` issue after its dependencies are complete. Branch from the current sprint staging branch (`sprint-1-staging` for Sprint 1), use a name like `feature/<issue-number>-<slug>`, and move the card to `In progress`.
+1. Pick a `Ready` issue after its dependencies are complete. Branch from the current sprint staging branch (`sprint-1-staging` for Sprint 1; exception: `cloud-staging`, branched from `sprint-1-staging`, serves as the staging branch for Lab 5 cloud/CI work), use a name like `feature/<issue-number>-<slug>`, and move the card to `In progress`.
 2. **Analyze.** Read the issue, acceptance criteria, linked contracts, and affected code or docs. Identify dependencies, current behavior, affected callers, and relevant risks. Resolve conflicts between the issue and contract before implementation.
 3. **Plan.** Record the intended changes, affected interfaces or data, and a verification step for each acceptance criterion in the issue or working notes. Update the versioned contract before changing behavior.
 4. **Implement.** Make the scoped change. For work that requires TDD evidence, retain the failing test run before the fix and the passing run after it.
@@ -16,7 +16,7 @@ Keep `Backlog` unlimited. Move issues to `Ready` when their scope is clear and d
 
 ## Staging to main
 
-Run build, regression, and end-to-end checks on sprint staging before opening a release PR. All changes enter `main` through an approved release PR from sprint staging. If the release PR needs changes, move the release card to `Fixing`, land corrections through reviewed fix PRs into staging, and return the existing release PR to review. Verify the merged commit, record the actual check results, and tag that commit (Sprint 1 uses `v0.1.0-sprint1`). Mark the release issue `Done` when the required submission evidence is ready.
+Run build, regression, and end-to-end checks on sprint staging before opening a release PR (for Lab 5 cloud/CI work tracked under Issues #18–#26 and #37 on `cloud-staging`, the `ci-docker.yml` build/test suite and release checks apply on `cloud-staging` and the release PR). All changes enter `main` through an approved release PR from the active staging branch (`sprint-1-staging`, or `cloud-staging` for Lab 5). If the release PR needs changes, move the release card to `Fixing`, land corrections through reviewed fix PRs into staging, and return the existing release PR to review. Verify the merged commit and record the actual check results (`v0.1.0-sprint1` tags the Sprint 1 baseline; Lab 5 deployments are traced by full commit SHA and Artifact Registry image digest). Mark the release issue `Done` when the required submission evidence is ready.
 
 ## Repository boundaries
 

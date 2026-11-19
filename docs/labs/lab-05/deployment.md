@@ -7,7 +7,7 @@
 - The server listens on `PORT`; it defaults to `4000` for local development. Cloud Run supplies `PORT` at runtime.
 - The API stores business data in PostgreSQL through Prisma. The application image and container filesystem are not a data store.
 - `GET /api/health` checks PostgreSQL and returns `200` when reachable or `503 SERVICE_UNAVAILABLE` when the query fails.
-- Production startup rejects missing/default JWT secrets and missing, malformed, or default PostgreSQL connection URLs. Configuration errors do not print credentials.
+- Production startup rejects missing/default JWT secrets and missing, malformed, credential-less, or default PostgreSQL connection URLs. Configuration errors do not print credentials.
 - Seed passwords are required only by the one-off database seed process. The long-running app service does not receive `DEMO_USER_PASSWORD`.
 
 ## Environment variables

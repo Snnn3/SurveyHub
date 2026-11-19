@@ -40,8 +40,10 @@ if (nodeEnv === 'production') {
   } catch {
     // Report configuration failure without exposing a URL that may contain credentials.
   }
+  let databaseUsername = '';
   let databasePassword = '';
   try {
+    if (databaseUrl?.username) databaseUsername = decodeURIComponent(databaseUrl.username);
     if (databaseUrl?.password) databasePassword = decodeURIComponent(databaseUrl.password);
   } catch {
     databaseUrl = undefined;
@@ -52,8 +54,10 @@ if (nodeEnv === 'production') {
     !databaseUrl ||
     !['postgres:', 'postgresql:'].includes(databaseUrl.protocol) ||
     !databaseUrl.hostname ||
-    !databaseUrl.pathname.replace(/^\//, '') ||
-    ['postgres', 'replace-with-a-local-database-password'].includes(databasePassword)
+    !databaseUrl.pathname.replace(/^\/+/, '').trim() ||
+    !databaseUsername.trim() ||
+    !databasePassword.trim() ||
+    ['postgres', 'replace-with-a-local-database-password'].includes(databasePassword.trim())
   ) {
     throw new Error(
       'FATAL: Production mode requires a valid, non-default PostgreSQL DATABASE_URL. System startup aborted.'
