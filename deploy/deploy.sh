@@ -41,11 +41,18 @@ gcloud run jobs describe "$MIGRATION_JOB_NAME" \
 gcloud run services describe "$SERVICE_NAME" \
   --region "$REGION" --project "$PROJECT_ID" >/dev/null
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 gcloud auth configure-docker "$REGION-docker.pkg.dev" --quiet
 IMAGE_URI="$REGION-docker.pkg.dev/$PROJECT_ID/$ARTIFACT_REPOSITORY/$IMAGE_NAME:$IMAGE_TAG"
-docker build --tag "$IMAGE_URI" .
+docker build --platform "${DOCKER_PLATFORM:-linux/amd64}" --tag "$IMAGE_URI" "$REPO_ROOT"
 docker push "$IMAGE_URI"
 
 export PROJECT_ID REGION TEAM_PREFIX ARTIFACT_REPOSITORY IMAGE_NAME
 export SERVICE_NAME MIGRATION_JOB_NAME IMAGE_TAG ROLLBACK=false
-bash deploy/release.sh
+bash "$SCRIPT_DIR/release.sh"
+
+SERVICE_URL="$(gcloud run services describe "$SERVICE_NAME" \
+  --project "$PROJECT_ID" --region "$REGION" --format='value(status.url)')"
+python3 "$SCRIPT_DIR/smoke_test.py" "$SERVICE_URL"

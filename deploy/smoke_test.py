@@ -48,7 +48,11 @@ def check(service_url):
         if status != 200:
             return False
         payload = json.loads(body)
-        data = payload.get("data", {})
+        if not isinstance(payload, dict):
+            return False
+        data = payload.get("data")
+        if not isinstance(data, dict):
+            return False
         return payload.get("success") is True and data.get("status") == "ok" and data.get("database") == "up"
 
     retry_check(base_url, "database health", "/api/health", healthy)

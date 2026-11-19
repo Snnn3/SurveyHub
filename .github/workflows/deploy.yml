@@ -100,6 +100,7 @@ jobs:
             echo "### SurveyHub deployment"
             echo "- Source commit: $IMAGE_TAG"
             echo "- Image: $DEPLOYED_IMAGE"
+            echo "- Revision: $DEPLOYED_REVISION"
             echo "- Rollback: $ROLLBACK"
             echo "- Service URL: $SERVICE_URL"
             echo "- Smoke check: passed"

@@ -52,14 +52,23 @@ gcloud run services update "$SERVICE_NAME" \
 gcloud run services update-traffic "$SERVICE_NAME" \
   --to-latest --project "$PROJECT_ID" --region "$REGION" --quiet
 
-SERVICE_URL="$(gcloud run services describe "$SERVICE_NAME" \
-  --project "$PROJECT_ID" --region "$REGION" --format='value(status.url)')"
+IFS=$'\t' read -r SERVICE_URL DEPLOYED_REVISION < <(
+  gcloud run services describe "$SERVICE_NAME" \
+    --project "$PROJECT_ID" --region "$REGION" \
+    --format='value(status.url,status.latestReadyRevisionName)'
+)
 if [[ -z "$SERVICE_URL" ]]; then
   echo "Cloud Run did not return a service URL." >&2
   exit 1
 fi
+if [[ -z "$DEPLOYED_REVISION" ]]; then
+  echo "Cloud Run did not return a ready revision name." >&2
+  exit 1
+fi
 
 echo "Service URL: $SERVICE_URL"
+echo "Deployed revision: $DEPLOYED_REVISION"
 if [[ -n "${GITHUB_ENV:-}" ]]; then
-  printf 'SERVICE_URL=%s\nDEPLOYED_IMAGE=%s\n' "$SERVICE_URL" "$DIGEST_IMAGE" >> "$GITHUB_ENV"
+  printf 'SERVICE_URL=%s\nDEPLOYED_IMAGE=%s\nDEPLOYED_REVISION=%s\n' \
+    "$SERVICE_URL" "$DIGEST_IMAGE" "$DEPLOYED_REVISION" >> "$GITHUB_ENV"
 fi
