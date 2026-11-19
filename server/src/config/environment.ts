@@ -57,7 +57,7 @@ if (nodeEnv === 'production') {
     !databaseUrl.pathname.replace(/^\/+/, '').trim() ||
     !databaseUsername.trim() ||
     !databasePassword.trim() ||
-    ['postgres', 'replace-with-a-local-database-password'].includes(databasePassword)
+    ['postgres', 'replace-with-a-local-database-password'].includes(databasePassword.trim())
   ) {
     throw new Error(
       'FATAL: Production mode requires a valid, non-default PostgreSQL DATABASE_URL. System startup aborted.'

@@ -50,77 +50,28 @@ describe('production configuration', () => {
     expect(() => loadEnvironment({ NODE_ENV: 'production', JWT_SECRET: validSecret })).toThrow(
       /DATABASE_URL/
     );
-    expect(() =>
-      loadEnvironment({
-        NODE_ENV: 'production',
-        JWT_SECRET: validSecret,
-        DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/surveyhub?schema=public',
-      })
-    ).toThrow(/DATABASE_URL/);
-    expect(() =>
-      loadEnvironment({
-        NODE_ENV: 'production',
-        JWT_SECRET: validSecret,
-        DATABASE_URL: 'postgresql://surveyhub:postgres@db:5432/surveyhub',
-      })
-    ).toThrow(/DATABASE_URL/);
-    expect(() =>
-      loadEnvironment({
-        NODE_ENV: 'production',
-        JWT_SECRET: validSecret,
-        DATABASE_URL: 'postgresql:/surveyhub',
-      })
-    ).toThrow(/DATABASE_URL/);
-    expect(() =>
-      loadEnvironment({
-        NODE_ENV: 'production',
-        JWT_SECRET: validSecret,
-        DATABASE_URL:
-          'postgresql://surveyhub:replace-with-a-local-database-password@db:5432/surveyhub',
-      })
-    ).toThrow(/DATABASE_URL/);
-    expect(() =>
-      loadEnvironment({
-        NODE_ENV: 'production',
-        JWT_SECRET: validSecret,
-        DATABASE_URL: 'postgresql://surveyhub@db:5432/surveyhub',
-      })
-    ).toThrow(/DATABASE_URL/);
-    expect(() =>
-      loadEnvironment({
-        NODE_ENV: 'production',
-        JWT_SECRET: validSecret,
-        DATABASE_URL: 'postgresql://surveyhub:@db:5432/surveyhub',
-      })
-    ).toThrow(/DATABASE_URL/);
-    expect(() =>
-      loadEnvironment({
-        NODE_ENV: 'production',
-        JWT_SECRET: validSecret,
-        DATABASE_URL: 'postgresql://surveyhub:%20@db:5432/surveyhub',
-      })
-    ).toThrow(/DATABASE_URL/);
-    expect(() =>
-      loadEnvironment({
-        NODE_ENV: 'production',
-        JWT_SECRET: validSecret,
-        DATABASE_URL: 'postgresql://:secure-postgres-word-pass@db:5432/surveyhub',
-      })
-    ).toThrow(/DATABASE_URL/);
-    expect(() =>
-      loadEnvironment({
-        NODE_ENV: 'production',
-        JWT_SECRET: validSecret,
-        DATABASE_URL: 'postgresql://surveyhub:secure-postgres-word-pass@db:5432///',
-      })
-    ).toThrow(/DATABASE_URL/);
-    expect(() =>
-      loadEnvironment({
-        NODE_ENV: 'production',
-        JWT_SECRET: validSecret,
-        DATABASE_URL: 'mysql://surveyhub:secure-postgres-word-pass@db:3306/surveyhub',
-      })
-    ).toThrow(/DATABASE_URL/);
+    const invalidDatabaseUrls = [
+      'postgresql://postgres:postgres@localhost:5432/surveyhub?schema=public',
+      'postgresql://surveyhub:postgres@db:5432/surveyhub',
+      'postgresql://surveyhub:%20postgres%20@db:5432/surveyhub',
+      'postgresql:/surveyhub',
+      'postgresql://surveyhub:replace-with-a-local-database-password@db:5432/surveyhub',
+      'postgresql://surveyhub@db:5432/surveyhub',
+      'postgresql://surveyhub:@db:5432/surveyhub',
+      'postgresql://surveyhub:%20@db:5432/surveyhub',
+      'postgresql://:secure-postgres-word-pass@db:5432/surveyhub',
+      'postgresql://surveyhub:secure-postgres-word-pass@db:5432///',
+      'mysql://surveyhub:secure-postgres-word-pass@db:3306/surveyhub',
+    ];
+    for (const url of invalidDatabaseUrls) {
+      expect(() =>
+        loadEnvironment({
+          NODE_ENV: 'production',
+          JWT_SECRET: validSecret,
+          DATABASE_URL: url,
+        })
+      ).toThrow(/DATABASE_URL/);
+    }
   });
 
   it('uses the configured Cloud Run port and accepts non-default production settings', () => {
