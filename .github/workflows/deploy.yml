@@ -21,15 +21,14 @@ concurrency:
 
 jobs:
   test:
-    if: github.ref == 'refs/heads/main' && !inputs.image_tag
+    if: github.ref == 'refs/heads/main'
     uses: ./.github/workflows/ci-docker.yml
+    with:
+      source_ref: ${{ inputs.image_tag || github.sha }}
 
   deploy:
     needs: test
-    if: >-
-      always() && !cancelled() && github.ref == 'refs/heads/main' &&
-      (needs.test.result == 'success' ||
-       (github.event_name == 'workflow_dispatch' && inputs.image_tag != '' && needs.test.result == 'skipped'))
+    if: github.ref == 'refs/heads/main' && needs.test.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: production

@@ -2,9 +2,15 @@ name: CI & Docker Build
 
 on:
   workflow_call:
+    inputs:
+      source_ref:
+        description: Commit SHA or ref to check out for release or rollback validation
+        type: string
+        required: false
   pull_request:
     branches:
       - cloud-staging
+      - sprint-1-staging
       - main
   workflow_dispatch:
 
@@ -43,6 +49,7 @@ jobs:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ inputs.source_ref }}
           persist-credentials: false
 
       - name: Set up Node.js
