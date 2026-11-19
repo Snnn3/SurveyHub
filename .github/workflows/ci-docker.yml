@@ -78,11 +78,13 @@ jobs:
       - name: Build client and server
         run: npm run build
 
-      - name: Check deployment helper syntax
+      - name: Check and test deployment helpers
         run: |
           bash -n deploy/deploy.sh
           bash -n deploy/release.sh
+          bash -n deploy/tests/test_deploy_safety.sh
           python3 -c "import ast, pathlib; ast.parse(pathlib.Path('deploy/smoke_test.py').read_text())"
+          bash deploy/tests/test_deploy_safety.sh
 
       - name: Build the production container
         run: docker build --tag "surveyhub-ci:${GITHUB_SHA}" .
