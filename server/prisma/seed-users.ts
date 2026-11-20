@@ -1,8 +1,25 @@
 import { Prisma, Role, User } from '@prisma/client';
 import { hashSeedPassword } from './password';
 
-export async function seedUsers(tx: Prisma.TransactionClient): Promise<Record<string, User>> {
-  const passwordHash = await hashSeedPassword('Password123!');
+export function getDemoUserPassword(): string {
+  const password = process.env.DEMO_USER_PASSWORD?.trim();
+  if (
+    !password ||
+    /^(replace-with|change-me)/i.test(password) ||
+    (process.env.NODE_ENV === 'production' && (password === 'Password123!' || password.length < 12))
+  ) {
+    throw new Error(
+      'DEMO_USER_PASSWORD must be set to an operator-supplied value; production values must be at least 12 characters and cannot use the test password.'
+    );
+  }
+  return password;
+}
+
+export async function seedUsers(
+  tx: Prisma.TransactionClient,
+  password: string
+): Promise<Record<string, User>> {
+  const passwordHash = await hashSeedPassword(password);
   const userFixtures = [
     { email: 'owner1@survey.local', fullName: 'Dr. Owner One', role: Role.SURVEY_OWNER },
     { email: 'owner2@survey.local', fullName: 'Prof. Owner Two', role: Role.SURVEY_OWNER },

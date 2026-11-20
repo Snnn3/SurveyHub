@@ -137,7 +137,7 @@ describe('Sprint 1 security matrix (STS-SEC-01/02)', () => {
 
   beforeEach(async () => {
     await truncateTestDatabase();
-    const users = await prisma.$transaction(seedUsers);
+    const users = await prisma.$transaction((tx) => seedUsers(tx, password));
     ownerId = users['owner1@survey.local'].id;
     [ownerToken, otherOwnerToken, respondentToken, otherRespondentToken] = await Promise.all([
       login('owner1@survey.local'),

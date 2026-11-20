@@ -23,7 +23,7 @@ describe('F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11)', () =>
 
   beforeEach(async () => {
     await truncateTestDatabase();
-    const users = await prisma.$transaction(seedUsers);
+    const users = await prisma.$transaction((tx) => seedUsers(tx, password));
     ownerAId = users['owner1@survey.local'].id;
     ownerBId = users['owner2@survey.local'].id;
 
