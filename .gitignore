@@ -20,9 +20,16 @@ coverage/
 test-results/
 playwright-report/
 /.playwright-cli/
+__pycache__/
+*.pyc
 
 # Temporary local output
 /tmp/
+
+# Local course toolkit and team configuration
+/project-kit/
+/.kit-state/
+/secrets.map
 
 # Logs
 npm-debug.log*

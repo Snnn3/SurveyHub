@@ -84,7 +84,7 @@ jobs:
           bash -n deploy/release.sh
           bash -n deploy/validate-resources.sh
           bash -n deploy/tests/test_deploy_safety.sh
-          python3 -c "import ast, pathlib; ast.parse(pathlib.Path('deploy/smoke_test.py').read_text())"
+          python3 -m unittest discover -s deploy/tests -p 'test_*.py'
           bash deploy/tests/test_deploy_safety.sh
 
       - name: Build the production container
