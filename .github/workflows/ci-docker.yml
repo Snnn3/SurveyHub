@@ -10,6 +10,7 @@ on:
   pull_request:
     branches:
       - cloud-staging
+      - sprint-1-staging
       - main
   workflow_dispatch:
 

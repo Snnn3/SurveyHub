@@ -48,12 +48,15 @@ assert_portal_config() {
   }
 }
 
-assert_portal_config jobs "$MIGRATION_JOB_NAME"
+if [[ "$ROLLBACK" == false ]]; then
+  assert_portal_config jobs "$MIGRATION_JOB_NAME"
+fi
 assert_portal_config services "$SERVICE_NAME"
 
 if [[ "$ROLLBACK" == false ]]; then
   release_cmd gcloud run jobs update "$MIGRATION_JOB_NAME" \
     --image "$DIGEST_IMAGE" \
+    --remove-env-vars DATABASE_URL \
     --update-secrets "DATABASE_URL=${DATABASE_URL_SECRET}:latest" \
     --command npm \
     --args run,db:migrate:deploy \
@@ -61,17 +64,22 @@ if [[ "$ROLLBACK" == false ]]; then
   release_cmd gcloud run jobs execute "$MIGRATION_JOB_NAME" \
     --wait --project "$PROJECT_ID" --region "$REGION" --quiet
 else
-  echo 'Rollback requested; run the configured migration job before reusing the prior image.'
-  release_cmd gcloud run jobs execute "$MIGRATION_JOB_NAME" \
-    --wait --project "$PROJECT_ID" --region "$REGION" --quiet
+  echo 'Rollback requested; switching the service image without running migrations.'
 fi
 
-release_cmd gcloud run services update "$SERVICE_NAME" \
-  --image "$DIGEST_IMAGE" \
-  --update-secrets "DATABASE_URL=${DATABASE_URL_SECRET}:latest,JWT_SECRET=${JWT_SECRET_NAME}:latest" \
-  --update-env-vars NODE_ENV=production \
-  --port 4000 \
-  --project "$PROJECT_ID" --region "$REGION" --quiet
+if [[ "$ROLLBACK" == true ]]; then
+  release_cmd gcloud run services update "$SERVICE_NAME" \
+    --image "$DIGEST_IMAGE" \
+    --project "$PROJECT_ID" --region "$REGION" --quiet
+else
+  release_cmd gcloud run services update "$SERVICE_NAME" \
+    --image "$DIGEST_IMAGE" \
+    --remove-env-vars DATABASE_URL,JWT_SECRET \
+    --update-secrets "DATABASE_URL=${DATABASE_URL_SECRET}:latest,JWT_SECRET=${JWT_SECRET_NAME}:latest" \
+    --update-env-vars NODE_ENV=production \
+    --port 4000 \
+    --project "$PROJECT_ID" --region "$REGION" --quiet
+fi
 release_cmd gcloud run services update-traffic "$SERVICE_NAME" \
   --to-latest --project "$PROJECT_ID" --region "$REGION" --quiet
 

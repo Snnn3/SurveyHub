@@ -11,8 +11,8 @@
 #     5) smoke-tests the public URL (deploy/smoke_test.py),
 #     6) writes a deployment summary.
 #   MANUAL ROLLBACK: run the workflow by hand and enter `image_tag` = the full
-#   40-character commit SHA of an image that already exists. CI still runs;
-#   build is skipped, the configured migration job runs, then the service rolls back.
+#   40-character commit SHA of an image already published by this workflow.
+#   CI/build/migrations are skipped; the service switches to that image only.
 #
 # ⚠️ DO NOT RENAME (the lab guide refers to these names):
 #   - job `test-and-docker` (defined in ci-docker.yml, called by `test` below)
@@ -73,13 +73,14 @@ concurrency:
 jobs:
   # ----------------------------------------------------------------------------
   # Job 1: run the existing CI workflow (including `test-and-docker`).
-  # It runs only for `main`, including when a rollback is requested.
+  # It runs only for normal `main` deployments. Rollback targets an image that
+  # passed this CI when it was originally built.
   # ----------------------------------------------------------------------------
   test:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && inputs.image_tag == ''
     uses: ./.github/workflows/ci-docker.yml
     with:
-      source_ref: ${{ inputs.image_tag || github.sha }}
+      source_ref: ${{ github.sha }}
 
   # ----------------------------------------------------------------------------
   # Job 2: build, migrate, deploy, smoke-test.
@@ -87,7 +88,13 @@ jobs:
   # ----------------------------------------------------------------------------
   deploy:
     needs: test
-    if: github.ref == 'refs/heads/main' && needs.test.result == 'success'
+    if: >-
+      always() &&
+      github.ref == 'refs/heads/main' &&
+      (needs.test.result == 'success' ||
+       (github.event_name == 'workflow_dispatch' &&
+        inputs.image_tag != '' &&
+        needs.test.result == 'skipped'))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # ⚠️ Do not rename: GitHub environment holding the WIF configuration.

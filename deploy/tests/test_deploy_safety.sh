@@ -82,10 +82,25 @@ assert_fails() {
   fi
 }
 
+# Real manual deploys reject stale image tags and dirty checkouts before calling external tools.
+: >"$STUB_LOG"
+OTHER_SHA="0000000000000000000000000000000000000000"
+assert_fails "mismatched IMAGE_TAG" \
+  env "${BASE_ENV[@]}" DRY_RUN=0 IMAGE_TAG="$OTHER_SHA" bash "$REPO_COPY/deploy/deploy.sh"
+[[ ! -s "$STUB_LOG" ]] || { echo "FAIL (mismatched IMAGE_TAG): stubs were called" >&2; exit 1; }
+touch "$REPO_COPY/untracked.txt"
+assert_fails "dirty checkout" \
+  env "${BASE_ENV[@]}" DRY_RUN=0 IMAGE_TAG="$HEAD_SHA" bash "$REPO_COPY/deploy/deploy.sh"
+rm -f "$REPO_COPY/untracked.txt"
+[[ ! -s "$STUB_LOG" ]] || { echo "FAIL (dirty checkout): stubs were called" >&2; exit 1; }
+
 # Wrong-team overrides fail before any cloud command is called.
 : >"$STUB_LOG"
 assert_fails "out-of-team service" \
   env "${BASE_ENV[@]}" SERVICE_NAME=other-team bash -c 'source "$1" && exit 0' _ "$REPO_COPY/deploy/validate-resources.sh"
+assert_fails "service prefix boundary" \
+  env "${BASE_ENV[@]}" SERVICE_NAME=s7c512824evil bash -c 'source "$1" && exit 0' _ "$REPO_COPY/deploy/validate-resources.sh"
+env "${BASE_ENV[@]}" SERVICE_NAME=s7c512824-api bash -c 'source "$1" && exit 0' _ "$REPO_COPY/deploy/validate-resources.sh"
 [[ ! -s "$STUB_LOG" ]] || { echo "FAIL (resource guard): cloud command was called" >&2; exit 1; }
 
 # A failed migration must stop before the live service is changed.
@@ -118,8 +133,10 @@ GITHUB_ENV_FILE="$TMP_DIR/github.env"
 env "${BASE_ENV[@]}" IMAGE_TAG="$HEAD_SHA" GITHUB_ENV="$GITHUB_ENV_FILE" \
   bash "$REPO_COPY/deploy/release.sh" >/dev/null
 grep -q -- "--args run,db:migrate:deploy" "$STUB_LOG"
+grep -q -- "--remove-env-vars DATABASE_URL" "$STUB_LOG"
 grep -q -- "DATABASE_URL=s7c512824-database-url:latest" "$STUB_LOG"
 grep -q -- "JWT_SECRET=s7c512824-app-secret-1:latest" "$STUB_LOG"
+grep -q -- "--remove-env-vars DATABASE_URL,JWT_SECRET" "$STUB_LOG"
 grep -q -- "--port 4000" "$STUB_LOG"
 grep -q "DEPLOYED_REVISION=s7c512824-00001-abc" "$GITHUB_ENV_FILE"
 grep -q "SERVICE_URL=https://s7c512824.a.run.app" "$GITHUB_ENV_FILE"
@@ -128,22 +145,14 @@ MIGRATE_LINE="$(grep -n -m1 "run jobs execute" "$STUB_LOG" | cut -d: -f1)"
 SERVICE_LINE="$(grep -n -m1 "run services update s7c512824" "$STUB_LOG" | cut -d: -f1)"
 [[ "$MIGRATE_LINE" -lt "$SERVICE_LINE" ]]
 
-# Rollback reuses the configured migration job before updating the service image.
+# Rollback does not inspect or execute the migration job and only changes the service image.
 : >"$STUB_LOG"
-env "${BASE_ENV[@]}" IMAGE_TAG="$HEAD_SHA" ROLLBACK=true \
+env "${BASE_ENV[@]}" IMAGE_TAG="$HEAD_SHA" ROLLBACK=true STUB_FAIL_MIGRATE=1 \
   bash "$REPO_COPY/deploy/release.sh" >/dev/null
-grep -q "run jobs execute s7c512824-migrate" "$STUB_LOG"
-! grep -q "run jobs update" "$STUB_LOG"
-MIGRATE_LINE="$(grep -n -m1 "run jobs execute" "$STUB_LOG" | cut -d: -f1)"
-SERVICE_LINE="$(grep -n -m1 "run services update s7c512824" "$STUB_LOG" | cut -d: -f1)"
-[[ "$MIGRATE_LINE" -lt "$SERVICE_LINE" ]]
-grep -q "run services update s7c512824" "$STUB_LOG"
-
-: >"$STUB_LOG"
-assert_fails "rollback migration failure stops service update" \
-  env "${BASE_ENV[@]}" IMAGE_TAG="$HEAD_SHA" ROLLBACK=true STUB_FAIL_MIGRATE=1 \
-  bash "$REPO_COPY/deploy/release.sh"
-! grep -q "run services update s7c512824" "$STUB_LOG"
+! grep -q "run jobs" "$STUB_LOG"
+grep -q "run services update s7c512824 --image .*@sha256:" "$STUB_LOG"
+! grep -q -- "--update-secrets" "$STUB_LOG"
+! grep -q -- "--update-env-vars" "$STUB_LOG"
 
 # The manual entry point defaults to a dry run and never invokes cloud/Docker tools.
 : >"$STUB_LOG"
