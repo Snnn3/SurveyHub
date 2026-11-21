@@ -59,6 +59,14 @@ git -C "$REPO_COPY" add deploy/
 git -C "$REPO_COPY" commit -qm "deploy test fixture"
 HEAD_SHA="$(git -C "$REPO_COPY" rev-parse HEAD)"
 
+# Keep the manual deploy entry point aligned with the Lab 5 Starter Kit layout.
+grep -q '^run_cmd()' "$REPO_COPY/deploy/deploy.sh"
+grep -q '^# 9\. Build & Push' "$REPO_COPY/deploy/deploy.sh"
+grep -q '^# 10\. Create/Update & Execute Cloud Run Job' "$REPO_COPY/deploy/deploy.sh"
+grep -q '^# 11\. Deploy Cloud Run Service' "$REPO_COPY/deploy/deploy.sh"
+grep -q 'gcloud run services describe "\$SERVICE_NAME"' "$REPO_COPY/deploy/deploy.sh"
+grep -q 'gcloud run jobs describe "\$MIGRATE_JOB_NAME"' "$REPO_COPY/deploy/deploy.sh"
+
 BASE_ENV=(
   "PATH=$STUB_BIN:$PATH"
   "STUB_LOG=$STUB_LOG"

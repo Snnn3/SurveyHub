@@ -22,3 +22,22 @@ for resource_name in "$ARTIFACT_REPOSITORY" "$IMAGE_NAME" "$SERVICE_NAME" "$MIGR
     exit 1
   fi
 done
+
+assert_portal_config() {
+  local kind="$1" name="$2" config="${3:-}"
+  if [[ "${DRY_RUN:-0}" == 1 ]]; then
+    echo "[DRY_RUN] Would verify Cloud SQL and runtime identity on Cloud Run $kind '$name'."
+    return
+  fi
+  if [[ -z "$config" ]]; then
+    config="$(gcloud run "$kind" describe "$name" --project "$PROJECT_ID" --region "$REGION" --format=json)"
+  fi
+  [[ "$config" == *"$PROJECT_ID:$REGION:${TEAM_PREFIX}-pg"* ]] || {
+    echo "Assigned Cloud SQL instance is not attached to Cloud Run $kind '$name'." >&2
+    return 1
+  }
+  [[ "$config" == *"${TEAM_PREFIX}-runner@$PROJECT_ID.iam.gserviceaccount.com"* ]] || {
+    echo "Assigned runtime service account is not configured on Cloud Run $kind '$name'." >&2
+    return 1
+  }
+}

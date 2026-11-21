@@ -30,24 +30,6 @@ else
   [[ "$DIGEST_IMAGE" == "$IMAGE_BASE@sha256:"* ]] || { echo 'Image digest not found.' >&2; exit 1; }
 fi
 
-# Read the portal configuration without printing secret-backed environment values.
-assert_portal_config() {
-  local kind="$1" name="$2" config
-  if [[ "$DRY_RUN" == 1 ]]; then
-    echo "[DRY_RUN] Would verify Cloud SQL and runtime identity on Cloud Run $kind '$name'."
-    return
-  fi
-  config="$(gcloud run "$kind" describe "$name" --project "$PROJECT_ID" --region "$REGION" --format=json)"
-  [[ "$config" == *"$PROJECT_ID:$REGION:${TEAM_PREFIX}-pg"* ]] || {
-    echo "Assigned Cloud SQL instance is not attached to Cloud Run $kind '$name'." >&2
-    exit 1
-  }
-  [[ "$config" == *"${TEAM_PREFIX}-runner@$PROJECT_ID.iam.gserviceaccount.com"* ]] || {
-    echo "Assigned runtime service account is not configured on Cloud Run $kind '$name'." >&2
-    exit 1
-  }
-}
-
 if [[ "$ROLLBACK" == false ]]; then
   assert_portal_config jobs "$MIGRATION_JOB_NAME"
 fi
