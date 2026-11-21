@@ -67,8 +67,8 @@ grep -q '^# 11\. Deploy Cloud Run Service' "$REPO_COPY/deploy/deploy.sh"
 grep -q 'gcloud run services describe "\$SERVICE_NAME"' "$REPO_COPY/deploy/deploy.sh"
 grep -q 'gcloud run jobs describe "\$MIGRATE_JOB_NAME"' "$REPO_COPY/deploy/deploy.sh"
 ! grep -q 's7c512824' "$REPO_COPY/deploy/deploy.sh" "$REPO_COPY/deploy/validate-resources.sh"
-! grep -q 'TEAM_PREFIX: s7c512824' "$DEPLOY_DIR/../.github/workflows/deploy.yml"
-grep -Fq 'TEAM_PREFIX: ${{ vars.TEAM_PREFIX }}' "$DEPLOY_DIR/../.github/workflows/deploy.yml"
+! grep -q 's7c512824' "$DEPLOY_DIR/../.github/workflows/deploy.yml"
+grep -q 'TEAM_PREFIX=.*WIF_SERVICE_ACCOUNT' "$DEPLOY_DIR/../.github/workflows/deploy.yml"
 
 BASE_ENV=(
   "PATH=$STUB_BIN:$PATH"
@@ -82,6 +82,7 @@ BASE_ENV=(
   "MIGRATION_JOB_NAME=s7c512824-migrate"
   "DATABASE_URL_SECRET=s7c512824-database-url"
   "JWT_SECRET_NAME=s7c512824-app-secret-1"
+  "WIF_SERVICE_ACCOUNT=s7c512824-deployer@cpe-se-course-2026.iam.gserviceaccount.com"
 )
 
 assert_fails() {
@@ -111,6 +112,9 @@ assert_fails "out-of-team service" \
   env "${BASE_ENV[@]}" SERVICE_NAME=other-team bash -c 'source "$1" && exit 0' _ "$REPO_COPY/deploy/validate-resources.sh"
 assert_fails "service prefix boundary" \
   env "${BASE_ENV[@]}" SERVICE_NAME=s7c512824evil bash -c 'source "$1" && exit 0' _ "$REPO_COPY/deploy/validate-resources.sh"
+assert_fails "WIF identity prefix mismatch" \
+  env "${BASE_ENV[@]}" WIF_SERVICE_ACCOUNT=otherteam-deployer@cpe-se-course-2026.iam.gserviceaccount.com \
+  bash -c 'source "$1" && exit 0' _ "$REPO_COPY/deploy/validate-resources.sh"
 env "${BASE_ENV[@]}" SERVICE_NAME=s7c512824-api bash -c 'source "$1" && exit 0' _ "$REPO_COPY/deploy/validate-resources.sh"
 env PROJECT_ID=cpe-se-course-2026 REGION=asia-southeast1 TEAM_PREFIX=sample-team \
   bash -c 'source "$1" && [[ "$SERVICE_NAME" == sample-team ]]' _ "$REPO_COPY/deploy/validate-resources.sh"

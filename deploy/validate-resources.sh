@@ -6,6 +6,10 @@
 : "${TEAM_PREFIX:?TEAM_PREFIX is required}"
 [[ "$PROJECT_ID" == "cpe-se-course-2026" ]] || { echo 'Wrong course project.' >&2; exit 1; }
 [[ "$REGION" == "asia-southeast1" ]] || { echo 'Wrong assigned region.' >&2; exit 1; }
+if [[ -n "${WIF_SERVICE_ACCOUNT:-}" && "$WIF_SERVICE_ACCOUNT" != "${TEAM_PREFIX}-deployer@$PROJECT_ID.iam.gserviceaccount.com" ]]; then
+  echo 'WIF deployer account does not match TEAM_PREFIX.' >&2
+  exit 1
+fi
 export ARTIFACT_REPOSITORY="${ARTIFACT_REPOSITORY:-$TEAM_PREFIX}"
 export IMAGE_NAME="${IMAGE_NAME:-$TEAM_PREFIX}"
 export SERVICE_NAME="${SERVICE_NAME:-$TEAM_PREFIX}"
