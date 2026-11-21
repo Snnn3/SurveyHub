@@ -17,8 +17,8 @@
 # ⚠️ DO NOT RENAME (the lab guide refers to these names):
 #   - job `test-and-docker` (defined in ci-docker.yml, called by `test` below)
 #   - environment: demo
-#   - environment variables: GCP_PROJECT_ID, GCP_REGION, WIF_PROVIDER,
-#     WIF_SERVICE_ACCOUNT (TEAM_PREFIX is derived from this identity)
+#   - environment variables: GCP_PROJECT_ID, GCP_REGION, TEAM_PREFIX,
+#     WIF_PROVIDER, WIF_SERVICE_ACCOUNT
 #
 # ⭐ IMPORTANT
 #   - No secret values live in this file. WIF settings come from GitHub
@@ -105,6 +105,7 @@ jobs:
     env:
       PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
       REGION: ${{ vars.GCP_REGION }}
+      TEAM_PREFIX: ${{ vars.TEAM_PREFIX }}
       ARTIFACT_REPOSITORY: ${{ vars.ARTIFACT_REPOSITORY }}
       IMAGE_NAME: ${{ vars.IMAGE_NAME }}
       SERVICE_NAME: ${{ vars.SERVICE_NAME }}
@@ -128,17 +129,8 @@ jobs:
       # 2. Fail early if settings are missing or the tag is not a full SHA
       - name: Validate deployment settings
         run: |
-          test -n "$PROJECT_ID" && test -n "$REGION"
           test -n "$WIF_PROVIDER" && test -n "$WIF_SERVICE_ACCOUNT"
-          test "$PROJECT_ID" = "cpe-se-course-2026"
-          test "$REGION" = "asia-southeast1"
-          suffix="-deployer@$PROJECT_ID.iam.gserviceaccount.com"
-          case "$WIF_SERVICE_ACCOUNT" in
-            *"$suffix") TEAM_PREFIX="${WIF_SERVICE_ACCOUNT%"$suffix"}" ;;
-            *) echo 'WIF deployer account does not identify a team prefix.'; exit 1 ;;
-          esac
-          test -n "$TEAM_PREFIX"
-          echo "TEAM_PREFIX=$TEAM_PREFIX" >> "$GITHUB_ENV"
+          source deploy/validate-resources.sh
           [[ "$IMAGE_TAG" =~ ^[0-9a-f]{40}$ ]] || { echo 'Image tag must be a full 40-character commit SHA.'; exit 1; }
 
       # ------------------------------------------------------------------------

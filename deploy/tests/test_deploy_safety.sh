@@ -59,16 +59,11 @@ git -C "$REPO_COPY" add deploy/
 git -C "$REPO_COPY" commit -qm "deploy test fixture"
 HEAD_SHA="$(git -C "$REPO_COPY" rev-parse HEAD)"
 
-# Keep the manual deploy entry point aligned with the Lab 5 Starter Kit layout.
-grep -q '^run_cmd()' "$REPO_COPY/deploy/deploy.sh"
-grep -q '^# 9\. Build & Push' "$REPO_COPY/deploy/deploy.sh"
-grep -q '^# 10\. Create/Update & Execute Cloud Run Job' "$REPO_COPY/deploy/deploy.sh"
-grep -q '^# 11\. Deploy Cloud Run Service' "$REPO_COPY/deploy/deploy.sh"
-grep -q 'gcloud run services describe "\$SERVICE_NAME"' "$REPO_COPY/deploy/deploy.sh"
-grep -q 'gcloud run jobs describe "\$MIGRATE_JOB_NAME"' "$REPO_COPY/deploy/deploy.sh"
+# Team scope comes from portal configuration, not team-specific literals in scripts.
 ! grep -q 's7c512824' "$REPO_COPY/deploy/deploy.sh" "$REPO_COPY/deploy/validate-resources.sh"
 ! grep -q 's7c512824' "$DEPLOY_DIR/../.github/workflows/deploy.yml"
-grep -q 'TEAM_PREFIX=.*WIF_SERVICE_ACCOUNT' "$DEPLOY_DIR/../.github/workflows/deploy.yml"
+grep -Eq '^[[:space:]]*TEAM_PREFIX:[[:space:]]*\$\{\{[[:space:]]*vars\.TEAM_PREFIX[[:space:]]*\}\}[[:space:]]*$' \
+  "$DEPLOY_DIR/../.github/workflows/deploy.yml"
 
 BASE_ENV=(
   "PATH=$STUB_BIN:$PATH"
@@ -159,6 +154,9 @@ grep -q -- "--port 4000" "$STUB_LOG"
 grep -q "DEPLOYED_REVISION=s7c512824-00001-abc" "$GITHUB_ENV_FILE"
 grep -q "SERVICE_URL=https://s7c512824.a.run.app" "$GITHUB_ENV_FILE"
 grep -q "DEPLOYED_IMAGE=.*@sha256:" "$GITHUB_ENV_FILE"
+! grep -q -- "--service-account" "$STUB_LOG"
+! grep -q -- "--add-cloudsql-instances" "$STUB_LOG"
+! grep -q -- "--set-cloudsql-instances" "$STUB_LOG"
 MIGRATE_LINE="$(grep -n -m1 "run jobs execute" "$STUB_LOG" | cut -d: -f1)"
 SERVICE_LINE="$(grep -n -m1 "run services update s7c512824" "$STUB_LOG" | cut -d: -f1)"
 [[ "$MIGRATE_LINE" -lt "$SERVICE_LINE" ]]
@@ -178,6 +176,8 @@ DRY_RUN_OUTPUT="$(env "${BASE_ENV[@]}" bash "$REPO_COPY/deploy/deploy.sh")"
 [[ ! -s "$STUB_LOG" ]] || { echo "FAIL (dry run): external command was called" >&2; exit 1; }
 grep -q "\[DRY_RUN\]" <<<"$DRY_RUN_OUTPUT"
 grep -q "db:migrate:deploy" <<<"$DRY_RUN_OUTPUT"
+grep -q "run jobs execute s7c512824-migrate" <<<"$DRY_RUN_OUTPUT"
+grep -q "run services update s7c512824" <<<"$DRY_RUN_OUTPUT"
 grep -q "JWT_SECRET=s7c512824-app-secret-1:latest" <<<"$DRY_RUN_OUTPUT"
 grep -q -- "--port 4000" <<<"$DRY_RUN_OUTPUT"
 
@@ -188,7 +188,11 @@ MIGRATE_LINE="$(grep -n -m1 "run jobs execute" "$STUB_LOG" | cut -d: -f1)"
 SERVICE_LINE="$(grep -n -m1 "run services update s7c512824" "$STUB_LOG" | cut -d: -f1)"
 [[ "$MIGRATE_LINE" -lt "$SERVICE_LINE" ]]
 grep -q "docker build --platform linux/amd64" "$STUB_LOG"
-grep -q "run jobs update s7c512824-migrate .*--add-cloudsql-instances cpe-se-course-2026:asia-southeast1:s7c512824-pg" "$STUB_LOG"
+grep -q "run jobs update s7c512824-migrate" "$STUB_LOG"
+[[ "$(grep -c "run jobs describe s7c512824-migrate" "$STUB_LOG")" -eq 1 ]]
+[[ "$(grep -c "run services describe s7c512824" "$STUB_LOG")" -eq 1 ]]
+! grep -q -- "--service-account" "$STUB_LOG"
+! grep -q -- "--add-cloudsql-instances" "$STUB_LOG"
 ! grep -q -- "--set-cloudsql-instances" "$STUB_LOG"
 grep -q "python3 .*deploy/smoke_test.py" "$STUB_LOG"
 
