@@ -59,6 +59,12 @@ git -C "$REPO_COPY" add deploy/
 git -C "$REPO_COPY" commit -qm "deploy test fixture"
 HEAD_SHA="$(git -C "$REPO_COPY" rev-parse HEAD)"
 
+# Team scope comes from portal configuration, not team-specific literals in scripts.
+! grep -q 's7c512824' "$REPO_COPY/deploy/deploy.sh" "$REPO_COPY/deploy/validate-resources.sh"
+! grep -q 's7c512824' "$DEPLOY_DIR/../.github/workflows/deploy.yml"
+grep -Eq '^[[:space:]]*TEAM_PREFIX:[[:space:]]*\$\{\{[[:space:]]*vars\.TEAM_PREFIX[[:space:]]*\}\}[[:space:]]*$' \
+  "$DEPLOY_DIR/../.github/workflows/deploy.yml"
+
 BASE_ENV=(
   "PATH=$STUB_BIN:$PATH"
   "STUB_LOG=$STUB_LOG"
@@ -71,6 +77,7 @@ BASE_ENV=(
   "MIGRATION_JOB_NAME=s7c512824-migrate"
   "DATABASE_URL_SECRET=s7c512824-database-url"
   "JWT_SECRET_NAME=s7c512824-app-secret-1"
+  "WIF_SERVICE_ACCOUNT=s7c512824-deployer@cpe-se-course-2026.iam.gserviceaccount.com"
 )
 
 assert_fails() {
@@ -100,7 +107,13 @@ assert_fails "out-of-team service" \
   env "${BASE_ENV[@]}" SERVICE_NAME=other-team bash -c 'source "$1" && exit 0' _ "$REPO_COPY/deploy/validate-resources.sh"
 assert_fails "service prefix boundary" \
   env "${BASE_ENV[@]}" SERVICE_NAME=s7c512824evil bash -c 'source "$1" && exit 0' _ "$REPO_COPY/deploy/validate-resources.sh"
+assert_fails "WIF identity prefix mismatch" \
+  env "${BASE_ENV[@]}" WIF_SERVICE_ACCOUNT=otherteam-deployer@cpe-se-course-2026.iam.gserviceaccount.com \
+  bash -c 'source "$1" && exit 0' _ "$REPO_COPY/deploy/validate-resources.sh"
 env "${BASE_ENV[@]}" SERVICE_NAME=s7c512824-api bash -c 'source "$1" && exit 0' _ "$REPO_COPY/deploy/validate-resources.sh"
+env PROJECT_ID=cpe-se-course-2026 REGION=asia-southeast1 TEAM_PREFIX=sample-team \
+  bash -c 'source "$1" && [[ "$SERVICE_NAME" == sample-team ]]' _ "$REPO_COPY/deploy/validate-resources.sh"
+assert_fails "missing team prefix" env -u TEAM_PREFIX bash "$REPO_COPY/deploy/deploy.sh"
 [[ ! -s "$STUB_LOG" ]] || { echo "FAIL (resource guard): cloud command was called" >&2; exit 1; }
 
 # A failed migration must stop before the live service is changed.
@@ -141,6 +154,9 @@ grep -q -- "--port 4000" "$STUB_LOG"
 grep -q "DEPLOYED_REVISION=s7c512824-00001-abc" "$GITHUB_ENV_FILE"
 grep -q "SERVICE_URL=https://s7c512824.a.run.app" "$GITHUB_ENV_FILE"
 grep -q "DEPLOYED_IMAGE=.*@sha256:" "$GITHUB_ENV_FILE"
+! grep -q -- "--service-account" "$STUB_LOG"
+! grep -q -- "--add-cloudsql-instances" "$STUB_LOG"
+! grep -q -- "--set-cloudsql-instances" "$STUB_LOG"
 MIGRATE_LINE="$(grep -n -m1 "run jobs execute" "$STUB_LOG" | cut -d: -f1)"
 SERVICE_LINE="$(grep -n -m1 "run services update s7c512824" "$STUB_LOG" | cut -d: -f1)"
 [[ "$MIGRATE_LINE" -lt "$SERVICE_LINE" ]]
@@ -160,6 +176,8 @@ DRY_RUN_OUTPUT="$(env "${BASE_ENV[@]}" bash "$REPO_COPY/deploy/deploy.sh")"
 [[ ! -s "$STUB_LOG" ]] || { echo "FAIL (dry run): external command was called" >&2; exit 1; }
 grep -q "\[DRY_RUN\]" <<<"$DRY_RUN_OUTPUT"
 grep -q "db:migrate:deploy" <<<"$DRY_RUN_OUTPUT"
+grep -q "run jobs execute s7c512824-migrate" <<<"$DRY_RUN_OUTPUT"
+grep -q "run services update s7c512824" <<<"$DRY_RUN_OUTPUT"
 grep -q "JWT_SECRET=s7c512824-app-secret-1:latest" <<<"$DRY_RUN_OUTPUT"
 grep -q -- "--port 4000" <<<"$DRY_RUN_OUTPUT"
 
@@ -170,6 +188,12 @@ MIGRATE_LINE="$(grep -n -m1 "run jobs execute" "$STUB_LOG" | cut -d: -f1)"
 SERVICE_LINE="$(grep -n -m1 "run services update s7c512824" "$STUB_LOG" | cut -d: -f1)"
 [[ "$MIGRATE_LINE" -lt "$SERVICE_LINE" ]]
 grep -q "docker build --platform linux/amd64" "$STUB_LOG"
+grep -q "run jobs update s7c512824-migrate" "$STUB_LOG"
+[[ "$(grep -c "run jobs describe s7c512824-migrate .*--format=json" "$STUB_LOG")" -eq 1 ]]
+[[ "$(grep -c "run services describe s7c512824 .*--format=json" "$STUB_LOG")" -eq 1 ]]
+! grep -q -- "--service-account" "$STUB_LOG"
+! grep -q -- "--add-cloudsql-instances" "$STUB_LOG"
+! grep -q -- "--set-cloudsql-instances" "$STUB_LOG"
 grep -q "python3 .*deploy/smoke_test.py" "$STUB_LOG"
 
 echo "PASS deploy safety tests"
