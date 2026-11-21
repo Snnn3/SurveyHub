@@ -46,6 +46,9 @@ jobs:
       JWT_SECRET: ci-only-secret-not-for-production-2026
       DEMO_USER_PASSWORD: CI-only-Demo-Password-2026!
     steps:
+      - name: Intentional failure for C-02 merge-gate evidence
+        run: exit 1
+
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
