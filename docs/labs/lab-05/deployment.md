@@ -1,6 +1,6 @@
 # Lab 5 deployment and environment configuration
 
-**Scope:** Issue [#18](https://github.com/Snnn3/SurveyHub/issues/18) (course-portal GCP resource activation) and Issue [#19](https://github.com/Snnn3/SurveyHub/issues/19), consolidated with [#20](https://github.com/Snnn3/SurveyHub/issues/20). This records portal-provisioned infrastructure metadata and reproducible local verification; the application image has not yet been deployed to Cloud Run (`application_deployed_by_portal: false`).
+**Scope:** Issues [#18](https://github.com/Snnn3/SurveyHub/issues/18) (course-portal GCP resource activation), [#19](https://github.com/Snnn3/SurveyHub/issues/19), [#20](https://github.com/Snnn3/SurveyHub/issues/20), [#21](https://github.com/Snnn3/SurveyHub/issues/21), and [#22](https://github.com/Snnn3/SurveyHub/issues/22). This records portal-provisioned infrastructure metadata and reproducible local verification; the application image has not yet been deployed to Cloud Run (`application_deployed_by_portal: false`).
 
 ## Runtime behavior
 
@@ -118,11 +118,17 @@ Course-managed GCP infrastructure was activated through the CPE334 Student Cloud
 
 ### Handoff for Issue #21 and #22
 
-- **GitHub `production` environment variables (`#21`):** `.github/workflows/deploy.yml` targets the `production` GitHub Environment (note: the portal UI references `demo` in its generic template instructions; use `production` to match `deploy.yml`). Because `deploy/validate-resources.sh` defaults `ARTIFACT_REPOSITORY`, `IMAGE_NAME`, and `SERVICE_NAME` to `$TEAM_PREFIX` (`s7c512824`) and `MIGRATION_JOB_NAME` to `${TEAM_PREFIX}-migrate` (`s7c512824-migrate`), no optional override variables are required:
+- **GitHub `demo` environment variables (`#21`):** Restrict the `demo` environment to the `main` branch. Set these four required variables from Team resources:
   - `GCP_PROJECT_ID`: `cpe-se-course-2026`
   - `GCP_REGION`: `asia-southeast1`
-  - `TEAM_PREFIX`: `s7c512824`
   - `WIF_PROVIDER`: `projects/670075229477/locations/global/workloadIdentityPools/s7c512824-pool/providers/s7c512824-provider`
   - `WIF_SERVICE_ACCOUNT`: `s7c512824-deployer@cpe-se-course-2026.iam.gserviceaccount.com`
+- `TEAM_PREFIX` is pinned in the workflow to `s7c512824`; it is not a GitHub variable. Optional resource-name variables are only needed if Team resources differ from defaults: `ARTIFACT_REPOSITORY` (`s7c512824`), `IMAGE_NAME` (`s7c512824`), `SERVICE_NAME` (`s7c512824`), and `MIGRATION_JOB_NAME` (`s7c512824-migrate`). `DATABASE_URL_SECRET` defaults to `s7c512824-database-url`; `JWT_SECRET_NAME` defaults to the `s7c512824-app-secret-1` reference. These are resource/reference names, not secret values.
 - **Repository push restriction (`#18` / `#21`):** Branch protection on `main` must still be confirmed/enabled by the repository owner (`Snnn3`) so only authorized team workflows/PRs land on `main`.
-- **Additional secret for app startup (`#22`):** Production mode requires a non-default `JWT_SECRET` of at least 32 characters (`server/src/config/environment.ts`). Populate a team app secret slot (such as `s7c512824-app-secret-1`) via Secret Manager / `./kit.sh secrets add` and mount it to the Cloud Run service before first deployment without using `--set-env-vars`.
+- **Additional secret for app startup (`#22`):** Production mode requires a non-default `JWT_SECRET` of at least 32 characters (`server/src/config/environment.ts`). Store it in `s7c512824-app-secret-1`; the release workflow maps that Secret Manager reference to `JWT_SECRET` on the service. Never store the value in GitHub variables or Git.
+
+Before changing either Cloud Run resource, `deploy/release.sh` reads its configuration and stops unless the assigned Cloud SQL connection and runtime service account are still attached. It does not print the configuration, which may contain secret references. A normal deployment removes any plain `DATABASE_URL`/`JWT_SECRET` environment entries before mapping those names to Secret Manager; other portal settings are preserved. The required Secret Manager versions must already exist and be accessible to the runtime service account.
+
+Before running **Deploy SurveyHub** on `main`, restrict the GitHub `demo` environment to deployments from `main` only. Also confirm the `DATABASE_URL` secret and `s7c512824-app-secret-1` each have an accessible latest version; the workflow does not create secret versions.
+
+For a manual rollback, run **Deploy SurveyHub** from `main` with `image_tag` set to the full SHA of an image published by this workflow. CI and build are skipped because that image's commit passed CI when published. The rollback checks the current Cloud Run service configuration, then switches only the service image and traffic; it does not inspect or execute the migration job or change runtime settings.

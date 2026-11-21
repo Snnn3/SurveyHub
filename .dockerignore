@@ -11,3 +11,10 @@ coverage
 test-results
 playwright-report
 *.md
+/project-kit/
+/.kit-state/
+/secrets.map
+/.playwright-cli/
+/tmp/
+__pycache__/
+*.pyc

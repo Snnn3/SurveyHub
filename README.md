@@ -117,6 +117,14 @@ npm run typecheck
 npm run build
 ```
 
+Run the offline deployment safety checks without accessing Google Cloud:
+
+```bash
+bash -n deploy/deploy.sh deploy/release.sh deploy/validate-resources.sh deploy/tests/test_deploy_safety.sh
+python3 -m unittest discover -s deploy/tests -p 'test_*.py'
+bash deploy/tests/test_deploy_safety.sh
+```
+
 ---
 
 ## Seeded Synthetic Demo Accounts
@@ -141,6 +149,15 @@ See [Lab 5 deployment and environment configuration](docs/labs/lab-05/deployment
 ├── .env.example               # Root environment variable template
 ├── .gitignore                 # Monorepo git ignore rules
 ├── AGENTS.md                  # Workflow, branching & review rules
+├── .github/workflows/         # Required CI gate and main-only Cloud Run deploy
+│   ├── ci-docker.yml          # Isolated PostgreSQL tests and Docker build
+│   └── deploy.yml              # WIF-authenticated release workflow
+├── deploy/                    # Lab 5 Cloud Run helpers and smoke checks
+│   ├── deploy.sh              # Manual entry point (dry run by default)
+│   ├── release.sh             # Migration and digest-pinned service update
+│   ├── validate-resources.sh  # Assigned project and team-prefix guard
+│   ├── smoke_test.py          # Read-only deployed-service checks
+│   └── tests/                 # Offline deploy safety checks
 ├── Dockerfile                 # Multi-stage production container build
 ├── README.md                  # Reproduction instructions & project guide
 ├── docker-compose.yml         # Containerized app & persistent PostgreSQL db
