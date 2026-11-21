@@ -9,7 +9,7 @@ set -euo pipefail
 #
 # Environment Variables (Optional):
 #   PROJECT_ID   GCP Project ID (defaults to the assigned course project)
-#   TEAM_PREFIX  Assigned team prefix (pinned by the resource validator)
+#   TEAM_PREFIX  Required team prefix from the course resource page
 #   REGION       GCP Region (default: asia-southeast1)
 #   DRY_RUN      Set DRY_RUN=1 to print all gcloud commands without executing
 #
@@ -44,7 +44,6 @@ set -euo pipefail
 DRY_RUN="${DRY_RUN:-1}"
 PROJECT_ID="${PROJECT_ID:-cpe-se-course-2026}"
 REGION="${REGION:-asia-southeast1}"
-TEAM_PREFIX="${TEAM_PREFIX:-s7c512824}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 [[ $# -eq 0 ]] || { echo 'Usage: DRY_RUN=1 bash deploy/deploy.sh' >&2; exit 1; }

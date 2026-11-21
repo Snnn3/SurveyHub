@@ -17,8 +17,8 @@
 # ⚠️ DO NOT RENAME (the lab guide refers to these names):
 #   - job `test-and-docker` (defined in ci-docker.yml, called by `test` below)
 #   - environment: demo
-#   - environment variables: GCP_PROJECT_ID, GCP_REGION, WIF_PROVIDER,
-#     WIF_SERVICE_ACCOUNT
+#   - environment variables: GCP_PROJECT_ID, GCP_REGION, TEAM_PREFIX,
+#     WIF_PROVIDER, WIF_SERVICE_ACCOUNT
 #
 # ⭐ IMPORTANT
 #   - No secret values live in this file. WIF settings come from GitHub
@@ -105,7 +105,7 @@ jobs:
     env:
       PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
       REGION: ${{ vars.GCP_REGION }}
-      TEAM_PREFIX: s7c512824
+      TEAM_PREFIX: ${{ vars.TEAM_PREFIX }}
       ARTIFACT_REPOSITORY: ${{ vars.ARTIFACT_REPOSITORY }}
       IMAGE_NAME: ${{ vars.IMAGE_NAME }}
       SERVICE_NAME: ${{ vars.SERVICE_NAME }}
@@ -133,7 +133,7 @@ jobs:
           test -n "$WIF_PROVIDER" && test -n "$WIF_SERVICE_ACCOUNT"
           test "$PROJECT_ID" = "cpe-se-course-2026"
           test "$REGION" = "asia-southeast1"
-          test "$TEAM_PREFIX" = "s7c512824"
+          test "$WIF_SERVICE_ACCOUNT" = "${TEAM_PREFIX}-deployer@$PROJECT_ID.iam.gserviceaccount.com"
           [[ "$IMAGE_TAG" =~ ^[0-9a-f]{40}$ ]] || { echo 'Image tag must be a full 40-character commit SHA.'; exit 1; }
 
       # ------------------------------------------------------------------------

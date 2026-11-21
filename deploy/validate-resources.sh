@@ -6,8 +6,6 @@
 : "${TEAM_PREFIX:?TEAM_PREFIX is required}"
 [[ "$PROJECT_ID" == "cpe-se-course-2026" ]] || { echo 'Wrong course project.' >&2; exit 1; }
 [[ "$REGION" == "asia-southeast1" ]] || { echo 'Wrong assigned region.' >&2; exit 1; }
-[[ "$TEAM_PREFIX" == "s7c512824" ]] || { echo 'Wrong assigned team prefix.' >&2; exit 1; }
-
 export ARTIFACT_REPOSITORY="${ARTIFACT_REPOSITORY:-$TEAM_PREFIX}"
 export IMAGE_NAME="${IMAGE_NAME:-$TEAM_PREFIX}"
 export SERVICE_NAME="${SERVICE_NAME:-$TEAM_PREFIX}"

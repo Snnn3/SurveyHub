@@ -66,6 +66,9 @@ grep -q '^# 10\. Create/Update & Execute Cloud Run Job' "$REPO_COPY/deploy/deplo
 grep -q '^# 11\. Deploy Cloud Run Service' "$REPO_COPY/deploy/deploy.sh"
 grep -q 'gcloud run services describe "\$SERVICE_NAME"' "$REPO_COPY/deploy/deploy.sh"
 grep -q 'gcloud run jobs describe "\$MIGRATE_JOB_NAME"' "$REPO_COPY/deploy/deploy.sh"
+! grep -q 's7c512824' "$REPO_COPY/deploy/deploy.sh" "$REPO_COPY/deploy/validate-resources.sh"
+! grep -q 'TEAM_PREFIX: s7c512824' "$DEPLOY_DIR/../.github/workflows/deploy.yml"
+grep -Fq 'TEAM_PREFIX: ${{ vars.TEAM_PREFIX }}' "$DEPLOY_DIR/../.github/workflows/deploy.yml"
 
 BASE_ENV=(
   "PATH=$STUB_BIN:$PATH"
@@ -109,6 +112,9 @@ assert_fails "out-of-team service" \
 assert_fails "service prefix boundary" \
   env "${BASE_ENV[@]}" SERVICE_NAME=s7c512824evil bash -c 'source "$1" && exit 0' _ "$REPO_COPY/deploy/validate-resources.sh"
 env "${BASE_ENV[@]}" SERVICE_NAME=s7c512824-api bash -c 'source "$1" && exit 0' _ "$REPO_COPY/deploy/validate-resources.sh"
+env PROJECT_ID=cpe-se-course-2026 REGION=asia-southeast1 TEAM_PREFIX=sample-team \
+  bash -c 'source "$1" && [[ "$SERVICE_NAME" == sample-team ]]' _ "$REPO_COPY/deploy/validate-resources.sh"
+assert_fails "missing team prefix" env -u TEAM_PREFIX bash "$REPO_COPY/deploy/deploy.sh"
 [[ ! -s "$STUB_LOG" ]] || { echo "FAIL (resource guard): cloud command was called" >&2; exit 1; }
 
 # A failed migration must stop before the live service is changed.

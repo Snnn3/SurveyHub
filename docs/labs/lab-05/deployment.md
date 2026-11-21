@@ -118,12 +118,13 @@ Course-managed GCP infrastructure was activated through the CPE334 Student Cloud
 
 ### Handoff for Issue #21 and #22
 
-- **GitHub `demo` environment variables (`#21`):** Restrict the `demo` environment to the `main` branch. Set these four required variables from Team resources:
+- **GitHub `demo` environment variables (`#21`):** Restrict the `demo` environment to the `main` branch. Set these required variables from Team resources:
   - `GCP_PROJECT_ID`: `cpe-se-course-2026`
   - `GCP_REGION`: `asia-southeast1`
+  - `TEAM_PREFIX`: `s7c512824`
   - `WIF_PROVIDER`: `projects/670075229477/locations/global/workloadIdentityPools/s7c512824-pool/providers/s7c512824-provider`
   - `WIF_SERVICE_ACCOUNT`: `s7c512824-deployer@cpe-se-course-2026.iam.gserviceaccount.com`
-- `TEAM_PREFIX` is pinned in the workflow to `s7c512824`; it is not a GitHub variable. Optional resource-name variables are only needed if Team resources differ from defaults: `ARTIFACT_REPOSITORY` (`s7c512824`), `IMAGE_NAME` (`s7c512824`), `SERVICE_NAME` (`s7c512824`), and `MIGRATION_JOB_NAME` (`s7c512824-migrate`). `DATABASE_URL_SECRET` defaults to `s7c512824-database-url`; `JWT_SECRET_NAME` defaults to the `s7c512824-app-secret-1` reference. These are resource/reference names, not secret values.
+- The workflow requires `WIF_SERVICE_ACCOUNT` to match `${TEAM_PREFIX}-deployer@${PROJECT_ID}.iam.gserviceaccount.com`. Resource-name variables default from `TEAM_PREFIX`: `ARTIFACT_REPOSITORY`, `IMAGE_NAME`, `SERVICE_NAME`, and `MIGRATION_JOB_NAME`. `DATABASE_URL_SECRET` and `JWT_SECRET_NAME` likewise default to that prefix. These settings are resource/reference names, not secret values.
 - **Repository push restriction (`#18` / `#21`):** Branch protection on `main` must still be confirmed/enabled by the repository owner (`Snnn3`) so only authorized team workflows/PRs land on `main`.
 - **Additional secret for app startup (`#22`):** Production mode requires a non-default `JWT_SECRET` of at least 32 characters (`server/src/config/environment.ts`). Store it in `s7c512824-app-secret-1`; the release workflow maps that Secret Manager reference to `JWT_SECRET` on the service. Never store the value in GitHub variables or Git.
 
