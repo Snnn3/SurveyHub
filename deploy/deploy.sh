@@ -140,7 +140,7 @@ run_cmd gcloud run jobs update "$MIGRATE_JOB_NAME" \
   --image "$DIGEST_IMAGE" \
   --region "$REGION" \
   --service-account "$SA_EMAIL" \
-  --set-cloudsql-instances "$SQL_CONN_NAME" \
+  --add-cloudsql-instances "$SQL_CONN_NAME" \
   --remove-env-vars DATABASE_URL \
   --update-secrets "DATABASE_URL=${DATABASE_URL_SECRET}:latest" \
   --command npm \

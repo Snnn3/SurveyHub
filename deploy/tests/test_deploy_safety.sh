@@ -178,6 +178,8 @@ MIGRATE_LINE="$(grep -n -m1 "run jobs execute" "$STUB_LOG" | cut -d: -f1)"
 SERVICE_LINE="$(grep -n -m1 "run services update s7c512824" "$STUB_LOG" | cut -d: -f1)"
 [[ "$MIGRATE_LINE" -lt "$SERVICE_LINE" ]]
 grep -q "docker build --platform linux/amd64" "$STUB_LOG"
+grep -q "run jobs update s7c512824-migrate .*--add-cloudsql-instances cpe-se-course-2026:asia-southeast1:s7c512824-pg" "$STUB_LOG"
+! grep -q -- "--set-cloudsql-instances" "$STUB_LOG"
 grep -q "python3 .*deploy/smoke_test.py" "$STUB_LOG"
 
 echo "PASS deploy safety tests"
