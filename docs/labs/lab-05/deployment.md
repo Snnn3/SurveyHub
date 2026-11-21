@@ -1,6 +1,6 @@
 # Lab 5 deployment and environment configuration
 
-**Scope:** Issue [#19](https://github.com/Snnn3/SurveyHub/issues/19), consolidated with [#20](https://github.com/Snnn3/SurveyHub/issues/20). This documents configuration and reproducible local verification; it does not claim the application has been deployed to Cloud Run.
+**Scope:** Issues [#19](https://github.com/Snnn3/SurveyHub/issues/19) and [#20](https://github.com/Snnn3/SurveyHub/issues/20) define runtime and Compose behavior; [#21](https://github.com/Snnn3/SurveyHub/issues/21) and [#22](https://github.com/Snnn3/SurveyHub/issues/22) define the CI/WIF and Cloud Run release workflow. This documents configuration and verification procedures; it does not claim a live deployment has completed.
 
 ## Runtime behavior
 
@@ -80,3 +80,31 @@ This changes the database role password in place; it does not remove or reinitia
 ## Cloud Run configuration
 
 Deploy the built image with `NODE_ENV=production`, Cloud Run's injected `PORT`, a valid PostgreSQL `DATABASE_URL` connected to managed Cloud SQL, and `JWT_SECRET` supplied from Secret Manager or a secret environment variable. For a Cloud SQL Unix socket, attach the instance to the Cloud Run service and use Prisma's localhost URL form, for example `postgresql://USER:PASSWORD@localhost/DB_NAME?host=/cloudsql/PROJECT:REGION:INSTANCE`; the `host` query value is the mounted socket directory. Include `@localhost` in the URL authority; production validation rejects hostless `@/DB_NAME` URLs. URL-encode reserved characters in the username or password. Set `CLIENT_ORIGIN` to the browser origin when the frontend is separate. Keep `DATABASE_URL_TEST` out of the app service. Configure `DEMO_USER_PASSWORD` only on an intentional one-off seed job; never bake it into the image or leave it in the running app service. Use `/api/health` as the readiness probe.
+
+## Lab 5 Starter Kit deployment layout
+
+The deployment files follow the provided Lab 5 kit paths, adapted for SurveyHub:
+
+```text
+.github/workflows/
+├── ci-docker.yml       # Existing required test-and-docker check
+└── deploy.yml          # Main-only WIF deployment workflow
+deploy/
+├── deploy.sh           # Safe manual entry point; defaults to dry run
+├── release.sh          # Digest-pinned migration and service update
+├── validate-resources.sh
+├── smoke_test.py       # Read-only health, UI, and unauthenticated API checks
+└── tests/test_deploy_safety.sh
+```
+
+Keep the GitHub Environment named `production` and configure these **variables** from Team resources: `GCP_PROJECT_ID`, `GCP_REGION`, `TEAM_PREFIX`, `WIF_PROVIDER`, and `WIF_SERVICE_ACCOUNT`. Resource-name overrides are optional; leave them unset when the assigned names use the team-prefix defaults. The deployment workflow runs the existing `test-and-docker` workflow before it authenticates through WIF. No service-account key or secret value belongs in GitHub variables or this repository.
+
+The service and migration job are provisioned by the course portal. The release script updates only their image and required SurveyHub settings: the migration job runs `npm run db:migrate:deploy`; the service listens on port `4000` and receives `DATABASE_URL` plus `JWT_SECRET` from Secret Manager. The JWT reference defaults to slot 1 (`<TEAM_PREFIX>-app-secret-1:latest`). Secret updates preserve other portal-provisioned settings. The automated release does not run the seed; seed only in a separate one-off job when demo accounts are required, with `DEMO_USER_PASSWORD` supplied to that job alone.
+
+Preview the manual deployment script without contacting Google Cloud or Docker:
+
+```bash
+DRY_RUN=1 bash deploy/deploy.sh
+```
+
+The real manual path refuses non-`main` branches and dirty checkouts. The normal release path is **Deploy SurveyHub** from `main`; it records the commit SHA, image digest, Cloud Run revision, service URL, and smoke-check result in the Actions summary. No live deployment is claimed by this repository layout change.

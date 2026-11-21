@@ -1,0 +1,183 @@
+# ##############################################################################
+# Deploy SurveyHub to Google Cloud Run
+# ##############################################################################
+# WHAT THIS WORKFLOW DOES
+#   On every push to `main` (or a manual run) it:
+#     1) runs the CI workflow (ci-docker.yml, job `test-and-docker`) first,
+#     2) authenticates to Google Cloud WITHOUT a key file (Workload Identity
+#        Federation),
+#     3) builds + pushes the image tagged with the commit SHA,
+#     4) runs deploy/release.sh (verify image -> migrate -> update service),
+#     5) smoke-tests the public URL (deploy/smoke_test.py),
+#     6) writes a deployment summary.
+#   MANUAL ROLLBACK: run the workflow by hand and enter `image_tag` = the full
+#   40-character commit SHA of an image that already exists. CI still runs;
+#   build and migration are skipped while the service is pointed to that image.
+#
+# ⚠️ DO NOT RENAME (the lab guide refers to these names):
+#   - job `test-and-docker` (defined in ci-docker.yml, called by `test` below)
+#   - environment : production
+#   - environment variables: GCP_PROJECT_ID, GCP_REGION, TEAM_PREFIX,
+#     WIF_PROVIDER, WIF_SERVICE_ACCOUNT
+#
+# ⭐ IMPORTANT
+#   - No secret values live in this file. WIF settings come from GitHub
+#     Settings -> Environments -> production (variables).
+#   - The portal-provisioned cloud resources must already exist. This workflow
+#     updates the assigned migration job and service; it creates no resources.
+#
+# REFERENCES
+#   - Workflow syntax / reusable workflows:
+#       https://docs.github.com/en/actions/sharing-automations/reusing-workflows
+#   - Environments: https://docs.github.com/en/actions/managing-workflow-runs-and-deployments/managing-deployments/managing-environments-for-deployment
+#   - Variables: https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/store-information-in-variables
+#   - Keyless auth to GCP (Workload Identity Federation):
+#       https://github.com/google-github-actions/auth
+#       https://cloud.google.com/iam/docs/workload-identity-federation
+#   - setup-gcloud : https://github.com/google-github-actions/setup-gcloud
+#   - Cloud Run deploy / rollback:
+#       https://cloud.google.com/run/docs/deploying
+#       https://cloud.google.com/run/docs/rollouts-rollbacks-traffic-migration
+#   - Concurrency: https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/control-the-concurrency-of-workflows-and-jobs
+#
+# Resource names are validated in deploy/validate-resources.sh.
+# ##############################################################################
+
+name: Deploy SurveyHub
+
+# ------------------------------------------------------------------------------
+# Triggers
+#   push to main      : automatic deploy
+#   workflow_dispatch : manual run; `image_tag` = rollback target (optional)
+# ------------------------------------------------------------------------------
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Rollback: full commit SHA of an existing image. Empty deploys current main after CI.'
+        type: string
+        required: false
+        default: ''
+
+# Least privilege by default; the deploy job adds `id-token: write` below.
+permissions:
+  contents: read
+
+# Queue releases; do not interrupt a running migration or deployment.
+concurrency:
+  group: deploy-surveyhub
+  cancel-in-progress: false
+
+jobs:
+  # ----------------------------------------------------------------------------
+  # Job 1: run the existing CI workflow (including `test-and-docker`).
+  # It runs only for `main`, including when a rollback is requested.
+  # ----------------------------------------------------------------------------
+  test:
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/ci-docker.yml
+    with:
+      source_ref: ${{ inputs.image_tag || github.sha }}
+
+  # ----------------------------------------------------------------------------
+  # Job 2: build, migrate, deploy, smoke-test.
+  # ⭐ IMPORTANT: only runs after CI passes.
+  # ----------------------------------------------------------------------------
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main' && needs.test.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # ⚠️ Do not rename: GitHub environment holding the WIF configuration.
+    environment: production
+    permissions:
+      contents: read
+      id-token: write # required for keyless Google Cloud login (WIF)
+    env:
+      PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      REGION: ${{ vars.GCP_REGION }}
+      TEAM_PREFIX: ${{ vars.TEAM_PREFIX }}
+      ARTIFACT_REPOSITORY: ${{ vars.ARTIFACT_REPOSITORY }}
+      IMAGE_NAME: ${{ vars.IMAGE_NAME }}
+      SERVICE_NAME: ${{ vars.SERVICE_NAME }}
+      MIGRATION_JOB_NAME: ${{ vars.MIGRATION_JOB_NAME }}
+      DATABASE_URL_SECRET: ${{ vars.DATABASE_URL_SECRET }}
+      JWT_SECRET_NAME: ${{ vars.JWT_SECRET_NAME }}
+      WIF_PROVIDER: ${{ vars.WIF_PROVIDER }}
+      WIF_SERVICE_ACCOUNT: ${{ vars.WIF_SERVICE_ACCOUNT }}
+      # Image tag = commit SHA (or the rollback SHA that was typed in).
+      IMAGE_TAG: ${{ inputs.image_tag || github.sha }}
+      ROLLBACK: ${{ github.event_name == 'workflow_dispatch' && inputs.image_tag != '' }}
+    steps:
+      # ------------------------------------------------------------------------
+      # 1. Get the source code (no git credentials kept on the runner)
+      # ------------------------------------------------------------------------
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # ------------------------------------------------------------------------
+      # 2. Fail early if settings are missing or the tag is not a full SHA
+      - name: Validate deployment settings
+        run: |
+          test -n "$PROJECT_ID" && test -n "$REGION" && test -n "$TEAM_PREFIX"
+          test -n "$WIF_PROVIDER" && test -n "$WIF_SERVICE_ACCOUNT"
+          test "$PROJECT_ID" = "cpe-se-course-2026"
+          test "$REGION" = "asia-southeast1"
+          test "$TEAM_PREFIX" = "s7c512824"
+          [[ "$IMAGE_TAG" =~ ^[0-9a-f]{40}$ ]] || { echo 'Image tag must be a full 40-character commit SHA.'; exit 1; }
+
+      # ------------------------------------------------------------------------
+      # 3. Log in to Google Cloud with Workload Identity Federation (no key file)
+      #    ⭐ IMPORTANT: this is why no service-account JSON is stored in GitHub.
+      # ------------------------------------------------------------------------
+      - name: Authenticate to Google Cloud without a key
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.WIF_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+
+      # ------------------------------------------------------------------------
+      # 4. Build and push the SurveyHub image from the root Dockerfile.
+      # ------------------------------------------------------------------------
+      - name: Build and push image
+        if: env.ROLLBACK != 'true'
+        run: |
+          source deploy/validate-resources.sh
+          gcloud auth configure-docker "$REGION-docker.pkg.dev" --quiet
+          IMAGE="$REGION-docker.pkg.dev/$PROJECT_ID/$ARTIFACT_REPOSITORY/$IMAGE_NAME:$IMAGE_TAG"
+          gcloud artifacts repositories describe "$ARTIFACT_REPOSITORY" --location "$REGION" --project "$PROJECT_ID" >/dev/null
+          docker build --platform linux/amd64 --tag "$IMAGE" .
+          docker push "$IMAGE"
+
+      # ------------------------------------------------------------------------
+      # 5. Verify image -> run migration job -> update the Cloud Run service
+      #    (all logic lives in deploy/release.sh). Exports SERVICE_URL and
+      #    DEPLOYED_IMAGE for the next steps.
+      # ------------------------------------------------------------------------
+      - name: Verify image, migrate and deploy
+        run: bash deploy/release.sh
+
+      # ------------------------------------------------------------------------
+      # 6. Smoke test the live URL (Python standard library only).
+      # ------------------------------------------------------------------------
+      - name: Smoke test public URL
+        run: python3 deploy/smoke_test.py "$SERVICE_URL"
+
+      # ------------------------------------------------------------------------
+      # 7. Deployment summary shown on the workflow run page
+      # ------------------------------------------------------------------------
+      - name: Record deployment
+        run: |
+          {
+            echo '### SurveyHub deployment'
+            echo "- Commit image tag: \`$IMAGE_TAG\`"
+            echo "- Digest: \`$DEPLOYED_IMAGE\`"
+            echo "- Rollback: $ROLLBACK"
+            echo "- Revision: $DEPLOYED_REVISION"
+            echo "- URL: $SERVICE_URL"
+            echo '- Smoke test: passed (database health, UI, unauthenticated API guard).'
+          } >> "$GITHUB_STEP_SUMMARY"
