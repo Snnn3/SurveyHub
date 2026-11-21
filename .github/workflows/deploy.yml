@@ -16,13 +16,13 @@
 #
 # ⚠️ DO NOT RENAME (the lab guide refers to these names):
 #   - job `test-and-docker` (defined in ci-docker.yml, called by `test` below)
-#   - environment : production
-#   - environment variables: GCP_PROJECT_ID, GCP_REGION, TEAM_PREFIX,
-#     WIF_PROVIDER, WIF_SERVICE_ACCOUNT
+#   - environment: demo
+#   - environment variables: GCP_PROJECT_ID, GCP_REGION, WIF_PROVIDER,
+#     WIF_SERVICE_ACCOUNT
 #
 # ⭐ IMPORTANT
 #   - No secret values live in this file. WIF settings come from GitHub
-#     Settings -> Environments -> production (variables).
+#     Settings -> Environments -> demo (variables).
 #   - The portal-provisioned cloud resources must already exist. This workflow
 #     updates the assigned migration job and service; it creates no resources.
 #
@@ -91,14 +91,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # ⚠️ Do not rename: GitHub environment holding the WIF configuration.
-    environment: production
+    environment: demo
     permissions:
       contents: read
       id-token: write # required for keyless Google Cloud login (WIF)
     env:
       PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
       REGION: ${{ vars.GCP_REGION }}
-      TEAM_PREFIX: ${{ vars.TEAM_PREFIX }}
+      TEAM_PREFIX: s7c512824
       ARTIFACT_REPOSITORY: ${{ vars.ARTIFACT_REPOSITORY }}
       IMAGE_NAME: ${{ vars.IMAGE_NAME }}
       SERVICE_NAME: ${{ vars.SERVICE_NAME }}

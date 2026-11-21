@@ -1,13 +1,13 @@
 # Lab 5 deployment and environment configuration
 
-**Scope:** Issues [#19](https://github.com/Snnn3/SurveyHub/issues/19) and [#20](https://github.com/Snnn3/SurveyHub/issues/20) define runtime and Compose behavior; [#21](https://github.com/Snnn3/SurveyHub/issues/21) and [#22](https://github.com/Snnn3/SurveyHub/issues/22) define the CI/WIF and Cloud Run release workflow. This documents configuration and verification procedures; it does not claim a live deployment has completed.
+**Scope:** Issue [#18](https://github.com/Snnn3/SurveyHub/issues/18) (course-portal GCP resource activation) and Issue [#19](https://github.com/Snnn3/SurveyHub/issues/19), consolidated with [#20](https://github.com/Snnn3/SurveyHub/issues/20). This records portal-provisioned infrastructure metadata and reproducible local verification; the application image has not yet been deployed to Cloud Run (`application_deployed_by_portal: false`).
 
 ## Runtime behavior
 
 - The server listens on `PORT`; it defaults to `4000` for local development. Cloud Run supplies `PORT` at runtime.
 - The API stores business data in PostgreSQL through Prisma. The application image and container filesystem are not a data store.
 - `GET /api/health` checks PostgreSQL and returns `200` when reachable or `503 SERVICE_UNAVAILABLE` when the query fails.
-- Production startup rejects missing/default JWT secrets and missing, malformed, or default PostgreSQL connection URLs. Configuration errors do not print credentials.
+- Production startup rejects missing/default JWT secrets and missing, malformed, credential-less, or default PostgreSQL connection URLs. Configuration errors do not print credentials.
 - Seed passwords are required only by the one-off database seed process. The long-running app service does not receive `DEMO_USER_PASSWORD`.
 
 ## Environment variables
@@ -81,30 +81,50 @@ This changes the database role password in place; it does not remove or reinitia
 
 Deploy the built image with `NODE_ENV=production`, Cloud Run's injected `PORT`, a valid PostgreSQL `DATABASE_URL` connected to managed Cloud SQL, and `JWT_SECRET` supplied from Secret Manager or a secret environment variable. For a Cloud SQL Unix socket, attach the instance to the Cloud Run service and use Prisma's localhost URL form, for example `postgresql://USER:PASSWORD@localhost/DB_NAME?host=/cloudsql/PROJECT:REGION:INSTANCE`; the `host` query value is the mounted socket directory. Include `@localhost` in the URL authority; production validation rejects hostless `@/DB_NAME` URLs. URL-encode reserved characters in the username or password. Set `CLIENT_ORIGIN` to the browser origin when the frontend is separate. Keep `DATABASE_URL_TEST` out of the app service. Configure `DEMO_USER_PASSWORD` only on an intentional one-off seed job; never bake it into the image or leave it in the running app service. Use `/api/health` as the readiness probe.
 
-## Lab 5 Starter Kit deployment layout
+## Course Portal GCP Resources (Issue #18)
 
-The deployment files follow the provided Lab 5 kit paths, adapted for SurveyHub:
+Course-managed GCP infrastructure was activated through the CPE334 Student Cloud Portal on `main` (`b7e12f7`). Only non-secret resource names, service identifiers, and Secret Manager references are recorded below; secret values and personal account details remain excluded from Git.
 
-```text
-.github/workflows/
-├── ci-docker.yml       # Existing required test-and-docker check
-└── deploy.yml          # Main-only WIF deployment workflow
-deploy/
-├── deploy.sh           # Safe manual entry point; defaults to dry run
-├── release.sh          # Digest-pinned migration and service update
-├── validate-resources.sh
-├── smoke_test.py       # Read-only health, UI, and unauthenticated API checks
-└── tests/test_deploy_safety.sh
-```
+### Portal Connection Summary
 
-Keep the GitHub Environment named `production` and configure these **variables** from Team resources: `GCP_PROJECT_ID`, `GCP_REGION`, `TEAM_PREFIX`, `WIF_PROVIDER`, and `WIF_SERVICE_ACCOUNT`. Resource-name overrides are optional; leave them unset when the assigned names use the team-prefix defaults. The deployment workflow runs the existing `test-and-docker` workflow before it authenticates through WIF. No service-account key or secret value belongs in GitHub variables or this repository.
+| Field | Value |
+|---|---|
+| Portal mode / status | `live` / `ready` (**Resources ready**) |
+| Connected GitHub repository | `Snnn3/SurveyHub` (`main`, `github_connected: true`) |
+| Google Cloud provisioned | `true` (`application_deployed_by_portal: false`) |
+| GCP Project ID | `cpe-se-course-2026` |
+| GCP Region | `asia-southeast1` |
+| Assigned team prefix | `s7c512824` |
+| Assigned Cloud Run URL | `https://s7c512824-4d7hbszvwq-as.a.run.app` (app not deployed until #22) |
 
-The service and migration job are provisioned by the course portal. The release script updates only their image and required SurveyHub settings: the migration job runs `npm run db:migrate:deploy`; the service listens on port `4000` and receives `DATABASE_URL` plus `JWT_SECRET` from Secret Manager. The JWT reference defaults to slot 1 (`<TEAM_PREFIX>-app-secret-1:latest`). Secret updates preserve other portal-provisioned settings. The automated release does not run the seed; seed only in a separate one-off job when demo accounts are required, with `DEMO_USER_PASSWORD` supplied to that job alone.
+### Provisioned Resource Names and Secret References
 
-Preview the manual deployment script without contacting Google Cloud or Docker:
+| Item | Assigned Resource / Reference Name | Purpose |
+|---|---|---|
+| Cloud Run service | `s7c512824` | Runs the SurveyHub container once deployed |
+| Migration job | `s7c512824-migrate` | Runs Prisma migrations prior to updating the service |
+| Cloud SQL instance | `s7c512824-pg` (`db-f1-micro`) | Managed PostgreSQL instance |
+| Database / DB user | `s7c512824` / `s7c512824` | PostgreSQL database and role name (password in Secret Manager) |
+| SQL connection name | `cpe-se-course-2026:asia-southeast1:s7c512824-pg` | Cloud SQL Unix socket attachment identifier |
+| Artifact Registry repository | `s7c512824` | Stores team Docker images |
+| Image repository URI | `asia-southeast1-docker.pkg.dev/cpe-se-course-2026/s7c512824/s7c512824` | Immutable commit SHA / `@sha256` push target |
+| Runtime service account | `s7c512824-runner@cpe-se-course-2026.iam.gserviceaccount.com` | Identity used by the Cloud Run service and migration job |
+| Deployer service account | `s7c512824-deployer@cpe-se-course-2026.iam.gserviceaccount.com` | Keyless GitHub Actions OIDC deployer identity |
+| Workload Identity pool / provider | `s7c512824-pool` / `s7c512824-provider` | Keyless authentication pool and GitHub OIDC provider |
+| Logs view | `projects/cpe-se-course-2026/locations/global/buckets/_Default/views/s7c512824` | Team-scoped Cloud Logging view |
+| `DATABASE_URL` secret ref | `s7c512824-database-url` | Secret Manager reference name only |
+| `ADMIN_PASSWORD` secret ref | `s7c512824-admin-password` | Secret Manager reference name only |
+| `DEMO_USER_PASSWORD` secret ref | `s7c512824-demo-password` | Secret Manager reference name only (seed use only) |
 
-```bash
-DRY_RUN=1 bash deploy/deploy.sh
-```
+### Handoff for Issue #21 and #22
 
-The real manual path refuses non-`main` branches and dirty checkouts. The normal release path is **Deploy SurveyHub** from `main`; it records the commit SHA, image digest, Cloud Run revision, service URL, and smoke-check result in the Actions summary. No live deployment is claimed by this repository layout change.
+- **GitHub `demo` environment variables (`#21`):** Restrict the `demo` environment to the `main` branch. Set these four required variables from Team resources:
+  - `GCP_PROJECT_ID`: `cpe-se-course-2026`
+  - `GCP_REGION`: `asia-southeast1`
+  - `WIF_PROVIDER`: `projects/670075229477/locations/global/workloadIdentityPools/s7c512824-pool/providers/s7c512824-provider`
+  - `WIF_SERVICE_ACCOUNT`: `s7c512824-deployer@cpe-se-course-2026.iam.gserviceaccount.com`
+- `TEAM_PREFIX` is pinned in the workflow to `s7c512824`; it is not a GitHub variable. Optional resource-name variables are only needed if Team resources differ from defaults: `ARTIFACT_REPOSITORY` (`s7c512824`), `IMAGE_NAME` (`s7c512824`), `SERVICE_NAME` (`s7c512824`), and `MIGRATION_JOB_NAME` (`s7c512824-migrate`). `DATABASE_URL_SECRET` defaults to `s7c512824-database-url`; `JWT_SECRET_NAME` defaults to the `s7c512824-app-secret-1` reference. These are resource/reference names, not secret values.
+- **Repository push restriction (`#18` / `#21`):** Branch protection on `main` must still be confirmed/enabled by the repository owner (`Snnn3`) so only authorized team workflows/PRs land on `main`.
+- **Additional secret for app startup (`#22`):** Production mode requires a non-default `JWT_SECRET` of at least 32 characters (`server/src/config/environment.ts`). Store it in `s7c512824-app-secret-1`; the release workflow maps that Secret Manager reference to `JWT_SECRET` on the service. Never store the value in GitHub variables or Git.
+
+Before changing either Cloud Run resource, `deploy/release.sh` reads its configuration and stops unless the assigned Cloud SQL connection and runtime service account are still attached. It does not print the configuration, which may contain secret references. The update commands change only the image, migration command and database secret, plus the service's `NODE_ENV`, port and required secret mappings; other portal settings are preserved.

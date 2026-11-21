@@ -17,11 +17,22 @@ case "$*" in
   *"artifacts docker images describe"*)
     echo "${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REPOSITORY}/${IMAGE_NAME}@sha256:$(printf 'a%.0s' {1..64})"
     ;;
-  *"run jobs execute"*)
-    [[ "${STUB_FAIL_MIGRATE:-0}" == "1" ]] && exit 1
-    ;;
   *"status.url,status.latestReadyRevisionName"*)
     printf 'https://%s.a.run.app\t%s-00001-abc\n' "$SERVICE_NAME" "$SERVICE_NAME"
+    ;;
+  *"run jobs describe"*|*"run services describe"*)
+    if [[ "${STUB_MISSING_CLOUDSQL:-0}" == "1" ]]; then
+      echo "${TEAM_PREFIX}-runner@${PROJECT_ID}.iam.gserviceaccount.com"
+    elif [[ "${STUB_MISSING_RUNTIME:-0}" == "1" ]]; then
+      echo "${PROJECT_ID}:${REGION}:${TEAM_PREFIX}-pg"
+    else
+      echo "${PROJECT_ID}:${REGION}:${TEAM_PREFIX}-pg ${TEAM_PREFIX}-runner@${PROJECT_ID}.iam.gserviceaccount.com"
+    fi
+    ;;
+  *"run jobs execute"*)
+    if [[ "${STUB_FAIL_MIGRATE:-0}" == "1" ]]; then
+      exit 1
+    fi
     ;;
 esac
 EOF
@@ -82,6 +93,22 @@ assert_fails "out-of-team service" \
 assert_fails "failed migration stops release" \
   env "${BASE_ENV[@]}" IMAGE_TAG="$HEAD_SHA" STUB_FAIL_MIGRATE=1 bash "$REPO_COPY/deploy/release.sh"
 grep -q "run jobs execute s7c512824-migrate" "$STUB_LOG"
+! grep -q "run services update s7c512824" "$STUB_LOG"
+
+# Missing portal Cloud SQL configuration stops before updating the migration job or service.
+: >"$STUB_LOG"
+assert_fails "missing Cloud SQL attachment stops release" \
+  env "${BASE_ENV[@]}" IMAGE_TAG="$HEAD_SHA" STUB_MISSING_CLOUDSQL=1 bash "$REPO_COPY/deploy/release.sh"
+grep -q "run jobs describe s7c512824-migrate" "$STUB_LOG"
+! grep -q "run jobs update" "$STUB_LOG"
+! grep -q "run services update s7c512824" "$STUB_LOG"
+
+# A wrong runtime identity also stops before updating either resource.
+: >"$STUB_LOG"
+assert_fails "wrong runtime identity stops release" \
+  env "${BASE_ENV[@]}" IMAGE_TAG="$HEAD_SHA" STUB_MISSING_RUNTIME=1 bash "$REPO_COPY/deploy/release.sh"
+grep -q "run jobs describe s7c512824-migrate" "$STUB_LOG"
+! grep -q "run jobs update" "$STUB_LOG"
 ! grep -q "run services update s7c512824" "$STUB_LOG"
 
 # A release pins one digest, updates only the required secrets, and records its revision.

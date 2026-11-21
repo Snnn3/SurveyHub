@@ -117,6 +117,14 @@ npm run typecheck
 npm run build
 ```
 
+Run the offline deployment safety checks without accessing Google Cloud:
+
+```bash
+bash -n deploy/deploy.sh deploy/release.sh deploy/validate-resources.sh deploy/tests/test_deploy_safety.sh
+python3 -m unittest discover -s deploy/tests -p 'test_*.py'
+bash deploy/tests/test_deploy_safety.sh
+```
+
 ---
 
 ## Seeded Synthetic Demo Accounts
