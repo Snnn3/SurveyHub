@@ -128,12 +128,22 @@ MIGRATE_LINE="$(grep -n -m1 "run jobs execute" "$STUB_LOG" | cut -d: -f1)"
 SERVICE_LINE="$(grep -n -m1 "run services update s7c512824" "$STUB_LOG" | cut -d: -f1)"
 [[ "$MIGRATE_LINE" -lt "$SERVICE_LINE" ]]
 
-# Rollback updates the service without running a migration.
+# Rollback reuses the configured migration job before updating the service image.
 : >"$STUB_LOG"
 env "${BASE_ENV[@]}" IMAGE_TAG="$HEAD_SHA" ROLLBACK=true \
   bash "$REPO_COPY/deploy/release.sh" >/dev/null
-! grep -q "run jobs" "$STUB_LOG"
+grep -q "run jobs execute s7c512824-migrate" "$STUB_LOG"
+! grep -q "run jobs update" "$STUB_LOG"
+MIGRATE_LINE="$(grep -n -m1 "run jobs execute" "$STUB_LOG" | cut -d: -f1)"
+SERVICE_LINE="$(grep -n -m1 "run services update s7c512824" "$STUB_LOG" | cut -d: -f1)"
+[[ "$MIGRATE_LINE" -lt "$SERVICE_LINE" ]]
 grep -q "run services update s7c512824" "$STUB_LOG"
+
+: >"$STUB_LOG"
+assert_fails "rollback migration failure stops service update" \
+  env "${BASE_ENV[@]}" IMAGE_TAG="$HEAD_SHA" ROLLBACK=true STUB_FAIL_MIGRATE=1 \
+  bash "$REPO_COPY/deploy/release.sh"
+! grep -q "run services update s7c512824" "$STUB_LOG"
 
 # The manual entry point defaults to a dry run and never invokes cloud/Docker tools.
 : >"$STUB_LOG"

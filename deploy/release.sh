@@ -61,7 +61,9 @@ if [[ "$ROLLBACK" == false ]]; then
   release_cmd gcloud run jobs execute "$MIGRATION_JOB_NAME" \
     --wait --project "$PROJECT_ID" --region "$REGION" --quiet
 else
-  echo 'Rollback requested; skip migrations and seed.'
+  echo 'Rollback requested; run the configured migration job before reusing the prior image.'
+  release_cmd gcloud run jobs execute "$MIGRATION_JOB_NAME" \
+    --wait --project "$PROJECT_ID" --region "$REGION" --quiet
 fi
 
 release_cmd gcloud run services update "$SERVICE_NAME" \

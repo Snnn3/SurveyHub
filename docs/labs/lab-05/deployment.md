@@ -128,3 +128,5 @@ Course-managed GCP infrastructure was activated through the CPE334 Student Cloud
 - **Additional secret for app startup (`#22`):** Production mode requires a non-default `JWT_SECRET` of at least 32 characters (`server/src/config/environment.ts`). Store it in `s7c512824-app-secret-1`; the release workflow maps that Secret Manager reference to `JWT_SECRET` on the service. Never store the value in GitHub variables or Git.
 
 Before changing either Cloud Run resource, `deploy/release.sh` reads its configuration and stops unless the assigned Cloud SQL connection and runtime service account are still attached. It does not print the configuration, which may contain secret references. The update commands change only the image, migration command and database secret, plus the service's `NODE_ENV`, port and required secret mappings; other portal settings are preserved.
+
+For a manual rollback, run **Deploy SurveyHub** from `main` with `image_tag` set to the full SHA of an existing image. The build is skipped, CI still runs, and the configured migration job must finish before the service switches to the older image.

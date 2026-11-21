@@ -12,7 +12,7 @@
 #     6) writes a deployment summary.
 #   MANUAL ROLLBACK: run the workflow by hand and enter `image_tag` = the full
 #   40-character commit SHA of an image that already exists. CI still runs;
-#   build and migration are skipped while the service is pointed to that image.
+#   build is skipped, the configured migration job runs, then the service rolls back.
 #
 # ⚠️ DO NOT RENAME (the lab guide refers to these names):
 #   - job `test-and-docker` (defined in ci-docker.yml, called by `test` below)
