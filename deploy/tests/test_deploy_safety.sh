@@ -189,8 +189,8 @@ SERVICE_LINE="$(grep -n -m1 "run services update s7c512824" "$STUB_LOG" | cut -d
 [[ "$MIGRATE_LINE" -lt "$SERVICE_LINE" ]]
 grep -q "docker build --platform linux/amd64" "$STUB_LOG"
 grep -q "run jobs update s7c512824-migrate" "$STUB_LOG"
-[[ "$(grep -c "run jobs describe s7c512824-migrate" "$STUB_LOG")" -eq 1 ]]
-[[ "$(grep -c "run services describe s7c512824" "$STUB_LOG")" -eq 1 ]]
+[[ "$(grep -c "run jobs describe s7c512824-migrate .*--format=json" "$STUB_LOG")" -eq 1 ]]
+[[ "$(grep -c "run services describe s7c512824 .*--format=json" "$STUB_LOG")" -eq 1 ]]
 ! grep -q -- "--service-account" "$STUB_LOG"
 ! grep -q -- "--add-cloudsql-instances" "$STUB_LOG"
 ! grep -q -- "--set-cloudsql-instances" "$STUB_LOG"
