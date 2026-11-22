@@ -1,6 +1,6 @@
 # Lab 5 deployment and environment configuration
 
-**Scope:** Issues [#18](https://github.com/Snnn3/SurveyHub/issues/18) (course-portal GCP resource activation), [#19](https://github.com/Snnn3/SurveyHub/issues/19), [#20](https://github.com/Snnn3/SurveyHub/issues/20), [#21](https://github.com/Snnn3/SurveyHub/issues/21), [#22](https://github.com/Snnn3/SurveyHub/issues/22), [#24](https://github.com/Snnn3/SurveyHub/issues/24), and [#37](https://github.com/Snnn3/SurveyHub/issues/37). This records portal-provisioned infrastructure metadata and reproducible local verification; the application image has not yet been deployed to Cloud Run (`application_deployed_by_portal: false`).
+**Scope:** Issues [#18](https://github.com/Snnn3/SurveyHub/issues/18) (course-portal GCP resource activation), [#19](https://github.com/Snnn3/SurveyHub/issues/19), [#20](https://github.com/Snnn3/SurveyHub/issues/20), [#21](https://github.com/Snnn3/SurveyHub/issues/21), [#22](https://github.com/Snnn3/SurveyHub/issues/22), [#24](https://github.com/Snnn3/SurveyHub/issues/24), and [#37](https://github.com/Snnn3/SurveyHub/issues/37). This guide records portal-provisioned infrastructure, local verification, and deployments run by GitHub Actions.
 
 ## Runtime behavior
 
@@ -95,13 +95,13 @@ Course-managed GCP infrastructure was activated through the CPE334 Student Cloud
 | GCP Project ID | `cpe-se-course-2026` |
 | GCP Region | `asia-southeast1` |
 | Assigned team prefix | `s7c512824` |
-| Assigned Cloud Run URL | `https://s7c512824-4d7hbszvwq-as.a.run.app` (app not deployed until #22) |
+| Assigned Cloud Run URL | `https://s7c512824-4d7hbszvwq-as.a.run.app` |
 
 ### Provisioned Resource Names and Secret References
 
 | Item | Assigned Resource / Reference Name | Purpose |
 |---|---|---|
-| Cloud Run service | `s7c512824` | Runs the SurveyHub container once deployed |
+| Cloud Run service | `s7c512824` | Runs the SurveyHub container |
 | Migration job | `s7c512824-migrate` | Runs Prisma migrations prior to updating the service |
 | Cloud SQL instance | `s7c512824-pg` (`db-f1-micro`) | Managed PostgreSQL instance |
 | Database / DB user | `s7c512824` / `s7c512824` | PostgreSQL database and role name (password in Secret Manager) |
@@ -133,3 +133,22 @@ Before changing either Cloud Run resource, `deploy/release.sh` reads its configu
 Before running **Deploy SurveyHub** on `main`, restrict the GitHub `demo` environment to deployments from `main` only. Also confirm the `DATABASE_URL` secret and `s7c512824-app-secret-1` each have an accessible latest version; the workflow does not create secret versions.
 
 For a manual rollback, run **Deploy SurveyHub** from `main` with `image_tag` set to the full SHA of an image published by this workflow. CI and build are skipped because that image's commit passed CI when published. The rollback checks the current Cloud Run service configuration, then switches only the service image and traffic; it does not inspect or execute the migration job or change runtime settings.
+
+## Cloud Run deployment evidence (Issue #22)
+
+Public URL: [SurveyHub](https://s7c512824-4d7hbszvwq-as.a.run.app). The image digests below refer to the team Artifact Registry repository listed above.
+
+| Deployment | Source commit on `main` | Image digest | Migration execution | Cloud Run revision |
+|---|---|---|---|---|
+| [Release A](https://github.com/Snnn3/SurveyHub/actions/runs/44908360347) | `73e576ea718f57dfb91535006a442011cf8974a8` | `sha256:6756d5858b8aef01a105db977302f4763be67a331328beaeeea46ebec1f57ded` | `s7c512824-migrate-lqzg5` | `s7c512824-00003-nbs` |
+| [PR #50 deployment](https://github.com/Snnn3/SurveyHub/actions/runs/44997453351) | `c35ff745c69c3864873973fc2a06b9ef2e39b396` | `sha256:da6e028d8e64f84eb9bdc1ae9b9306e82a233a5bae123e34dbe8a05cf9099dd0` | `s7c512824-migrate-btqk2` | `s7c512824-00005-7qz` |
+
+Both Actions runs built and published the commit image, completed the migration job before updating the service, and passed the public UI, database health, and unauthenticated access checks.
+
+On 2026-11-22 the public UI and `GET /api/health` both returned HTTP `200`. The health response included `database: up`. Cloud Run reported revision `s7c512824-00005-7qz` serving 100% of traffic. The service and migration job were attached to `cpe-se-course-2026:asia-southeast1:s7c512824-pg` and used the assigned runtime account. Both mapped `DATABASE_URL` from `s7c512824-database-url:latest`. The service also mapped `JWT_SECRET` from `s7c512824-app-secret-1:latest`. The migration job was configured to run `npm run db:migrate:deploy` on the recorded image digest.
+
+### C-04 and persistence handoff
+
+C-04 is pending. On the public service, sign in with synthetic owner and respondent accounts, create and publish a survey, and submit a response. Capture a forbidden response from the authenticated respondent's attempt to read the owner-only survey details, checking that the response contains no protected survey data.
+
+Record the synthetic survey and response IDs with the revision tested, then link the evidence from #24. Release A above is a historical deployment baseline. There is no captured evidence yet of a synthetic record on that revision for the C-05 persistence comparison.
