@@ -149,6 +149,18 @@ On 2026-11-22 the public UI and `GET /api/health` both returned HTTP `200`. The 
 
 ### C-04 and persistence handoff
 
-C-04 is pending. On the public service, sign in with synthetic owner and respondent accounts, create and publish a survey, and submit a response. Capture a forbidden response from the authenticated respondent's attempt to read the owner-only survey details, checking that the response contains no protected survey data.
+C-04 passed on 2026-11-22 against the public Cloud Run service. Revision `s7c512824-00005-7qz` was confirmed serving 100% of traffic. One synthetic survey and one response were created through the application API.
 
-Record the synthetic survey and response IDs with the revision tested, then link the evidence from #24. Release A above is a historical deployment baseline. There is no captured evidence yet of a synthetic record on that revision for the C-05 persistence comparison.
+| Check | Observed result |
+|---|---|
+| Owner and respondent sign-in | HTTP `200` for each, with the expected role |
+| Owner creates and publishes survey | HTTP `201` for creation, then `200` with status `PUBLISHED` |
+| Authenticated respondent calls owner-only survey detail | HTTP `403 FORBIDDEN_ROLE`. The response contained only the public error envelope and no survey data. |
+| Respondent fetches the form and submits one answer | HTTP `200` for the form, then `201` for submission |
+| Respondent reopens the receipt | HTTP `200`, matching response and survey IDs, with one saved answer |
+
+- Synthetic survey ID: `a3f734ec-9e19-458b-ba65-0f6ceaebb24b`
+- Synthetic response ID: `7be3b23f-0795-4a14-81bb-37e89b0e00ea`
+- Submission time from the API: `2026-11-22T08:04:14.937Z`
+
+The synthetic record is available to #24 as a persistence fixture. It was first verified on the revision from PR #50. Its existence on the historical Release A before redeployment has not been verified, so this result does not complete C-05.
