@@ -368,7 +368,7 @@ export default function App() {
       {/* Footer */}
       <footer className="border-t border-slate-200 bg-white py-6">
         <div className="max-w-6xl mx-auto px-4 text-center text-xs text-slate-500">
-          SurveyHub — CPE 334 Software Engineering in the Age of AI Agents (1/2026) | Monorepo Scaffolding
+          SurveyHub — CPE 334 Software Engineering in the Age of AI Agents (1/2026) | Lab 5 Deployment Demo
         </div>
       </footer>
     </div>
