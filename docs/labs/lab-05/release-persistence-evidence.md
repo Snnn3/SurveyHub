@@ -23,7 +23,7 @@ The table records the source commit, immutable Artifact Registry OCI index diges
 
 The A baseline was deliberately re-established immediately before the new B release by running the original A image. The synthetic response was created after A's original deployment, so its presence during that historical deployment is not claimed. The new baseline run and all three later receipt checks returned the same fixture.
 
-The release workflow confirmed that no Prisma schema or migration files changed between A and B. Release B's migration completed before updating the service. The rollback to A and roll forward to B each used the existing image-only workflow, skipped migrations, and passed the public smoke checks. No reverse migration was run.
+A Git comparison of the exact A and B commits showed no Prisma schema or migration files changed between them ([compare](https://github.com/Snnn3/SurveyHub/compare/73e576ea718f57dfb91535006a442011cf8974a8...32787b85499a2860ba5ba9093d254f03d325dfc5)). Release B's migration completed before updating the service. The rollback to A and roll forward to B each used the existing image-only workflow, skipped migrations, and passed the public smoke checks. No reverse migration was run.
 
 ## Final live verification
 
