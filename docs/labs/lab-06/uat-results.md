@@ -1,5 +1,6 @@
 # Lab 6 — UAT results
 
-| Case ID | AC | Tester | Date/time (timezone) | App URL | Revision / source commit | Result (`PASS` / `FAIL` / `BLOCKED`) | Evidence ID | Finding / notes |
-|---|---|---|---|---|---|---|---|---|
-| — | — | — | — | — | — | — | — | — |
+| Tester | Result file |
+|---|---|
+| Chanon | [uat-results-chanon.md](uat-results-chanon.md) |
+| Worawut | [uat-results-worawut.md](uat-results-worawut.md) |
