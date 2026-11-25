@@ -54,7 +54,7 @@ function normalizeAnswers(
       if (textValue && textValue.length > 2000) {
         invalidAnswer(`${answerField}.textValue`, 'Answer must be at most 2,000 characters.');
       }
-      if (textValue) normalized.push({ questionId: answer.questionId, textValue });
+      if (textValue && !question.isRequired) normalized.push({ questionId: answer.questionId, textValue });
     } else {
       invalidAnswer(answerField, 'This question type cannot be answered yet.');
     }
