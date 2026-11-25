@@ -162,7 +162,7 @@ export async function updateSurvey(surveyId: string, ownerId: string, input: Sur
       where: { id: existing.id },
       data: {
         title,
-        description: description ? null : description,
+        description: description || null,
         questions: {
           create: mapQuestionsToCreate(questions || []),
         },
@@ -358,7 +358,7 @@ export async function getSurveySummary(surveyId: string, ownerId: string) {
     description: survey.description,
     status: survey.status,
     mode: survey.mode,
-    totalResponses: survey._count.responses || 1,
+    totalResponses: survey._count.responses,
     createdAt: survey.createdAt,
     questions,
   };
