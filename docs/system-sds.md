@@ -3,7 +3,7 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)
 **Course:** CPE 334 Software Engineering, Semester 1/2026
 **Deliverable:** Project Deliverable 1 — Part C (15 points)
-**Document status:** Baseline v5 with proposed F-05 amendment v6, drafted on 26 November 2026
+**Document status:** Baseline v5 with proposed F-05 amendment v6 and F-07 amendment v7, drafted on 27 November 2026
 **Related documents:** Part A (requirements), Part B (traceability), Part E (feature contracts)
 
 > Status note: this is a design document. It does not claim that the system is implemented or
@@ -144,8 +144,12 @@ erDiagram
    submitted a survey. In anonymous mode it has no link to the response, so the system can prevent a
    second submission without knowing which response belongs to the user.
 4. **Eligibility is a table, not a boolean.** An empty eligibility list means "all respondents" in
-   Sprint 1. Populated lists restrict submission in Sprint 2.
-5. **Closed is terminal.** `publishedAt`, `closesAt` and `closedAt` capture lifecycle history.
+   Sprint 1. Populated lists restrict submission in Sprint 2. Only the owner sees selected eligible
+   account details; no respondent directory is exposed.
+5. **Scheduled close is derived.** A published survey accepts responses only while `closesAt` is
+   null or later than the captured server time. A deadline does not mutate status or `closedAt`; a
+   manual close remains terminal. The owner may reschedule or clear a deadline on a still-published
+   survey to resume acceptance.
 6. **No user deletion in scope.** Foreign keys use `Restrict` where deleting a user or survey would
    destroy audit-relevant data. Draft survey deletion is handled by the service and cascades only
    through structure that has no responses.
@@ -507,6 +511,7 @@ Rules:
 | `FORBIDDEN_OWNERSHIP` | 403 | Record belongs to another owner |
 | `FORBIDDEN_CROSS_RESPONSE_ACCESS` | 403 | Respondent requests another respondent's receipt |
 | `NOT_ELIGIBLE` | 403 | Respondent is not on the allowlist (Sprint 2) |
+| `INVALID_ELIGIBILITY` | 400 | Allowlist contains an unknown or non-respondent account; no account details are returned |
 | `NOT_FOUND` | 404 | Unknown id |
 | `DUPLICATE_SUBMISSION` | 409 | Claim already exists or unique violation |
 | `SURVEY_NOT_ACCEPTING_RESPONSES` | 400 | Survey is draft, closed or past `closesAt` |
@@ -514,7 +519,7 @@ Rules:
 | `MISSING_REQUIRED_QUESTIONS` | 400 | Required answers absent |
 | `INVALID_ANSWER` | 400 | Wrong value shape, foreign option, duplicate question, invalid type-specific bound or date |
 | `INVALID_QUESTION_STRUCTURE` | 400 | Publish requirements not met |
-| `SURVEY_NOT_EDITABLE` | 400 | Update/delete attempted after publication |
+| `SURVEY_NOT_EDITABLE` | 400 | Draft-only update/delete attempted after publication, or policy change attempted after manual close |
 | `INVALID_STATE_TRANSITION` | 400 | Publish/close transition not allowed |
 | `SERVICE_UNAVAILABLE` | 503 | Database connectivity check failed at the health endpoint |
 | `INTERNAL_ERROR` | 500 | Unhandled error |
@@ -533,14 +538,18 @@ All endpoints except login and health require `Authorization: Bearer <token>`.
 | 6 | POST | `/api/surveys` | Token | SURVEY_OWNER | Create draft survey with questions |
 | 7 | GET | `/api/surveys/:id` | Token | SURVEY_OWNER (owner) | Get own survey detail |
 | 8 | PUT | `/api/surveys/:id` | Token | SURVEY_OWNER (owner) | Replace draft metadata and questions |
-| 9 | DELETE | `/api/surveys/:id` | Token | SURVEY_OWNER (owner) | Delete a draft survey |
-| 10 | PATCH | `/api/surveys/:id/publish` | Token | SURVEY_OWNER (owner) | Publish a valid draft |
-| 11 | PATCH | `/api/surveys/:id/close` | Token | SURVEY_OWNER (owner) | Close a published survey |
-| 12 | GET | `/api/surveys/:id/summary` | Token | SURVEY_OWNER (owner) | Aggregate results |
-| 13 | GET | `/api/surveys/active` | Token | RESPONDENT | List published surveys and submission state |
-| 14 | GET | `/api/surveys/:id/form` | Token | RESPONDENT | Get the form for a published survey |
-| 15 | POST | `/api/surveys/:id/responses` | Token | RESPONDENT | Submit one response |
-| 16 | GET | `/api/surveys/:id/responses/:responseId` | Token | RESPONDENT | Get own identified receipt or anonymous metadata by opaque reference |
+| 9 | GET | `/api/surveys/:id/eligibility` | Token | SURVEY_OWNER (owner) | Read selected eligible respondents only |
+| 10 | PUT | `/api/surveys/:id/eligibility` | Token | SURVEY_OWNER (owner) | Atomically replace the respondent allowlist |
+| 11 | GET | `/api/surveys/:id/schedule` | Token | SURVEY_OWNER (owner) | Read deadline and current acceptance state |
+| 12 | PATCH | `/api/surveys/:id/schedule` | Token | SURVEY_OWNER (owner) | Set, update, or clear the deadline |
+| 13 | DELETE | `/api/surveys/:id` | Token | SURVEY_OWNER (owner) | Delete a draft survey |
+| 14 | PATCH | `/api/surveys/:id/publish` | Token | SURVEY_OWNER (owner) | Publish a valid draft |
+| 15 | PATCH | `/api/surveys/:id/close` | Token | SURVEY_OWNER (owner) | Close a published survey |
+| 16 | GET | `/api/surveys/:id/summary` | Token | SURVEY_OWNER (owner) | Aggregate results |
+| 17 | GET | `/api/surveys/active` | Token | RESPONDENT | List eligible published surveys with submission and acceptance state |
+| 18 | GET | `/api/surveys/:id/form` | Token | RESPONDENT | Get an eligible, currently accepting survey form |
+| 19 | POST | `/api/surveys/:id/responses` | Token | RESPONDENT | Submit one response |
+| 20 | GET | `/api/surveys/:id/responses/:responseId` | Token | RESPONDENT | Get own identified receipt or anonymous metadata by opaque reference |
 
 Route registration order: `/api/surveys/active` must be registered before `/api/surveys/:id` so the
 literal path is not captured as an id.
@@ -580,6 +589,12 @@ Database check failure `503`:
 - Validation errors return field-level details and never echo the submitted password.
 - `PUT /api/surveys/:id` replaces the full question set atomically inside a transaction. It is allowed
   only when the survey is `DRAFT`.
+- `PUT /api/surveys/:id/eligibility` resolves and validates the entire email list before replacing
+  `SurveyEligibility` rows atomically. Empty means all authenticated respondents; selected account
+  details are returned only to the survey owner.
+- Schedule input is an ISO date-time with an explicit offset or `null`; it is persisted as an
+  absolute UTC instant. Acceptance uses `status = PUBLISHED` and `now < closesAt` (or no deadline).
+  Deadline changes do not alter `closedAt`; the manual `CLOSED` transition remains terminal.
 
 ---
 
@@ -613,6 +628,7 @@ Database check failure `503`:
 | `/auth/me`, `/auth/logout` | 401 | Allowed | Allowed | Allowed | Allowed |
 | List/create own surveys | 401 | 403 | Allowed | Allowed | 403 |
 | Get/update/delete own draft | 401 | 403 | 403 | Allowed | 403 |
+| Get/update own eligibility or schedule | 401 | 403 | 403 | Allowed | 403 |
 | Publish/close own survey | 401 | 403 | 403 | Allowed | 403 |
 | View own summary | 401 | 403 | 403 | Allowed | 403 |
 | Browse active surveys | 401 | Allowed | 403 | 403 | Allowed |
