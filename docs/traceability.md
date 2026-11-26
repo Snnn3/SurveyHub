@@ -28,7 +28,7 @@ Status values: **PLANNED** (designed, not implemented), **IMPLEMENTED** (code ex
 | **FR-09** | Persisted confirmation and receipt retrieval | F-03 | 1 | AC-F03-03, AC-F03-10 | STS-F03-03, STS-F03-10 | PLANNED |
 | **FR-10** | Aggregate summary (Sprint 1 formats) | F-04 | 1 | AC-F04-01..04 | STS-F04-01..04 | PLANNED |
 | **FR-11** | Anonymous responses | F-05 | 2 | AC-S2-01, AC-PRIV-01 | STS-S2-01, STS-PRIV-01 | DEFERRED |
-| **FR-12** | Expanded question types and type-aware summary | F-06, [Issue #9](https://github.com/Snnn3/SurveyHub/issues/9) | 2 | AC-F06-01..12 | STS-F06-01..19 ([F-06 contract](sprints/sprint-2/f-06.md)) | DEFERRED |
+| **FR-12** | Expanded question types and type-aware summary | F-06, [Issue #9](https://github.com/Snnn3/SurveyHub/issues/9) | 2 | AC-F06-01..12 | STS-F06-01..19 ([F-06 contract](sprints/sprint-2/f-06.md)) | PLANNED |
 | **FR-13** | CSV/JSON export | F-08 | 3 | AC-S3-01 | STS-S3-01 | DEFERRED |
 | **FR-14** | Eligibility allowlist | F-07 | 2 | AC-S2-03 | STS-S2-03 | DEFERRED |
 | **FR-15** | Scheduled close | F-07 | 2 | AC-S2-04 | STS-S2-04 | DEFERRED |
