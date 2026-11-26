@@ -1,34 +1,6 @@
-import { expect, test, type Page } from '@playwright/test';
-
-const password = 'Password123!';
+import { expect, test } from '@playwright/test';
+import { signIn, signOut } from './auth';
 const seedSurveyId = '00000000-0000-4000-a000-000000000001';
-type HomePath = '/owner/surveys' | '/surveys';
-
-async function signIn(page: Page, email: string, home: HomePath): Promise<void> {
-  await page.goto('/login');
-  await expect(page.getByLabel('Email')).toBeVisible();
-  await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Password').fill(password);
-
-  const loginResponse = page.waitForResponse((response) =>
-    response.url().endsWith('/api/auth/login') && response.request().method() === 'POST'
-  );
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  expect((await loginResponse).status()).toBe(200);
-
-  await expect(page).toHaveURL(new RegExp(`${home}$`));
-  await expect(page.getByRole('button', { name: 'Log out' })).toBeVisible();
-}
-
-async function signOut(page: Page): Promise<void> {
-  const logoutResponse = page.waitForResponse((response) =>
-    response.url().endsWith('/api/auth/logout') && response.request().method() === 'POST'
-  );
-  await page.getByRole('button', { name: 'Log out' }).click();
-  expect((await logoutResponse).status()).toBe(200);
-  await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByLabel('Email')).toBeVisible();
-}
 
 test('STS-E2E-01: owner publishes, respondent submits, and owner sees persisted summary', async ({ page }) => {
   const title = `Sprint 1 E2E ${Date.now()}`;
