@@ -1,6 +1,6 @@
 # Lab 6 — Retest evidence
 
-Screenshots in this folder were captured from the application during the 2026-11-26 UAT-03 retest using computer use. UAT-03 was the only known defect and is the only case included in this retest. The inline images and outcomes are in [uat-retest-results-worawut.md](../uat-retest-results-worawut.md).
+Screenshots in this folder were captured from the application during the 2026-11-26 UAT-03 retest using computer use. UAT-03 was the only known defect and is the only case included in this retest. The inline images and outcomes are in [uat-results.md](../uat-results.md).
 
 | Evidence ID | File | Captured (Asia/Bangkok) | What it shows |
 | --- | --- | --- | --- |

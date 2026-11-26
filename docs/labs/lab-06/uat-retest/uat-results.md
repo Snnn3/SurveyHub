@@ -28,33 +28,33 @@ Tester signed in as requester Ploy and used reviewer Mint. Each input was checke
 
 | Amount entered | Expected | Actual | Result | Evidence |
 | --- | --- | --- | --- | --- |
-| Blank | `Enter an amount.` | The amount field displayed `Enter an amount.` | **PASS** | [E-RETEST-03-01](evidence-retest/E-RETEST-03-01-blank-amount.jpg) |
-| `abc` | `Enter the amount as a number, for example 1250.50.` | The amount field displayed `Enter the amount as a number, for example 1250.50.` | **PASS** | [E-RETEST-03-02](evidence-retest/E-RETEST-03-02-nonnumeric-amount.jpg) |
-| `12.345` | `Enter the amount as a number, for example 1250.50.` | The amount field displayed `Enter the amount as a number, for example 1250.50.` | **PASS** | [E-RETEST-03-03](evidence-retest/E-RETEST-03-03-excess-decimal-places.jpg) |
-| `0` | `Enter an amount greater than 0.` | The amount field displayed `Enter an amount greater than 0.` | **PASS** | [E-RETEST-03-04](evidence-retest/E-RETEST-03-04-zero-amount.jpg) |
-| `1,000,000.01` | `Enter an amount of at most 1,000,000.00 THB.` | The amount field displayed `Enter an amount of at most 1,000,000.00 THB.` | **PASS** | [E-RETEST-03-05](evidence-retest/E-RETEST-03-05-above-maximum.jpg) |
-| `0.01` | Request is submitted. | Success message showed `Request REQ-000066 submitted.` The request was created for THB 0.01. | **PASS** | [E-RETEST-03-06](evidence-retest/E-RETEST-03-06-minimum-accepted.jpg) |
-| `1,000,000.00` | Inclusive maximum is accepted and page shows `Request REQ-… submitted.` | Success message showed `Request REQ-000067 submitted.` The request was created for THB 1,000,000.00. | **PASS** | [E-RETEST-03-07](evidence-retest/E-RETEST-03-07-maximum-accepted.jpg) |
+| Blank | `Enter an amount.` | The amount field displayed `Enter an amount.` | **PASS** | [E-RETEST-03-01](evidence/E-RETEST-03-01-blank-amount.jpg) |
+| `abc` | `Enter the amount as a number, for example 1250.50.` | The amount field displayed `Enter the amount as a number, for example 1250.50.` | **PASS** | [E-RETEST-03-02](evidence/E-RETEST-03-02-nonnumeric-amount.jpg) |
+| `12.345` | `Enter the amount as a number, for example 1250.50.` | The amount field displayed `Enter the amount as a number, for example 1250.50.` | **PASS** | [E-RETEST-03-03](evidence/E-RETEST-03-03-excess-decimal-places.jpg) |
+| `0` | `Enter an amount greater than 0.` | The amount field displayed `Enter an amount greater than 0.` | **PASS** | [E-RETEST-03-04](evidence/E-RETEST-03-04-zero-amount.jpg) |
+| `1,000,000.01` | `Enter an amount of at most 1,000,000.00 THB.` | The amount field displayed `Enter an amount of at most 1,000,000.00 THB.` | **PASS** | [E-RETEST-03-05](evidence/E-RETEST-03-05-above-maximum.jpg) |
+| `0.01` | Request is submitted. | Success message showed `Request REQ-000066 submitted.` The request was created for THB 0.01. | **PASS** | [E-RETEST-03-06](evidence/E-RETEST-03-06-minimum-accepted.jpg) |
+| `1,000,000.00` | Inclusive maximum is accepted and page shows `Request REQ-… submitted.` | Success message showed `Request REQ-000067 submitted.` The request was created for THB 1,000,000.00. | **PASS** | [E-RETEST-03-07](evidence/E-RETEST-03-07-maximum-accepted.jpg) |
 
 ### UAT-03 evidence
 
 **Invalid values and validation messages**
 
-![E-RETEST-03-01: Blank amount shows the required-field validation](evidence-retest/E-RETEST-03-01-blank-amount.jpg)
+![E-RETEST-03-01: Blank amount shows the required-field validation](evidence/E-RETEST-03-01-blank-amount.jpg)
 
-![E-RETEST-03-02: Non-numeric amount shows the number-format validation](evidence-retest/E-RETEST-03-02-nonnumeric-amount.jpg)
+![E-RETEST-03-02: Non-numeric amount shows the number-format validation](evidence/E-RETEST-03-02-nonnumeric-amount.jpg)
 
-![E-RETEST-03-03: Amount with three decimal places shows the number-format validation](evidence-retest/E-RETEST-03-03-excess-decimal-places.jpg)
+![E-RETEST-03-03: Amount with three decimal places shows the number-format validation](evidence/E-RETEST-03-03-excess-decimal-places.jpg)
 
-![E-RETEST-03-04: Zero amount shows the greater-than-zero validation](evidence-retest/E-RETEST-03-04-zero-amount.jpg)
+![E-RETEST-03-04: Zero amount shows the greater-than-zero validation](evidence/E-RETEST-03-04-zero-amount.jpg)
 
-![E-RETEST-03-05: Amount above the maximum shows the upper-bound validation](evidence-retest/E-RETEST-03-05-above-maximum.jpg)
+![E-RETEST-03-05: Amount above the maximum shows the upper-bound validation](evidence/E-RETEST-03-05-above-maximum.jpg)
 
 **Valid boundary values**
 
-![E-RETEST-03-06: Minimum amount 0.01 THB was submitted successfully](evidence-retest/E-RETEST-03-06-minimum-accepted.jpg)
+![E-RETEST-03-06: Minimum amount 0.01 THB was submitted successfully](evidence/E-RETEST-03-06-minimum-accepted.jpg)
 
-![E-RETEST-03-07: Inclusive maximum 1,000,000.00 THB was submitted successfully as REQ-000067](evidence-retest/E-RETEST-03-07-maximum-accepted.jpg)
+![E-RETEST-03-07: Inclusive maximum 1,000,000.00 THB was submitted successfully as REQ-000067](evidence/E-RETEST-03-07-maximum-accepted.jpg)
 
 ## Final decision
 

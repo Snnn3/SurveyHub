@@ -1,4 +1,4 @@
-<!-- Purpose: This is the SurveyHub Sprint 1 UAT plan and test-case set prepared by Product Team TH-019 for independent execution by TH-044. It specifies our product, release, scope, test data, steps, and expected results; the the Approval Flow UAT cases supplied by TH-044 test their own product. Record actual outcomes in the separate execution log. -->
+<!-- Purpose: This is the SurveyHub Sprint 1 UAT plan and test-case set prepared by Product Team TH-019 for independent execution by TH-044. It specifies our product, release, scope, test data, steps, and expected results; the Approval Flow UAT cases supplied by TH-044 test their own product. Record actual outcomes in the separate execution log. -->
 
 # SurveyHub Sprint 1 UAT Plan and Handoff
 
@@ -12,12 +12,12 @@
 
 ## 1. Teams
 
-| Role | Team / person | Student ID |
-|---|---|---|
-| Product Team | Worawut Sereethai (@YummieGG) | 67070501040 |
-| Product Team | Chanon Lhumsa-ard (@Snnn3) | 67070501059 |
-| Independent UAT Team | WIRACHAT THONGUTHAISRI | 67070501041 |
-| Independent UAT Team | POOMIPAT APIWATTANAPHONG | 67070501035 |
+| Role | Team / person |
+|---|---|
+| Product Team | Worawut Sereethai (@YummieGG) |
+| Product Team | Chanon Lhumsa-ard (@Snnn3) |
+| Independent UAT Team | WIRACHAT THONGUTHAISRI |
+| Independent UAT Team | POOMIPAT APIWATTANAPHONG |
 
 Both TH-044 students must each execute at least one case and review the recorded results. Product Team members participate in handoff, defect triage, fix review, and release work. Only TH-044, as the independent UAT Team, records the final acceptance decision.
 
@@ -40,7 +40,7 @@ The deployment is frozen during UAT. TH-019 will tell TH-044 before any deployme
 
 The baseline and deployed release are separate references. UAT cases below target the designated deployed release; they do not ask TH-044 to compare it with the baseline. The Product Team reports that the server source and Prisma schema are unchanged between the baseline and UAT release, with the build footer being the client-side difference.
 
-The versioned Sprint 1 contracts are in [docs/sprints/sprint-1](../../sprints/sprint-1/README.md). Expected results below follow those contracts.
+The versioned Sprint 1 contracts are in [docs/sprints/sprint-1](../../../../sprints/sprint-1/README.md). Expected results below follow those contracts.
 
 ## 3. Accepted scope
 

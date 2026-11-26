@@ -32,9 +32,9 @@
 
 **Evidence:**
 
-![submitted request](evidence-exercise/E-UAT-01-01-Codex-submitted.png)
+![submitted request](evidence/E-UAT-01-01-Codex-submitted.png)
 
-![approved request](evidence-exercise/E-UAT-01-02-Codex-approved.png)
+![approved request](evidence/E-UAT-01-02-Codex-approved.png)
 
 #### UAT-02 — PASS
 
@@ -43,7 +43,7 @@
 
 **Evidence:**
 
-![rejected request](evidence-exercise/E-UAT-02-01-Codex-rejected.png)
+![rejected request](evidence/E-UAT-02-01-Codex-rejected.png)
 
 #### UAT-03 — FAIL (prior controlled-build retest)
 
@@ -56,11 +56,11 @@ UAT-03 was not repeated in this run. The prior controlled-build retest recorded 
 
 **Evidence:**
 
-![blank reason validation](evidence-exercise/E-UAT-04-01-Codex-empty-reason-validation.png)
+![blank reason validation](evidence/E-UAT-04-01-Codex-empty-reason-validation.png)
 
-![whitespace validation](evidence-exercise/E-UAT-04-02-Codex-whitespace-validation.png)
+![whitespace validation](evidence/E-UAT-04-02-Codex-whitespace-validation.png)
 
-![approval with blank reason](evidence-exercise/E-UAT-04-03-Codex-blank-reason-approved.png)
+![approval with blank reason](evidence/E-UAT-04-03-Codex-blank-reason-approved.png)
 
 #### UAT-05 — PASS
 
@@ -69,13 +69,13 @@ UAT-03 was not repeated in this run. The prior controlled-build retest recorded 
 
 **Evidence:**
 
-![required fields](evidence-exercise/E-UAT-05-01-Codex-required-fields.png)
+![required fields](evidence/E-UAT-05-01-Codex-required-fields.png)
 
-![title over limit](evidence-exercise/E-UAT-05-02-Codex-title-over-limit.png)
+![title over limit](evidence/E-UAT-05-02-Codex-title-over-limit.png)
 
-![title at limit](evidence-exercise/E-UAT-05-03-Codex-title-at-limit.png)
+![title at limit](evidence/E-UAT-05-03-Codex-title-at-limit.png)
 
-![literal HTML text](evidence-exercise/E-UAT-05-04-Codex-literal-html.png)
+![literal HTML text](evidence/E-UAT-05-04-Codex-literal-html.png)
 
 #### UAT-06 — PASS
 
@@ -84,15 +84,15 @@ UAT-03 was not repeated in this run. The prior controlled-build retest recorded 
 
 **Evidence:**
 
-![requester menu](evidence-exercise/E-UAT-06-01-Codex-requester-menu.png)
+![requester menu](evidence/E-UAT-06-01-Codex-requester-menu.png)
 
-![review page denied](evidence-exercise/E-UAT-06-02-Codex-reviews-denied.png)
+![review page denied](evidence/E-UAT-06-02-Codex-reviews-denied.png)
 
-![signed-in inbox 403](evidence-exercise/E-UAT-06-03-Codex-forbidden-403.png)
+![signed-in inbox 403](evidence/E-UAT-06-03-Codex-forbidden-403.png)
 
-![signed-out inbox 401](evidence-exercise/E-UAT-06-04-Codex-signed-out-inbox-401.png)
+![signed-out inbox 401](evidence/E-UAT-06-04-Codex-signed-out-inbox-401.png)
 
-![signed-out My Requests API 401](evidence-exercise/E-UAT-06-05-Codex-signed-out-mine-401.png)
+![signed-out My Requests API 401](evidence/E-UAT-06-05-Codex-signed-out-mine-401.png)
 
 #### UAT-07 — PASS
 
@@ -101,15 +101,15 @@ UAT-03 was not repeated in this run. The prior controlled-build retest recorded 
 
 **Evidence:**
 
-![requester unavailable page](evidence-exercise/E-UAT-07-01-Codex-REQB-unavailable-404.png)
+![requester unavailable page](evidence/E-UAT-07-01-Codex-REQB-unavailable-404.png)
 
-![requester 404](evidence-exercise/E-UAT-07-02-Codex-REQB-not-found-404.png)
+![requester 404](evidence/E-UAT-07-02-Codex-REQB-not-found-404.png)
 
-![unassigned reviewer page](evidence-exercise/E-UAT-07-03-Codex-REVB-unavailable-404.png)
+![unassigned reviewer page](evidence/E-UAT-07-03-Codex-REVB-unavailable-404.png)
 
-![unassigned reviewer 404](evidence-exercise/E-UAT-07-04-Codex-REVB-not-found-404.png)
+![unassigned reviewer 404](evidence/E-UAT-07-04-Codex-REVB-not-found-404.png)
 
-![assigned reviewer panel](evidence-exercise/E-UAT-07-05-Codex-Mint-assigned-panel.png)
+![assigned reviewer panel](evidence/E-UAT-07-05-Codex-Mint-assigned-panel.png)
 
 #### UAT-08 — PASS
 
@@ -118,13 +118,13 @@ UAT-03 was not repeated in this run. The prior controlled-build retest recorded 
 
 **Evidence:**
 
-![reviewer options](evidence-exercise/E-UAT-08-01-Codex-reviewer-options.png)
+![reviewer options](evidence/E-UAT-08-01-Codex-reviewer-options.png)
 
-![Mint's request detail](evidence-exercise/E-UAT-08-02-Codex-Mint-request-detail.png)
+![Mint's request detail](evidence/E-UAT-08-02-Codex-Mint-request-detail.png)
 
-![Korn's inbox](evidence-exercise/E-UAT-08-03-Codex-Korn-inbox.png)
+![Korn's inbox](evidence/E-UAT-08-03-Codex-Korn-inbox.png)
 
-![Korn's decision panel](evidence-exercise/E-UAT-08-04-Codex-Korn-decision-panel.png)
+![Korn's decision panel](evidence/E-UAT-08-04-Codex-Korn-decision-panel.png)
 
 #### UAT-09 — PASS
 
@@ -133,11 +133,11 @@ UAT-03 was not repeated in this run. The prior controlled-build retest recorded 
 
 **Evidence:**
 
-![Mint inbox after rejection](evidence-exercise/E-UAT-09-01-Codex-Mint-inbox-after-rejection.png)
+![Mint inbox after rejection](evidence/E-UAT-09-01-Codex-Mint-inbox-after-rejection.png)
 
-![reviewer decision history](evidence-exercise/E-UAT-09-02-Codex-Mint-rejected-history.png)
+![reviewer decision history](evidence/E-UAT-09-02-Codex-Mint-rejected-history.png)
 
-![Ploy's reloaded history](evidence-exercise/E-UAT-09-03-Codex-Ploy-history-reloaded.png)
+![Ploy's reloaded history](evidence/E-UAT-09-03-Codex-Ploy-history-reloaded.png)
 
 #### UAT-10 — PASS
 
@@ -146,11 +146,11 @@ UAT-03 was not repeated in this run. The prior controlled-build retest recorded 
 
 **Evidence:**
 
-![stale rejection blocked](evidence-exercise/E-UAT-10-01-Codex-stale-reject-blocked.png)
+![stale rejection blocked](evidence/E-UAT-10-01-Codex-stale-reject-blocked.png)
 
-![approved after reload](evidence-exercise/E-UAT-10-02-Codex-approved-after-reload.png)
+![approved after reload](evidence/E-UAT-10-02-Codex-approved-after-reload.png)
 
-![single approval for Ploy](evidence-exercise/E-UAT-10-03-Codex-Ploy-single-approval.png)
+![single approval for Ploy](evidence/E-UAT-10-03-Codex-Ploy-single-approval.png)
 
 #### UAT-11 — PASS
 
@@ -159,15 +159,15 @@ UAT-03 was not repeated in this run. The prior controlled-build retest recorded 
 
 **Evidence:**
 
-![empty form errors](evidence-exercise/E-UAT-11-01-Codex-empty-form-errors.png)
+![empty form errors](evidence/E-UAT-11-01-Codex-empty-form-errors.png)
 
-![signed-out request route](evidence-exercise/E-UAT-11-02-Codex-requests-redirect-login.png)
+![signed-out request route](evidence/E-UAT-11-02-Codex-requests-redirect-login.png)
 
-![known account error](evidence-exercise/E-UAT-11-03-Codex-known-account-wrong-password.png)
+![known account error](evidence/E-UAT-11-03-Codex-known-account-wrong-password.png)
 
-![unknown account error](evidence-exercise/E-UAT-11-04-Codex-unknown-email-same-message.png)
+![unknown account error](evidence/E-UAT-11-04-Codex-unknown-email-same-message.png)
 
-![Mint inbox](evidence-exercise/E-UAT-11-05-Codex-Mint-lands-inbox.png)
+![Mint inbox](evidence/E-UAT-11-05-Codex-Mint-lands-inbox.png)
 
 #### UAT-12 — PASS
 
@@ -178,9 +178,9 @@ UAT-03 was not repeated in this run. The prior controlled-build retest recorded 
 
 **Evidence:**
 
-![REQ-B lockout after correct-password attempt](evidence-exercise/E-UAT-12-02-Codex-REQB-locked-10min.png)
+![REQ-B lockout after correct-password attempt](evidence/E-UAT-12-02-Codex-REQB-locked-10min.png)
 
-![Ploy access during lockout](evidence-exercise/E-UAT-12-03-Codex-Ploy-access-during-lockout.png)
+![Ploy access during lockout](evidence/E-UAT-12-03-Codex-Ploy-access-during-lockout.png)
 
 ### Evidence provenance
 
@@ -194,9 +194,9 @@ The directory contains fresh screenshots for the 2026-11-26 retest except for th
 - **Steps and input:** On New Request, enter title `UAT-03 maximum 2026-11-25`, description `Maximum amount boundary test`, amount `1000000.00` THB, and select Mint Chaiyaporn as reviewer; submit. Repeat once with the same boundary amount.
 - **Expected:** The inclusive maximum boundary `1,000,000.00` THB is valid and the request is submitted.
 - **Actual:** Both submissions were blocked by the validation message `Enter an amount of at most 1,000,000.00 THB.` No request was created for either maximum-amount attempt.
-- **Evidence:** [E-UAT-03-a0b6afa-maximum-rejected.png](evidence-exercise/E-UAT-03-a0b6afa-maximum-rejected.png) shows the entered maximum amount, validation message, and Build `a0b6afa`. Worawut supplied the same PNG again on 2026-11-26; it is already saved under this evidence ID. The request title in the screenshot dates it to the 2026-11-25 run.
+- **Evidence:** [E-UAT-03-a0b6afa-maximum-rejected.png](evidence/E-UAT-03-a0b6afa-maximum-rejected.png) shows the entered maximum amount, validation message, and Build `a0b6afa`. Worawut supplied the same PNG again on 2026-11-26; it is already saved under this evidence ID. The request title in the screenshot dates it to the 2026-11-25 run.
 
-![UAT-03 on Build a0b6afa: the 1,000,000.00 THB boundary is rejected](evidence-exercise/E-UAT-03-a0b6afa-maximum-rejected.png)
+![UAT-03 on Build a0b6afa: the 1,000,000.00 THB boundary is rejected](evidence/E-UAT-03-a0b6afa-maximum-rejected.png)
 
 ### UAT-03 — Controlled-build retest (2026-11-26)
 
@@ -206,7 +206,7 @@ The directory contains fresh screenshots for the 2026-11-26 retest except for th
 - **Inputs and observed results:** Blank, `abc`, `12.345`, `0`, and `1000000.01` each showed the corresponding validation message described in UAT-03. `0.01` was accepted as `REQ-000054` (`UAT-03 Worawut 2026-11-26 06`, assigned to Mint). The inclusive maximum `1000000.00` was entered as `UAT-03 Worawut 2026-11-26 07`, assigned to Mint; the form instead showed `Enter an amount of at most 1,000,000.00 THB.` The My Requests list showed the new minimum request and no row for the title used in the rejected maximum attempt. Older maximum-boundary requests from other runs remain in the shared database.
 - **Expected:** The minimum `0.01` and inclusive maximum `1,000,000.00` are accepted; invalid inputs are rejected with their validation messages.
 - **Actual / result:** Invalid inputs matched expectation and the minimum was accepted. The inclusive maximum was rejected, so UAT-03 is **FAIL** on Build `a0b6afa`.
-- **Evidence:** New retest screenshots are pending manual capture: `E-UAT-03-a0b6afa-RETEST-01-minimum-accepted.png` and `E-UAT-03-a0b6afa-RETEST-02-maximum-rejected.png`. The existing [E-UAT-03-a0b6afa-maximum-rejected.png](evidence-exercise/E-UAT-03-a0b6afa-maximum-rejected.png) belongs to the earlier 2026-11-25 run and is not evidence of this retest. CUA displayed the current page image but could not save a PNG file into the evidence directory.
+- **Evidence:** New retest screenshots are pending manual capture: `E-UAT-03-a0b6afa-RETEST-01-minimum-accepted.png` and `E-UAT-03-a0b6afa-RETEST-02-maximum-rejected.png`. The existing [E-UAT-03-a0b6afa-maximum-rejected.png](evidence/E-UAT-03-a0b6afa-maximum-rejected.png) belongs to the earlier 2026-11-25 run and is not evidence of this retest. CUA displayed the current page image but could not save a PNG file into the evidence directory.
 
 ## Final summary
 
