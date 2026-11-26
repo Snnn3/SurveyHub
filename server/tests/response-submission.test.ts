@@ -209,6 +209,34 @@ describe('F-03 survey submission and receipts (STS-F03-01 to STS-F03-10)', () =>
     expect(accepted.status).toBe(201);
   });
 
+  it('accepts a valid non-empty answer to a required short-text question', async () => {
+    const survey = await createSurvey(ownerId);
+    const [choiceQuestion, textQuestion] = survey.questions;
+    await prisma.question.update({
+      where: { id: textQuestion.id },
+      data: { isRequired: true },
+    });
+
+    const response = await request(app)
+      .post(`/api/surveys/${survey.id}/responses`)
+      .set('Authorization', `Bearer ${respondentToken}`)
+      .send({
+        answers: [
+          { questionId: choiceQuestion.id, selectedOptionIds: [choiceQuestion.options[0].id] },
+          { questionId: textQuestion.id, textValue: 'Synthetic response.' },
+        ],
+      });
+
+    expect(response.status).toBe(201);
+    const stored = await prisma.surveyResponse.findUnique({
+      where: { id: response.body.data.responseId },
+      include: { answers: true },
+    });
+    expect(stored?.answers.find((answer) => answer.questionId === textQuestion.id)?.textValue)
+      .toBe('Synthetic response.');
+    expect(await prisma.responseClaim.count({ where: { surveyId: survey.id, userId: respondentId } })).toBe(1);
+  });
+
   it('rejects malformed response bodies before entering the submission service', async () => {
     const survey = await createSurvey(ownerId);
     const submit = jest.spyOn(responseService, 'submitSurveyResponse');
