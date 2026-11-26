@@ -19,4 +19,4 @@ This folder contains both teams' test plans and the execution records for each U
 
 Each round folder has an `evidence/` subfolder. The exercise round also contains [`findings.md`](uat-exercise/findings.md); the retest round contains [`retest-and-acceptance.md`](uat-retest/retest-and-acceptance.md).
 
-Test accounts are synthetic where stated. Passwords, tokens, session cookies, student ID numbers, and saved-password prompts do not belong in the public repository. Screenshots exposing unrelated browser context or an autofill prompt were omitted from the public evidence copy; the corresponding observed results remain described in their report.
+Test accounts are synthetic where stated. Passwords, tokens, session cookies, student ID numbers, and saved-password prompts do not belong in the public repository. The UAT-06 screenshot was withheld because it included unrelated browser tabs and a debugging banner; the observed API response and HTTP status remain recorded in the report. No public image is provided for that check.
