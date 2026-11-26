@@ -3,7 +3,7 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)
 **Course:** CPE 334 Software Engineering, Semester 1/2026
 **Deliverable:** Project Deliverable 1 — Part C (15 points)
-**Document status:** Baseline v5, includes the health endpoint contract on 6 November 2026
+**Document status:** Baseline v5 with proposed F-05 amendment v6, drafted on 26 November 2026
 **Related documents:** Part A (requirements), Part B (traceability), Part E (feature contracts)
 
 > Status note: this is a design document. It does not claim that the system is implemented or
@@ -103,7 +103,7 @@ boundaries, and no distributed-system overhead for a two-person course project.
 | BR-07 immutable structure | Reject update when status is not DRAFT | Service-level only |
 | BR-08 eligibility | Role check; optional allowlist check | `SurveyEligibility(survey_id, user_id)` unique |
 | BR-09 terminal state | State-transition check | Enum status |
-| BR-10 anonymous separation | Write `respondentId = NULL`; create claim without response link | Nullable `respondent_id`; separate `response_claims` table |
+| BR-10 anonymous separation | Write `respondentId = NULL`; create a claim with no response link or timestamp | Nullable `respondent_id`; separate `response_claims` table with `(survey_id,user_id)` only |
 | BR-11 result privacy | Build summary without identity fields | No identity columns in aggregate queries |
 
 ---
@@ -300,7 +300,6 @@ model ResponseClaim {
   survey    Survey   @relation(fields: [surveyId], references: [id], onDelete: Cascade)
   userId    String   @map("user_id")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now()) @map("created_at")
 
   @@unique([surveyId, userId])
   @@index([userId])
@@ -511,6 +510,7 @@ Rules:
 | `NOT_FOUND` | 404 | Unknown id |
 | `DUPLICATE_SUBMISSION` | 409 | Claim already exists or unique violation |
 | `SURVEY_NOT_ACCEPTING_RESPONSES` | 400 | Survey is draft, closed or past `closesAt` |
+| `ANONYMOUS_MODE_NOT_READY` | 400 | F-05 mode is configured but #72 submission transaction integration is not enabled yet |
 | `MISSING_REQUIRED_QUESTIONS` | 400 | Required answers absent |
 | `INVALID_ANSWER` | 400 | Wrong value shape, foreign option, duplicate question, invalid type-specific bound or date |
 | `INVALID_QUESTION_STRUCTURE` | 400 | Publish requirements not met |
@@ -540,7 +540,7 @@ All endpoints except login and health require `Authorization: Bearer <token>`.
 | 13 | GET | `/api/surveys/active` | Token | RESPONDENT | List published surveys and submission state |
 | 14 | GET | `/api/surveys/:id/form` | Token | RESPONDENT | Get the form for a published survey |
 | 15 | POST | `/api/surveys/:id/responses` | Token | RESPONDENT | Submit one response |
-| 16 | GET | `/api/surveys/:id/responses/:responseId` | Token | RESPONDENT (own) | Get own submission receipt |
+| 16 | GET | `/api/surveys/:id/responses/:responseId` | Token | RESPONDENT | Get own identified receipt or anonymous metadata by opaque reference |
 
 Route registration order: `/api/surveys/active` must be registered before `/api/surveys/:id` so the
 literal path is not captured as an id.
@@ -607,7 +607,7 @@ Database check failure `503`:
 
 ### 5.3 Role and ownership matrix
 
-| Operation | Unauthenticated | RESPONDENT | SURVEY_OWNER (non-owner) | SURVEY_OWNER (owner) | Respondent (other user's receipt) |
+| Operation | Unauthenticated | RESPONDENT | SURVEY_OWNER (non-owner) | SURVEY_OWNER (owner) | RESPONDENT (other user's receipt reference) |
 |---|---|---|---|---|---|
 | Login | Allowed | Allowed | Allowed | Allowed | Allowed |
 | `/auth/me`, `/auth/logout` | 401 | Allowed | Allowed | Allowed | Allowed |
@@ -618,7 +618,7 @@ Database check failure `503`:
 | Browse active surveys | 401 | Allowed | 403 | 403 | Allowed |
 | Get published form | 401 | Allowed | 403 | 403 | Allowed |
 | Submit response | 401 | Allowed, if eligible and not already submitted | 403 | 403 | Allowed |
-| Get own receipt | 401 | Allowed | 403 | 403 | 403 |
+| Get receipt | 401 | Allowed by mode rule | 403 | 403 | 403 for identified; anonymous metadata only |
 
 Key correction from the previous draft: owners are **not** allowed to open or submit survey forms.
 Roles are exclusive.
@@ -628,6 +628,7 @@ Roles are exclusive.
 - Role guard first: wrong role → `403 FORBIDDEN_ROLE`.
 - Ownership check second: wrong owner → `403 FORBIDDEN_OWNERSHIP`.
 - For receipt access: if the response belongs to another user → `403 FORBIDDEN_CROSS_RESPONSE_ACCESS`.
+- Anonymous receipts are the exception: a valid response UUID permits authenticated respondents to read only response id, survey id, timestamp, and `mode: ANONYMOUS`; no answers or identity are returned.
 - For unknown ids → `404 NOT_FOUND`.
 - A forbidden response never includes record data.
 - UI hiding is not treated as authorization; tests call the API directly.
@@ -719,7 +720,7 @@ This section exists now because the schema must not need a breaking migration la
 
 - `Survey.mode = ANONYMOUS`.
 - `SurveyResponse.respondentId = NULL`.
-- `ResponseClaim` stores `(surveyId, userId)` only. It has no `responseId` column.
+- `ResponseClaim` stores `(surveyId, userId)` only. It has no `responseId`, response foreign key, timestamp, or reverse response lookup.
 - The system knows **that** a user submitted, not **which** response is theirs.
 - No IP address, user agent or other request metadata is stored with a response.
 - The response id is a random UUID and is not derivable from the user id.
@@ -732,13 +733,17 @@ This section exists now because the schema must not need a breaking migration la
 - No respondent names, emails or ids.
 - Export for an anonymous survey contains aggregates and unlinked text only.
 
-### 7.3 Residual risk
+### 7.3 Receipt and residual risk
 
-A database administrator could correlate `ResponseClaim.createdAt` with `SurveyResponse.submittedAt`.
-To reduce this, the claim row does **not** store a timestamp in Sprint 2; only the unique key is kept.
-Even so, an administrator with access to database transaction logs could correlate activity. The
-product does not claim cryptographic unlinkability against a privileged database operator. This
-limitation is disclosed rather than overclaimed.
+Identified receipts remain account-bound and include answers. An anonymous receipt is an opaque
+response UUID that returns only `responseId`, `surveyId`, `submittedAt`, `mode: ANONYMOUS`, and an empty `answers` array.
+The endpoint requires an authenticated RESPONDENT but does not compare that account with a claim;
+possession of the reference authorizes only this limited confirmation metadata. Survey history may
+show that the respondent has submitted but never exposes a response ID for an anonymous claim.
+
+A database administrator with access to transaction logs or external observations could correlate
+activity. The product does not claim cryptographic unlinkability against a privileged database
+operator. This limitation is disclosed rather than overclaimed.
 
 ---
 
@@ -747,7 +752,7 @@ limitation is disclosed rather than overclaimed.
 | Future need | Present in Sprint 1 schema | Later work |
 |---|---|---|
 | Expanded question types | `QuestionType`; `AnswerOption`; `textValue`; `numberValue`; `dateValue`; `minSelections`, `maxSelections`, `numberMin`, `numberMax` | Sprint 2 validation, authoring UI, response UI and summary for multi-choice, long text, yes/no, Likert, rating, integer and date |
-| Anonymous mode | `SurveyMode.ANONYMOUS`, nullable `respondentId`, `ResponseClaim` without response link | Endpoints, privacy tests, UI |
+| Anonymous mode | `SurveyMode.ANONYMOUS`, nullable `respondentId`, `ResponseClaim` without response link or timestamp | #60 mode configuration and metadata receipt; #72 transaction integration |
 | Eligibility | `SurveyEligibility` table | Management API and UI |
 | Scheduled close | `closesAt` | Date picker and server check |
 | Export | Existing models and summary service | CSV/JSON serializers |

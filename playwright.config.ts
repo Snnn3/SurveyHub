@@ -10,7 +10,7 @@ if (!testDatabaseUrl) throw new Error('DATABASE_URL_TEST is required for E2E tes
 
 export default defineConfig({
   testDir: './e2e',
-  testMatch: 'sprint1-survey-flow.spec.ts',
+  testMatch: '**/*.spec.ts',
   fullyParallel: false,
   workers: 1,
   reporter: 'list',

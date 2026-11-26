@@ -2,6 +2,7 @@ import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import api, { getApiErrorMessage } from '../api';
+import type { SurveyMode } from '../types/survey';
 
 interface SurveyQuestion {
   id: string;
@@ -16,6 +17,7 @@ interface SurveyForm {
   id: string;
   title: string;
   description: string | null;
+  mode: SurveyMode;
   questions: SurveyQuestion[];
 }
 
@@ -23,6 +25,7 @@ interface SurveyReceipt {
   responseId: string;
   surveyId: string;
   submittedAt: string;
+  mode?: SurveyMode;
   answers: Array<{
     questionId: string;
     prompt: string;
@@ -137,6 +140,18 @@ export function SurveyTakePage() {
     );
   }
 
+  if (survey.mode === 'ANONYMOUS') {
+    return (
+      <section className="space-y-4" aria-labelledby="survey-title">
+        <h2 id="survey-title" className="text-2xl font-bold text-slate-900">{survey.title}</h2>
+        <p role="status" className="rounded-lg bg-amber-50 p-4 text-sm text-amber-900">
+          This survey is configured for anonymous responses, which are not available yet. No response has been submitted.
+        </p>
+        <Link to="/surveys" className="text-sm font-medium text-indigo-600 hover:text-indigo-800">← Available surveys</Link>
+      </section>
+    );
+  }
+
   return (
     <section className="space-y-6" aria-labelledby="survey-title">
       <div>
@@ -238,6 +253,9 @@ export function SurveyReceiptPage() {
     <section aria-labelledby="confirmation-heading" className="rounded-xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm">
       <h2 id="confirmation-heading" className="text-2xl font-bold text-emerald-900">Your response is recorded</h2>
       <p className="mt-2 text-sm text-emerald-800">Survey response successfully recorded.</p>
+      {receipt.mode === 'ANONYMOUS' && (
+        <p className="mt-2 text-sm text-emerald-800">This anonymous confirmation contains no answers. Keep the response ID for your records.</p>
+      )}
       <dl className="mt-4 space-y-2 text-sm text-emerald-900">
         <div><dt className="inline font-semibold">Response ID: </dt><dd className="inline break-all">{receipt.responseId}</dd></div>
         <div><dt className="inline font-semibold">Submitted: </dt><dd className="inline"><time dateTime={receipt.submittedAt}>{new Date(receipt.submittedAt).toLocaleString()}</time></dd></div>
@@ -246,17 +264,19 @@ export function SurveyReceiptPage() {
       <button type="button" onClick={loadReceipt} disabled={loading} className="mt-5 rounded-lg border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-60">
         {loading ? 'Loading receipt…' : 'View receipt'}
       </button>
-      <div className="mt-5 border-t border-emerald-200 pt-4">
-        <h3 className="font-semibold text-emerald-900">Your answers</h3>
-        <ul className="mt-3 space-y-3">
-          {receipt.answers.map((answer) => (
-            <li key={answer.questionId} className="text-sm text-emerald-900">
-              <p className="font-medium">{answer.prompt}</p>
-              <p>{answer.textValue || answer.selectedOptions.join(', ')}</p>
-            </li>
-          ))}
-        </ul>
-      </div>
+      {receipt.mode !== 'ANONYMOUS' && (
+        <div className="mt-5 border-t border-emerald-200 pt-4">
+          <h3 className="font-semibold text-emerald-900">Your answers</h3>
+          <ul className="mt-3 space-y-3">
+            {receipt.answers.map((answer) => (
+              <li key={answer.questionId} className="text-sm text-emerald-900">
+                <p className="font-medium">{answer.prompt}</p>
+                <p>{answer.textValue || answer.selectedOptions.join(', ')}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <Link to="/surveys" className="mt-5 inline-block text-sm font-semibold text-emerald-800 hover:text-emerald-950">Return to surveys</Link>
     </section>
   );

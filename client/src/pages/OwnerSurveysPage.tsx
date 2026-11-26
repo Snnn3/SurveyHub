@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import api, { getApiErrorMessage, parseApiError } from '../api';
 import { ConfirmationModal } from '../components/ConfirmationModal';
+import type { SurveyMode } from '../types/survey';
 
 export type SurveyStatus = 'DRAFT' | 'PUBLISHED' | 'CLOSED';
-export type SurveyMode = 'IDENTIFIED' | 'ANONYMOUS';
+export type { SurveyMode } from '../types/survey';
 
 export interface ActionErrorState {
   message: string;

@@ -3,7 +3,7 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)
 **Course:** CPE 334 Software Engineering, Semester 1/2026
 **Deliverable:** Project Deliverable 1 — Part A (10 points)
-**Document status:** Baseline v5, aligned with the reviewed draft-lifecycle scope on 6 November 2026
+**Document status:** Baseline v5 with proposed F-05 amendment v6, drafted on 26 November 2026
 **Team:** Worawut Sereethai (67070501040), Chanon Lhumsa-ard (67070501059)
 **Repository:** <https://github.com/Snnn3/SurveyHub>
 
@@ -55,7 +55,7 @@ confirmed with the instructor or TA.
 | Actor | Description | Responsibilities and permissions |
 |---|---|---|
 | **Survey Owner** | Course coordinator, lecturer or administrator who runs a survey | Create, edit and delete **draft** surveys; publish and close **own** surveys; view aggregate summaries for **own** surveys; no access to another owner's surveys |
-| **Respondent** | Enrolled student or other eligible user | Browse published surveys; submit one validated response per survey; view only their own submission receipt; cannot manage surveys or read another respondent's answers |
+| **Respondent** | Enrolled student or other eligible user | Browse published surveys; submit one validated response per survey; view their full identified receipt or an anonymous metadata-only receipt when holding its reference; cannot manage surveys or read another respondent's answers |
 | **Unauthenticated user** | A visitor without a valid token | Can call login and health endpoints only; every protected endpoint returns `401` |
 
 ### 2.1 Role model decision
@@ -130,6 +130,7 @@ breaking migration. This baseline records the following approved changes:
 | Replaced the unmeasured performance claim with a defined benchmark | The previous "24 tests in 2.65 s" figure was not a latency measurement |
 | Added a Docker Compose application and PostgreSQL stack to Sprint 1 | Team decision: reproducible local setup from the first scaffold; CI/CD and GCP remain Lab 5 work | Part C §6.3; Part D; GitHub Issue [#2](https://github.com/Snnn3/SurveyHub/issues/2) |
 | Keep authored deliverable documents in the tracked `docs/` tree | Team workflow decision; only local reference material under `docs/materials/` is ignored | GitHub Issue [#1](https://github.com/Snnn3/SurveyHub/issues/1) |
+| Proposed F-05 amendment: define anonymous receipts as opaque metadata-only confirmations and remove claim timestamps | Resolve the FR-09 receipt and BR-10 unlinkability conflict without a respondent-to-response link | Draft F-05 contract; GitHub Issue [#60](https://github.com/Snnn3/SurveyHub/issues/60) |
 
 ### 3.5 Requirement summary
 
@@ -159,7 +160,7 @@ Stable IDs are used in Parts B–F. "Sprint" is the planned delivery sprint.
 | **FR-06** | Close survey | A Survey Owner can close their own published survey. The status becomes `CLOSED` and `closedAt` is recorded. | 1 |
 | **FR-07** | Browse published surveys | A Respondent can list published surveys and see whether they have already submitted. | 1 |
 | **FR-08** | Take and submit survey | A Respondent can open a published survey, answer the questions and submit exactly one response. | 1 |
-| **FR-09** | Persisted confirmation | A successful submission is stored in PostgreSQL and the respondent receives a receipt with response id and timestamp. The receipt can be retrieved later. | 1 |
+| **FR-09** | Persisted confirmation | A successful identified submission is stored in PostgreSQL and the respondent can later retrieve a receipt with response id, timestamp and answers. An anonymous submission returns a retrievable opaque confirmation reference with response id, survey id, timestamp and mode only; its receipt contains no answers or respondent identity. | 1 (identified) / 2 (anonymous) |
 | **FR-10** | Aggregate summary | A Survey Owner can view total responses and per-question answered counts. Choice questions show option counts and percentages; short- and long-text answers appear unlinked; rating and integer questions show count, average, minimum and maximum; date questions show counts by calendar date. Sprint 1 delivers counts, choice summaries and short text; F-06 adds the remaining formats in Sprint 2. | 1 (base) / 2 (F-06 formats) |
 | **FR-11** | Anonymous responses | A survey can run in anonymous mode. Responses are stored without a link to the respondent, while duplicate submission is still prevented. | 2 |
 | **FR-12** | Expanded question types | In addition to Sprint 1 single-choice and short text, owners can author and respondents can answer multi-choice, long text, yes/no, five-point Likert, 1–5 rating, bounded integer and date questions. Results preserve the answer type and are included in the owner summary. | 2 |
@@ -178,12 +179,12 @@ Stable IDs are used in Parts B–F. "Sprint" is the planned delivery sprint.
 | **BR-02** | Survey state guard | Responses are accepted only while the survey is `PUBLISHED` and, from Sprint 2, before `closesAt`. A `DRAFT` or `CLOSED` survey returns `400 SURVEY_NOT_ACCEPTING_RESPONSES`. | 1 (state) / 2 (scheduled close) |
 | **BR-03** | Answer validation | Every required question must be answered and each answer must use exactly the value shape for its type. Selected options must belong to that question. Short text is trimmed and at most 2,000 characters; long text is trimmed and at most 10,000 characters. Yes/no has exactly one fixed `Yes` or `No` option; Likert has exactly one of five ordered labels; rating is an integer from 1 through 5; integer answers respect any configured minimum and maximum; date answers are calendar dates without a time zone. Invalid input returns `400 INVALID_ANSWER` or `400 MISSING_REQUIRED_QUESTIONS`. Sprint 1 enforces the single-choice and short-text subset. | 1 (subset) / 2 (extensions) |
 | **BR-04** | Survey ownership boundary | Only the owner may read, update, delete, publish, close or summarize a survey. A non-owner receives `403 FORBIDDEN_OWNERSHIP`; an unknown survey id receives `404 NOT_FOUND`. | 1 |
-| **BR-05** | Cross-response privacy | A respondent may retrieve only their own response receipt. Requesting another respondent's receipt returns `403 FORBIDDEN_CROSS_RESPONSE_ACCESS` without returning any answer data. | 1 |
+| **BR-05** | Cross-response privacy | In identified mode, only the respondent may retrieve their full receipt; another respondent receives `403 FORBIDDEN_CROSS_RESPONSE_ACCESS` without answer data. In anonymous mode, an authenticated respondent holding the opaque receipt UUID may retrieve only response id, survey id, submission time and mode; no answer or respondent fields are returned and no account-to-response link is used. | 1 (identified) / 2 (anonymous) |
 | **BR-06** | Publish structure | A survey can be published only if it has at least one question and every prompt is non-empty. Single-choice and multi-choice questions have at least two options; multi-choice selection bounds are valid and do not exceed the option count. Yes/no has the fixed `Yes` and `No` options, Likert has five ordered labels, rating uses the fixed 1–5 scale, and configured integer bounds do not contradict each other. Otherwise `400 INVALID_QUESTION_STRUCTURE`. Sprint 1 enforces the single-choice subset. | 1 (subset) / 2 (extensions) |
 | **BR-07** | Immutable structure after publication | Questions and options cannot be added, edited, reordered or removed after publication. `PUT /api/surveys/:id` returns `400 SURVEY_NOT_EDITABLE`. Metadata edits are also blocked in Sprint 1 for simplicity. | 1 |
 | **BR-08** | Response eligibility | Only authenticated users with the `RESPONDENT` role may submit. From Sprint 2, if a survey has eligibility entries, the respondent must be on the list; otherwise `403 NOT_ELIGIBLE`. In Sprint 1 an empty eligibility list means all respondents are eligible. | 1 (role) / 2 (allowlist) |
 | **BR-09** | Terminal closed state | `CLOSED` is terminal. Publishing a published or closed survey, or closing a draft or closed survey, returns `400 INVALID_STATE_TRANSITION`. | 1 |
-| **BR-10** | Anonymous identity separation | In anonymous mode, `SurveyResponse.respondentId` is `NULL`; no name, email, IP address or user agent is stored with the response; the `ResponseClaim` row records only that the user submitted, not which response is theirs. Owners see aggregates and unlinked text only. | 2 |
+| **BR-10** | Anonymous identity separation | In anonymous mode, `SurveyResponse.respondentId` is `NULL`; no name, email, IP address or user agent is stored with the response; `ResponseClaim` records the survey and claimant only, with no response ID, response relation, timestamp or reverse lookup. Owners see aggregates and unlinked text only. Anonymous receipts contain confirmation metadata only. | 2 |
 | **BR-11** | Result privacy | Aggregate and export responses never include respondent identity fields. Identified raw-response browsing is available only to the owning Survey Owner and only for identified surveys. | 1 (aggregate) / 3 (raw) |
 
 ### 5.1 Access-to-raw-data policy
@@ -192,7 +193,7 @@ The theme brief requires an explicit raw-data policy.
 
 | Caller | Aggregate summary | Individual response content | Respondent identity |
 |---|---|---|---|
-| Respondent | No | Own receipt only | Own account |
+| Respondent | No | Full identified receipt for own response; anonymous confirmation metadata with a valid reference | Account for identified receipt; reference possession for anonymous metadata |
 | Survey Owner (own survey, identified mode) | Yes | From Sprint 3, through an explicit response browser and export | From Sprint 3, included only in the identified raw export |
 | Survey Owner (own survey, anonymous mode) | Yes | Unlinked text answers in the summary; no response-level identity | Never |
 | Survey Owner (another owner's survey) | No | No | No |
@@ -217,7 +218,7 @@ results only in Part F, after execution.
 | **NFR-SEC-04** | Token revocation | A token used before logout returns `401 TOKEN_REVOKED` after logout | Integration test: login, call `/me`, logout, call `/me` with the same token | 1 |
 | **NFR-PERF-01** | Read latency | p95 latency of `GET /api/surveys/:id/form` is below 300 ms over 50 sequential requests on the local development environment (Node.js 20+ and PostgreSQL 16+ on the same machine; actual versions are recorded in Part F) | `server/scripts/benchmark-read.ts` records p50/p95/p99 and writes a JSON result | 1 |
 | **NFR-DATA-01** | Relational integrity and durability | Foreign keys and unique constraints exist; a submitted response is still retrievable after an API restart and after a database server restart | Migration inspection plus a documented restart check against the seeded environment | 1 |
-| **NFR-PRIV-01** | Anonymous unlinkability | In anonymous mode, `survey_responses.respondent_id IS NULL` for 100% of anonymous responses, and no identity field exists in the answers or API output | Database audit test and API response-shape assertions | 2 |
+| **NFR-PRIV-01** | Anonymous unlinkability | In anonymous mode, `survey_responses.respondent_id IS NULL` for 100% of anonymous responses; summaries and receipts contain no respondent identity, answers in receipts, or response-to-user association. | Database audit test and API response-shape assertions | 2 |
 
 **Explicit non-target:** the project does not claim production-scale throughput, high availability or
 sub-second p99 latency. Those are outside the course scope.
@@ -331,11 +332,11 @@ The course handouts disagree: the group specification and Final Delivery section
 | # | Question | Resolution |
 |---|---|---|
 | Q1 | How do we prevent two simultaneous submissions from the same respondent? | Service pre-check plus `ResponseClaim` unique constraint plus identified-response unique constraint. Catch `P2002` and return `409`. Tested with concurrent requests. |
-| Q2 | Who may read raw answers? | The owner of the survey, for their own identified survey, from Sprint 3. Respondents see only their own receipt. Anonymous surveys never expose identity. Sprint 1 exposes aggregates and unlinked text only. |
+| Q2 | Who may read raw answers? | The owner of the survey, for their own identified survey, from Sprint 3. Respondents see their identified receipt; anonymous receipt references reveal confirmation metadata only, never answers or identity. Anonymous surveys never expose identity. Sprint 1 exposes aggregates and unlinked text only. |
 | Q3 | What happens if an owner edits questions after publication? | Rejected with `400 SURVEY_NOT_EDITABLE`. Metadata edits are also blocked in Sprint 1 to keep the published contract stable. |
 | Q4 | How is logout made real with stateless JWT? | `User.tokenVersion` is embedded in the token and checked on every request. Logout increments it. Old tokens return `401 TOKEN_REVOKED`. |
 | Q5 | Who is eligible in Sprint 1? | Every authenticated `RESPONDENT`. The `SurveyEligibility` table is present but empty, which means "open to all respondents". Sprint 2 adds allowlist management. |
-| Q6 | Does anonymous mode need cryptography? | No. It needs separation: the response row has no user link, the claim row has no response link, and no request metadata is stored. Residual risk: a database administrator could correlate timestamps. That risk is documented rather than overclaimed. |
+| Q6 | Does anonymous mode need cryptography? | No. It needs separation: the response row has no user link, the claim row has no response link or timestamp, and no request metadata is stored. The opaque receipt is metadata-only and is a bearer reference. Residual risk: a database administrator with transaction-log access could correlate activity. That risk is documented rather than overclaimed. |
 | Q7 | How do we model the expanded question types without redesigning later? | `AnswerOption` stores single-choice, multi-choice, yes/no and Likert selections; `Answer.textValue` stores short and long text; `Answer.numberValue` stores ratings and bounded integers; `Answer.dateValue` stores calendar dates. `Question.minSelections/maxSelections` and `numberMin/numberMax` hold type-specific bounds. |
 | Q8 | What is the evidence standard for this project? | Only real command output, commit ids, PR links and screenshots from the submitted release count. Planned checks are labelled PLANNED and are never reported as PASS. |
 | Q9 | The handouts give different video limits. Which do we follow? | 4 minutes unless the TA confirms 10. |
