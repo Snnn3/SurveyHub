@@ -145,8 +145,6 @@ model ResponseClaim {
   survey    Survey   @relation(fields: [surveyId], references: [id], onDelete: Cascade)
   userId    String   @map("user_id")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now()) @map("created_at")
-
   @@unique([surveyId, userId])
   @@index([userId])
   @@map("response_claims")

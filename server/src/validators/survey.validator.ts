@@ -1,4 +1,4 @@
-import { QuestionType } from '@prisma/client';
+import { QuestionType, SurveyMode } from '@prisma/client';
 import { z } from 'zod';
 
 export const questionOptionInputSchema = z
@@ -50,6 +50,7 @@ export const surveyInputSchema = z
   .object({
     title: z.string().trim().min(1, 'Title is required').max(120, 'Title must be at most 120 characters'),
     description: z.string().trim().max(2000, 'Description must be at most 2,000 characters').optional().nullable(),
+    mode: z.nativeEnum(SurveyMode).optional(),
     questions: z.array(questionInputSchema).optional().default([]),
   })
   .strict();

@@ -1,7 +1,8 @@
-import { Prisma, QuestionType, SurveyStatus } from '@prisma/client';
+import { Prisma, QuestionType, SurveyMode, SurveyStatus } from '@prisma/client';
 import { prisma } from '../utils/prisma';
 import { HttpError, NotFoundError } from '../utils/errors';
 import { parseUuid } from '../utils/uuid';
+import { assertAnonymousSubmissionReady } from '../policies/anonymous-response.policy';
 import {
   validateSurveyStructure,
   type SurveyInput,
@@ -126,7 +127,7 @@ export async function listOwnerSurveys(ownerId: string) {
 }
 
 export async function createSurvey(ownerId: string, input: SurveyInput) {
-  const { title, description, questions } = input;
+  const { title, description, mode, questions } = input;
 
   return prisma.survey.create({
     data: {
@@ -134,6 +135,7 @@ export async function createSurvey(ownerId: string, input: SurveyInput) {
       description: description || null,
       ownerId,
       status: SurveyStatus.DRAFT,
+      mode: mode ?? SurveyMode.IDENTIFIED,
       questions: {
         create: mapQuestionsToCreate(questions || []),
       },
@@ -147,7 +149,7 @@ export async function getSurveyById(surveyId: string, ownerId: string) {
 }
 
 export async function updateSurvey(surveyId: string, ownerId: string, input: SurveyInput) {
-  const { title, description, questions } = input;
+  const { title, description, mode, questions } = input;
 
   return prisma.$transaction(async (tx) => {
     // Acquire row-level exclusive lock to serialize lifecycle operations and prevent concurrent state bypass
@@ -163,6 +165,7 @@ export async function updateSurvey(surveyId: string, ownerId: string, input: Sur
       data: {
         title,
         description: description || null,
+        ...(mode ? { mode } : {}),
         questions: {
           create: mapQuestionsToCreate(questions || []),
         },
@@ -196,6 +199,9 @@ export async function publishSurvey(surveyId: string, ownerId: string) {
     if (existing.status !== SurveyStatus.DRAFT) {
       throw new HttpError(400, 'INVALID_STATE_TRANSITION', 'Only draft surveys can be published.');
     }
+
+    // shortcut: anonymous publication stays disabled until #72 integrates transactional submission.
+    assertAnonymousSubmissionReady(existing.mode);
 
     const validation = validateSurveyStructure(existing);
     if (!validation.isValid) {

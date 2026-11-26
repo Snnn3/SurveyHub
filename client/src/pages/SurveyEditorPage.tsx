@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api, { getApiErrorMessage, getApiErrorStatus, parseApiError, type ApiErrorDetail } from '../api';
 import { ConfirmationModal } from '../components/ConfirmationModal';
+import type { SurveyMode } from '../types/survey';
 
 export type QuestionType = 'SINGLE_CHOICE' | 'SHORT_TEXT';
 
@@ -96,6 +97,7 @@ export function SurveyEditorPage() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [mode, setMode] = useState<SurveyMode>('IDENTIFIED');
   const [questions, setQuestions] = useState<FormQuestion[]>([]);
 
   const [loading, setLoading] = useState(Boolean(id));
@@ -127,6 +129,7 @@ export function SurveyEditorPage() {
           data: {
             title: string;
             description: string | null;
+            mode: SurveyMode;
             status: string;
             questions: Array<{
               prompt: string;
@@ -147,6 +150,7 @@ export function SurveyEditorPage() {
 
         setTitle(survey.title);
         setDescription(survey.description || '');
+        setMode(survey.mode);
         setQuestions(
           survey.questions.map((q) => ({
             prompt: q.prompt,
@@ -338,6 +342,7 @@ export function SurveyEditorPage() {
     const payload = {
       title: title.trim(),
       description: description.trim() || null,
+      mode,
       questions: questions.map((q) => ({
         prompt: q.prompt.trim(),
         questionType: q.questionType,
@@ -375,6 +380,11 @@ export function SurveyEditorPage() {
   }
 
   async function onPublishClick() {
+    if (mode === 'ANONYMOUS') {
+      setError('Anonymous surveys are not available yet. Choose Identified to publish this survey.');
+      return;
+    }
+
     const { errors, fieldErrors: validationFieldErrors } = validateForPublish();
     if (errors.length > 0) {
       setValidationErrors(errors);
@@ -544,6 +554,26 @@ export function SurveyEditorPage() {
             </p>
           )}
           <p className="text-xs text-slate-400 mt-1 text-right">{description.length} / 2,000 characters</p>
+        </div>
+
+        <div>
+          <label htmlFor="survey-mode" className="block text-sm font-semibold text-slate-800 mb-1">
+            Response privacy
+          </label>
+          <select
+            id="survey-mode"
+            value={mode}
+            onChange={(event) => setMode(event.target.value as SurveyMode)}
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          >
+            <option value="IDENTIFIED">Identified</option>
+            <option value="ANONYMOUS">Anonymous</option>
+          </select>
+          <p className="text-xs text-slate-500 mt-1">
+            {mode === 'ANONYMOUS'
+              ? 'Anonymous receipts show submission metadata only, and a claim prevents the same account from submitting twice. Anonymous drafts can be saved, but cannot be published until response support is ready.'
+              : 'Identified responses include a receipt with the respondent’s answers.'}
+          </p>
         </div>
       </section>
 
