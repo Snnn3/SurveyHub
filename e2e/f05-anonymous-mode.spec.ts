@@ -35,6 +35,8 @@ test('STS-F05-09: saves anonymous mode and renders the pending form and metadata
         title: 'Anonymous UI contract fixture',
         description: null,
         status: 'PUBLISHED',
+        closesAt: null,
+        acceptingResponses: true,
         questionCount: 1,
         hasSubmitted: false,
       }],

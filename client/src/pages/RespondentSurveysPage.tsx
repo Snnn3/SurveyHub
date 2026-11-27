@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import api, { getApiErrorMessage } from '../api';
+import { SurveyStartAction } from '../components/SurveyStartAction';
 
 interface ActiveSurvey {
   id: string;
   title: string;
   description: string | null;
   status: 'PUBLISHED';
+  closesAt: string | null;
+  acceptingResponses: boolean;
   questionCount: number;
   hasSubmitted: boolean;
   responseId?: string;
@@ -62,32 +64,7 @@ export function RespondentSurveysPage() {
                   {survey.description && <p className="mt-1 text-sm text-slate-600">{survey.description}</p>}
                   <p className="mt-2 text-xs text-slate-500">{survey.questionCount} questions</p>
                 </div>
-                {survey.hasSubmitted ? (
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      disabled
-                      className="inline-flex cursor-not-allowed justify-center rounded-lg bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-500"
-                    >
-                      Start survey
-                    </button>
-                    {survey.responseId && (
-                      <Link
-                        to={`/surveys/${survey.id}/confirmation/${survey.responseId}`}
-                        className="inline-flex justify-center rounded-lg border border-emerald-300 px-4 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-50"
-                      >
-                        View receipt
-                      </Link>
-                    )}
-                  </div>
-                ) : (
-                  <Link
-                    to={`/surveys/${survey.id}/take`}
-                    className="inline-flex justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
-                  >
-                    Start survey
-                  </Link>
-                )}
+                <SurveyStartAction survey={survey} />
               </div>
             </li>
           ))}

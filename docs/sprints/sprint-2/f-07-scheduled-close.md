@@ -3,7 +3,7 @@
 **System:** SurveyHub — Review, Feedback, and Survey System<br>
 **Feature:** F-07 — Eligibility and scheduled close<br>
 **Issue:** [#61 — Implement eligibility and scheduled-close policies](https://github.com/Snnn3/SurveyHub/issues/61)<br>
-**Status:** Draft for teammate review; behavior changes are gated on agreement<br>
+**Status:** Approved in PR #79 by YummieGG on 27 Nov 2026; implementation in progress<br>
 **Baseline:** `sprint-2-staging` at `a94e089440cfb89c964e708e45e842fda26a5d14`<br>
 **Related documents:** [SRS](../../srs.md), [feature inventory](../../features.md), [traceability](../../traceability.md), [system design](../../system-sds.md), [F-02](../sprint-1/f-02.md), [F-03](../sprint-1/f-03.md), [F-05](f-05.md)
 
@@ -94,3 +94,4 @@ These are planned checks, not claimed results. Database/API tests use the dedica
 | v2 | 27 Nov 2026 | Clarify that an owner can reopen a still-published survey by extending or clearing an expired deadline; manual close remains terminal. | Draft for teammate review; no implementation or test results claimed |
 | v3 | 27 Nov 2026 | Specify that form availability takes precedence over eligibility and test both eligible and ineligible respondents against expired surveys. | Draft for teammate review; no implementation or test results claimed |
 | v4 | 27 Nov 2026 | Clarify the scheduled-close UI message and add published/acceptance/deadline/error conditions to the SDS submission matrix. | Draft for teammate review; no implementation or test results claimed |
+| v5 | 27 Nov 2026 | Record teammate approval of the F-07 scheduled-close contract in PR #79 before behavior implementation. | Approved; implementation in progress |

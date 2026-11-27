@@ -8,6 +8,7 @@ import { SurveyEditorPage } from './pages/SurveyEditorPage';
 import { RespondentSurveysPage } from './pages/RespondentSurveysPage';
 import { SurveyReceiptPage, SurveyTakePage } from './pages/SurveyTakingPage';
 import { SurveySummaryPage } from './pages/SurveySummaryPage';
+import { SurveyPolicyPage } from './pages/SurveyPolicyPage';
 
 type UserRole = 'SURVEY_OWNER' | 'RESPONDENT';
 
@@ -358,6 +359,14 @@ export default function App() {
             element={
               <ProtectedRoute user={user} loading={authLoading} allowedRole="SURVEY_OWNER">
                 <SurveySummaryPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/owner/surveys/:id/policies"
+            element={
+              <ProtectedRoute user={user} loading={authLoading} allowedRole="SURVEY_OWNER">
+                <SurveyPolicyPage />
               </ProtectedRoute>
             }
           />

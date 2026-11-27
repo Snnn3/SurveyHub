@@ -3,7 +3,7 @@
 **System:** SurveyHub — Review, Feedback, and Survey System<br>
 **Feature:** F-07 — Eligibility and scheduled close<br>
 **Issue:** [#61 — Implement eligibility and scheduled-close policies](https://github.com/Snnn3/SurveyHub/issues/61)<br>
-**Status:** Draft for teammate review; behavior changes are gated on agreement<br>
+**Status:** Approved in PR #79 by YummieGG on 27 Nov 2026; implementation in progress<br>
 **Baseline:** `sprint-2-staging` at `a94e089440cfb89c964e708e45e842fda26a5d14`<br>
 **Related documents:** [SRS](../../srs.md), [feature inventory](../../features.md), [traceability](../../traceability.md), [system design](../../system-sds.md), [F-05](f-05.md), [F-06](f-06.md)
 
@@ -97,3 +97,4 @@ These are planned checks, not claimed results. Database tests use the dedicated 
 |---|---|---|---|
 | v1 | 27 Nov 2026 | Define allowlist API, account-exposure boundary, lifecycle, pure decision helper, AC and verification cases for Issue #61. | Draft for teammate review; no implementation or test results claimed |
 | v2 | 27 Nov 2026 | Specify malformed/duplicate validation errors, mixed-input precedence, and form-availability precedence; align AC and STS with the reviewed rules. | Draft for teammate review; no implementation or test results claimed |
+| v3 | 27 Nov 2026 | Record teammate approval of the F-07 eligibility contract in PR #79 before behavior implementation. | Approved; implementation in progress |
