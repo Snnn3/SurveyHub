@@ -121,18 +121,18 @@ describe('F-05 anonymous mode foundations (STS-F05-01 to STS-F05-08)', () => {
       .toEqual({ mode: SurveyMode.IDENTIFIED });
   });
 
-  it('keeps the draft publish gate and accepts submissions to published anonymous surveys through #72', async () => {
+  it('publishes an anonymous draft and accepts submissions through #72', async () => {
     const draft = await createSurvey(ownerId, SurveyMode.ANONYMOUS, SurveyStatus.DRAFT);
     const publish = await request(app)
       .patch(`/api/surveys/${draft.id}/publish`)
       .set('Authorization', `Bearer ${ownerToken}`);
-    expect(publish.status).toBe(400);
-    expect(publish.body.error.code).toBe('ANONYMOUS_MODE_NOT_READY');
-    expect(await prisma.survey.findUnique({ where: { id: draft.id }, select: { status: true } }))
-      .toEqual({ status: SurveyStatus.DRAFT });
+    expect(publish.status).toBe(200);
+    expect(publish.body.data).toMatchObject({ id: draft.id, mode: SurveyMode.ANONYMOUS, status: SurveyStatus.PUBLISHED });
+    expect(await prisma.survey.findUnique({ where: { id: draft.id }, select: { mode: true, status: true } }))
+      .toEqual({ mode: SurveyMode.ANONYMOUS, status: SurveyStatus.PUBLISHED });
 
     const inactiveSurveys = [
-      draft,
+      await createSurvey(ownerId, SurveyMode.ANONYMOUS, SurveyStatus.DRAFT),
       await createSurvey(ownerId, SurveyMode.ANONYMOUS, SurveyStatus.CLOSED),
     ];
     for (const inactive of inactiveSurveys) {
@@ -149,9 +149,8 @@ describe('F-05 anonymous mode foundations (STS-F05-01 to STS-F05-08)', () => {
       expect(await prisma.responseClaim.count({ where: { surveyId: inactive.id } })).toBe(0);
     }
 
-    const publishedFixture = await createSurvey(ownerId, SurveyMode.ANONYMOUS, SurveyStatus.PUBLISHED);
     const response = await request(app)
-      .post(`/api/surveys/${publishedFixture.id}/responses`)
+      .post(`/api/surveys/${draft.id}/responses`)
       .set('Authorization', `Bearer ${respondentToken}`)
       .send({ answers: [] });
 
@@ -161,16 +160,16 @@ describe('F-05 anonymous mode foundations (STS-F05-01 to STS-F05-08)', () => {
       select: { respondentId: true },
     });
     expect(saved).toEqual({ respondentId: null });
-    expect(await prisma.responseClaim.count({ where: { surveyId: publishedFixture.id, userId: respondentId } })).toBe(1);
-    expect(await prisma.answer.count({ where: { response: { surveyId: publishedFixture.id } } })).toBe(0);
+    expect(await prisma.responseClaim.count({ where: { surveyId: draft.id, userId: respondentId } })).toBe(1);
+    expect(await prisma.answer.count({ where: { response: { surveyId: draft.id } } })).toBe(0);
 
     const receipt = await request(app)
-      .get(`/api/surveys/${publishedFixture.id}/responses/${response.body.data.responseId}`)
+      .get(`/api/surveys/${draft.id}/responses/${response.body.data.responseId}`)
       .set('Authorization', `Bearer ${respondentToken}`);
     expect(receipt.status).toBe(200);
     expect(receipt.body.data).toMatchObject({
       responseId: response.body.data.responseId,
-      surveyId: publishedFixture.id,
+      surveyId: draft.id,
       mode: SurveyMode.ANONYMOUS,
       answers: [],
     });

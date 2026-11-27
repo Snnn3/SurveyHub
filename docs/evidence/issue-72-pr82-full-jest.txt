@@ -1,0 +1,296 @@
+
+> surveyhub@0.1.0 test
+> npm run test --prefix server
+
+
+> surveyhub-server@0.1.0 test
+> jest --runInBand --detectOpenHandles --forceExit
+
+  console.log
+    prisma:error 
+    Invalid `tx.surveyResponse.create()` invocation in
+    C:\Users\lchan\.codex\worktrees\issue-9-f06-contract\SEProject\server\src\services\response.service.ts:148:38
+    
+      145 
+      146 try {
+      147   await tx.responseClaim.create({ data: { surveyId, userId: identity.claimUserId } });
+    → 148   return await tx.surveyResponse.create(
+    Error occurred during query execution:
+    ConnectorError(ConnectorError { user_facing_error: None, kind: QueryError(PostgresError { code: "P0001", message: "issue72 forced answer insert failure", severity: "ERROR", detail: None, column: None, hint: None }), transient: false })
+
+      at Object.zc (../node_modules/@prisma/internals/src/logger.ts:13:11)
+
+  console.error
+    [Unhandled Server Error]: PrismaClientUnknownRequestError: 
+    Invalid `tx.surveyResponse.create()` invocation in
+    C:\Users\lchan\.codex\worktrees\issue-9-f06-contract\SEProject\server\src\services\response.service.ts:148:38
+    
+      145 
+      146 try {
+      147   await tx.responseClaim.create({ data: { surveyId, userId: identity.claimUserId } });
+    → 148   return await tx.surveyResponse.create(
+    Error occurred during query execution:
+    ConnectorError(ConnectorError { user_facing_error: None, kind: QueryError(PostgresError { code: "P0001", message: "issue72 forced answer insert failure", severity: "ERROR", detail: None, column: None, hint: None }), transient: false })
+        at ei.handleRequestError (C:\Users\lchan\.codex\worktrees\issue-9-f06-contract\SEProject\node_modules\@prisma\client\src\runtime\RequestHandler.ts:237:13)
+        at ei.handleAndLogRequestError (C:\Users\lchan\.codex\worktrees\issue-9-f06-contract\SEProject\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+        at ei.request (C:\Users\lchan\.codex\worktrees\issue-9-f06-contract\SEProject\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+        at async a (C:\Users\lchan\.codex\worktrees\issue-9-f06-contract\SEProject\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:833:24)
+        at async C:\Users\lchan\.codex\worktrees\issue-9-f06-contract\SEProject\server\src\services\response.service.ts:148:14
+        at async Proxy._transactionWithCallback (C:\Users\lchan\.codex\worktrees\issue-9-f06-contract\SEProject\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:722:18)
+        at async submitSurveyResponse (C:\Users\lchan\.codex\worktrees\issue-9-f06-contract\SEProject\server\src\controllers\response.controller.ts:64:22) {
+      clientVersion: '6.19.3'
+    }
+
+      55 |   // Handle Unexpected Server Errors
+      56 |   if (env.NODE_ENV !== 'production') {
+    > 57 |     console.error('[Unhandled Server Error]:', err);
+         |             ^
+      58 |   }
+      59 |
+      60 |   res.status(500).json({
+
+      at errorHandler (src/middleware/error.middleware.ts:57:13)
+      at Layer.handle_error (../node_modules/express/lib/router/layer.js:71:5)
+      at trim_prefix (../node_modules/express/lib/router/index.js:326:13)
+      at ../node_modules/express/lib/router/index.js:286:9
+      at router.process_params (../node_modules/express/lib/router/index.js:346:12)
+      at next (../node_modules/express/lib/router/index.js:280:10)
+      at Layer.handle_error (../node_modules/express/lib/router/layer.js:67:12)
+      at trim_prefix (../node_modules/express/lib/router/index.js:326:13)
+      at ../node_modules/express/lib/router/index.js:286:9
+      at param (../node_modules/express/lib/router/index.js:365:14)
+      at param (../node_modules/express/lib/router/index.js:376:14)
+      at router.process_params (../node_modules/express/lib/router/index.js:421:3)
+      at next (../node_modules/express/lib/router/index.js:280:10)
+      at Layer.handle_error (../node_modules/express/lib/router/layer.js:67:12)
+      at trim_prefix (../node_modules/express/lib/router/index.js:326:13)
+      at ../node_modules/express/lib/router/index.js:286:9
+      at router.process_params (../node_modules/express/lib/router/index.js:346:12)
+      at Immediate.next (../node_modules/express/lib/router/index.js:280:10)
+      at Immediate._onImmediate (../node_modules/express/lib/router/index.js:646:15)
+
+  console.log
+    prisma:error 
+    Invalid `tx.responseClaim.create()` invocation in
+    C:\Users\lchan\.codex\worktrees\issue-9-f06-contract\SEProject\server\src\services\response.service.ts:147:30
+    
+      144 const identity = getSubmissionIdentity(survey.mode, userId);
+      145 
+      146 try {
+    → 147   await tx.responseClaim.create(
+    Unique constraint failed on the fields: (`survey_id`,`user_id`)
+
+      at Object.zc (../node_modules/@prisma/internals/src/logger.ts:13:11)
+
+  console.log
+    prisma:error 
+    Invalid `tx.responseClaim.create()` invocation in
+    C:\Users\lchan\.codex\worktrees\issue-9-f06-contract\SEProject\server\src\services\response.service.ts:147:30
+    
+      144 const identity = getSubmissionIdentity(survey.mode, userId);
+      145 
+      146 try {
+    → 147   await tx.responseClaim.create(
+    Unique constraint failed on the fields: (`survey_id`,`user_id`)
+
+      at Object.zc (../node_modules/@prisma/internals/src/logger.ts:13:11)
+
+PASS tests/response-submission-sprint2.integration.test.ts (21.877 s)
+  Issue #72 atomic response submission integration
+    √ persists all seven F-06 types and returns typed values in the identified receipt (1183 ms)
+    √ rolls back the claim and response if answer persistence fails (1021 ms)
+    √ accepts one anonymous concurrent submission, stores no respondent link, and returns metadata only (1331 ms)
+    √ rejects an identified duplicate without adding response, claim, or answer rows (960 ms)
+    √ rejects a closed survey without adding response, claim, or answer rows (590 ms)
+    √ rejects an ineligible respondent without adding response, claim, or answer rows (797 ms)
+    √ rejects malformed answers without adding response, claim, or answer rows (968 ms)
+    √ denies survey owners without writing response, claim, or answer rows (783 ms)
+    √ uses the exact server-time deadline boundary (before) (625 ms)
+    √ uses the exact server-time deadline boundary (at) (445 ms)
+    √ uses the exact server-time deadline boundary (after) (430 ms)
+
+PASS tests/survey-lifecycle.test.ts (22.844 s)
+  F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11)
+    √ STS-F02-01: AC-F02-01 GET /api/surveys returns only the authenticated owner surveys with counts (1005 ms)
+    √ STS-F02-02: AC-F02-02 POST /api/surveys creates a DRAFT with ordered questions and options (865 ms)
+    √ STS-F02-03: AC-F02-03 GET /api/surveys/:id returns the owner full survey detail with ordered items (723 ms)
+    √ STS-F02-04: AC-F02-04 PUT /api/surveys/:id updates a draft title, description, and replaces questions atomically (666 ms)
+    √ STS-F02-05: AC-F02-05 DELETE /api/surveys/:id deletes draft and cascades questions and options (643 ms)
+    √ STS-F02-06: AC-F02-06 PATCH /api/surveys/:id/publish publishes a valid draft and sets publishedAt (628 ms)
+    √ STS-F02-07: AC-F02-07 PATCH /api/surveys/:id/publish rejects invalid structure and leaves status DRAFT (732 ms)
+    √ STS-F02-08: AC-F02-08 PATCH /api/surveys/:id/close closes a published survey and sets closedAt (718 ms)
+    √ STS-F02-09: AC-F02-09 Non-owner gets 403 FORBIDDEN_OWNERSHIP for GET, PUT, DELETE, publish, close (1217 ms)
+    √ STS-F02-10: AC-F02-10 Updating or deleting a published or closed survey returns 400 SURVEY_NOT_EDITABLE (1136 ms)
+    √ STS-F02-11: AC-F02-11 Invalid state transitions return 400 INVALID_STATE_TRANSITION (903 ms)
+    √ rejects access from respondents with 403 FORBIDDEN_ROLE (823 ms)
+    √ returns 404 NOT_FOUND for non-existent survey ID or malformed UUID (806 ms)
+    √ rejects duplicate option labels with 400 VALIDATION_ERROR (720 ms)
+    √ creates, persists, orders, and publishes all F-06 question configurations (958 ms)
+    √ rejects invalid F-06 bounds as VALIDATION_ERROR without saving a draft (676 ms)
+    √ includes F-06 bounds in the respondent form DTO (753 ms)
+    √ rejects SHORT_TEXT questions with options with 400 VALIDATION_ERROR (678 ms)
+    √ rejects SINGLE_CHOICE questions with more than 20 options with 400 VALIDATION_ERROR (604 ms)
+    √ handles concurrent PUT and PATCH publish requests atomically (774 ms)
+
+PASS tests/f05-anonymous-mode.test.ts (15.104 s)
+  F-05 anonymous mode foundations (STS-F05-01 to STS-F05-08)
+    √ defaults new drafts to identified and persists anonymous mode through owner reads and updates (1217 ms)
+    √ rejects invalid, wrong-role, non-owner, and non-draft mode changes without changing stored mode (1287 ms)
+    √ publishes an anonymous draft and accepts submissions through #72 (1695 ms)
+    √ returns anonymous receipts with metadata only and keeps owner summary unlinked (1920 ms)
+    √ drops only the claim timestamp while retaining existing claims and their unique key (1149 ms)
+
+  console.log
+    prisma:error 
+    Invalid `tx.responseClaim.create()` invocation in
+    C:\Users\lchan\.codex\worktrees\issue-9-f06-contract\SEProject\server\src\services\response.service.ts:147:30
+    
+      144 const identity = getSubmissionIdentity(survey.mode, userId);
+      145 
+      146 try {
+    → 147   await tx.responseClaim.create(
+    Unique constraint failed on the fields: (`survey_id`,`user_id`)
+
+      at Object.zc (../node_modules/@prisma/internals/src/logger.ts:13:11)
+
+  console.log
+    prisma:error 
+    Invalid `tx.responseClaim.create()` invocation in
+    C:\Users\lchan\.codex\worktrees\issue-9-f06-contract\SEProject\server\src\services\response.service.ts:147:30
+    
+      144 const identity = getSubmissionIdentity(survey.mode, userId);
+      145 
+      146 try {
+    → 147   await tx.responseClaim.create(
+    Unique constraint failed on the fields: (`survey_id`,`user_id`)
+
+      at Object.zc (../node_modules/@prisma/internals/src/logger.ts:13:11)
+
+PASS tests/response-submission.test.ts (21.483 s)
+  F-03 survey submission and receipts (STS-F03-01 to STS-F03-10)
+    √ STS-F03-01: lists published surveys and only the caller’s submission state and receipt id (1732 ms)
+    √ STS-F03-02: returns ordered questions and options for a published survey (1089 ms)
+    √ STS-F03-03: persists a response, answers, selected option, and claim atomically (1029 ms)
+    √ STS-F03-04: returns one duplicate conflict sequentially and under concurrent submissions (1361 ms)
+    √ STS-F03-05: rejects submissions to draft and closed surveys (1270 ms)
+    √ STS-F03-06: reports missing required questions and accepts omitted optional questions (831 ms)
+    √ rejects malformed response bodies before entering the submission service (669 ms)
+    √ STS-F03-07: rejects wrong types, foreign options, duplicate questions, mixed values, and long text (1013 ms)
+    √ STS-F03-08: denies a different respondent access to a receipt without returning answers (768 ms)
+    √ STS-F03-09: rejects owner access to respondent submission endpoints (701 ms)
+    √ STS-F03-10: retrieves the same persisted receipt and timestamp after another request (768 ms)
+
+PASS tests/survey-summary.test.ts (16.379 s)
+  F-04 Aggregate Summary (STS-F04-01 to STS-F04-04)
+    √ STS-F04-01: returns counts, percentages, text answers, and no identity keys (866 ms)
+    √ STS-F04-02: respondent receives 403 FORBIDDEN_ROLE and no summary data (771 ms)
+    √ STS-F04-03: non-owner owner receives 403 FORBIDDEN_OWNERSHIP and no statistics (701 ms)
+    √ STS-F04-04: survey with zero responses returns zero counts, empty lists and 200 (797 ms)
+    √ returns 404 NOT_FOUND for unknown survey UUID or malformed UUID (738 ms)
+    √ uses answeredCount rather than totalResponses as percentage denominator when questions are skipped (1008 ms)
+    √ aggregates rating, integer, and calendar-date answers with safe empty states (912 ms)
+    √ summarizes partial F-06 multi-choice and long-text answers without respondent links (900 ms)
+
+PASS tests/security-matrix.test.ts (11.911 s)
+  Sprint 1 security matrix (STS-SEC-01/02)
+    √ keeps only login and health public (759 ms)
+    √ rejects missing, malformed, and expired tokens on every protected route without returning data (2432 ms)
+    √ rejects each wrong role on every survey route without changing the database (1626 ms)
+    √ denies non-owner survey operations and cross-respondent receipts without data or database changes (987 ms)
+
+PASS tests/f07-eligibility.test.ts (10.149 s)
+  F-07 respondent eligibility API (STS-S2-03-01 to STS-S2-03-06)
+    √ returns only selected respondent accounts and enforces role, ownership, and not-found checks (1149 ms)
+    √ replaces allowlists atomically and validates normalized addresses before resolving accounts (1374 ms)
+    √ filters the active list by allowlist and returns non-acceptance without hiding expired published surveys (902 ms)
+    √ checks availability before eligibility and never returns form data on denial (1085 ms)
+
+PASS tests/f07-scheduled-close.test.ts (9.705 s)
+  F-07 scheduled-close API (STS-S2-04-01 to STS-S2-04-05)
+    √ gets, sets, changes, and clears UTC deadlines while preserving survey lifecycle fields (1295 ms)
+    √ rejects invalid, timezone-free, and past deadlines without changing the saved instant (1006 ms)
+    √ enforces role, ownership, not-found, and manual-close terminal state (984 ms)
+    √ exposes acceptance in owner list and detail responses (1067 ms)
+
+PASS tests/auth.test.ts (11.429 s)
+  F-01 authentication and roles
+    √ logs in with a normalized email and returns a signed token without the password hash (556 ms)
+    √ returns the same credentials error for an unknown email and a wrong password (694 ms)
+    √ rejects malformed login input (423 ms)
+    √ requires a token for current-user and logout requests (446 ms)
+    √ returns the current database user and role for a valid token (497 ms)
+    √ rejects malformed tokens (317 ms)
+    √ revokes an existing token on logout (541 ms)
+    √ enforces roles on server-protected routes (769 ms)
+    √ seeds every account with bcrypt cost 10 and the required 2b prefix (513 ms)
+
+PASS tests/unit/anonymous-response.policy.test.ts (6.054 s)
+  F-05 anonymous response policy
+    √ keeps the response identity separate from the duplicate claim in anonymous mode (2 ms)
+
+PASS tests/configuration.test.ts (6.547 s)
+  production configuration
+    √ rejects missing or default JWT secrets (37 ms)
+    √ rejects missing and default database URLs without exposing credentials (26 ms)
+    √ uses the configured Cloud Run port and accepts non-default production settings (3 ms)
+    √ accepts and trims a Cloud SQL Unix socket URL (3 ms)
+    √ rejects hostless Cloud SQL socket URLs (3 ms)
+  seed password configuration
+    √ requires an operator supplied password and rejects the example placeholder (6 ms)
+    √ rejects the fixed test password and weak values for production seeds (4 ms)
+    √ accepts explicit synthetic test credentials outside production (3 ms)
+
+PASS tests/health.test.ts (6.632 s)
+  GET /api/health (Scaffold Health & Database Connectivity)
+    √ should return 200 and report status ok with database up (39 ms)
+    √ should return 404 with standard error envelope for undefined API routes (both /api and /api/*) (66 ms)
+    √ should return 400 VALIDATION_ERROR when request contains malformed JSON (53 ms)
+    √ should return 503 SERVICE_UNAVAILABLE when database connectivity check fails (30 ms)
+
+PASS tests/unit/f06-validators.test.ts (6.86 s)
+  F-06 validators
+    √ accepts and normalizes valid answers for every question type (5 ms)
+    √ accepts the exact Sprint 1 and F-06 text length limits (3 ms)
+    √ rejects too many multi selections (2 ms)
+    √ rejects duplicate selections (3 ms)
+    √ rejects foreign option (3 ms)
+    √ rejects short text overflow (2 ms)
+    √ rejects long text overflow (2 ms)
+    √ rejects rating below range (2 ms)
+    √ rejects fractional integer (3 ms)
+    √ rejects integer out of range (2 ms)
+    √ rejects integer above PostgreSQL Int range (2 ms)
+    √ rejects integer below PostgreSQL Int range (1 ms)
+    √ rejects invalid leap date (2 ms)
+    √ rejects timestamp date (2 ms)
+    √ returns missing required questions and treats optional blank text as unanswered (2 ms)
+    √ supports unbounded, min-only, max-only, and inclusive integer bounds (2 ms)
+    √ accepts valid F-06 configuration and rejects invalid selection/numeric bounds (4 ms)
+    √ requires canonical ordered fixed options at publish time (2 ms)
+
+PASS tests/f07-policy.test.ts (6.511 s)
+  F-07 respondent eligibility policy
+    √ allows any respondent for an empty allowlist (2 ms)
+    √ allows a listed respondent and denies an unlisted respondent (1 ms)
+    √ denies an owner and a non-respondent role (1 ms)
+  F-07 scheduled-close policy
+    √ accepts a published survey with no deadline or before a future deadline (1 ms)
+    √ stops exactly at the deadline and after it (1 ms)
+    √ does not accept draft or manually closed surveys (1 ms)
+
+PASS tests/unit/rules.test.ts (6.799 s)
+  Sprint 1 Supporting Unit Tests - Rules (STS-U-01, STS-U-02)
+    √ STS-U-01: rejects a draft with zero questions with code NO_QUESTIONS (4 ms)
+    √ STS-U-02: rejects a single-choice question with fewer than two options with code TOO_FEW_OPTIONS (2 ms)
+    √ rejects single-choice options with empty or over 200 character labels with code INVALID_OPTION_LABEL (3 ms)
+    √ rejects an empty question prompt with code EMPTY_PROMPT (3 ms)
+    √ rejects a question prompt exceeding 500 characters with code PROMPT_TOO_LONG (3 ms)
+    √ rejects a single-choice question with more than 20 options with code TOO_MANY_OPTIONS (3 ms)
+    √ rejects single-choice duplicate option labels with code DUPLICATE_OPTIONS (2 ms)
+    √ accepts a valid draft structure with single-choice and short-text questions (1 ms)
+
+Test Suites: 15 passed, 15 total
+Tests:       121 passed, 121 total
+Snapshots:   0 total
+Time:        180.944 s
+Ran all test suites.

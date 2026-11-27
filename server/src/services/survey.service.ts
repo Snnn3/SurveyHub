@@ -2,7 +2,6 @@ import { Prisma, QuestionType, SurveyMode, SurveyStatus } from '@prisma/client';
 import { prisma } from '../utils/prisma';
 import { HttpError, NotFoundError } from '../utils/errors';
 import { parseUuid } from '../utils/uuid';
-import { assertAnonymousSubmissionReady } from '../policies/anonymous-response.policy';
 import { isSurveyAcceptingResponses } from '../policies/scheduled-close.policy';
 import {
   FIXED_QUESTION_OPTIONS,
@@ -224,9 +223,6 @@ export async function publishSurvey(surveyId: string, ownerId: string) {
     if (existing.status !== SurveyStatus.DRAFT) {
       throw new HttpError(400, 'INVALID_STATE_TRANSITION', 'Only draft surveys can be published.');
     }
-
-    // shortcut: anonymous publication stays disabled until #72 integrates transactional submission.
-    assertAnonymousSubmissionReady(existing.mode);
 
     const validation = validateSurveyStructure(existing);
     if (!validation.isValid) {

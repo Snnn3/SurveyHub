@@ -1,0 +1,21 @@
+
+> surveyhub-client@0.1.0 test:components
+> node ./scripts/run-component-tests.mjs
+
+✔ MULTI_CHOICE renders question-owned checkboxes, current selection and bounds (9.1312ms)
+✔ LONG_TEXT renders its 10,000-character limit and answer counter (1.7108ms)
+✔ YES_NO renders ordered question options as required radios (1.1472ms)
+✔ LIKERT renders its ordered option labels as radios (1.0858ms)
+✔ RATING renders exactly five labeled radio values and preserves the selected value (1.0055ms)
+✔ INTEGER renders a whole-number input with inclusive bounds (0.5867ms)
+✔ DATE renders a native date input and preserves its calendar-date value (0.5701ms)
+✔ scheduled-close local input preserves the same instant including milliseconds (2.9562ms)
+✔ expired published surveys disable Start and announce that responses are closed (1.0064ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 812.9749

@@ -203,13 +203,26 @@ describe('Issue #72 atomic response submission integration', () => {
   it('accepts one anonymous concurrent submission, stores no respondent link, and returns metadata only', async () => {
     const survey = await createPublishedSurvey(ownerId, { mode: SurveyMode.ANONYMOUS });
     const answer = { questionId: survey.questions[0].id, selectedOptionIds: [survey.questions[0].options[0].id] };
+    const before = await submissionState(survey.id);
     const submit = () => request(app)
       .post(`/api/surveys/${survey.id}/responses`)
       .set('Authorization', `Bearer ${respondentToken}`)
       .send({ answers: [answer] });
 
     const attempts = await Promise.all([submit(), submit()]);
+    const after = await submissionState(survey.id);
     expect(attempts.map((response) => response.status).sort()).toEqual([201, 409]);
+    expect(before).toEqual({ responses: [], claims: [] });
+    expect(after.responses).toEqual([
+      expect.objectContaining({
+        respondentId: null,
+        answers: [expect.objectContaining({
+          questionId: survey.questions[0].id,
+          selectedOptions: [{ optionId: survey.questions[0].options[0].id }],
+        })],
+      }),
+    ]);
+    expect(after.claims).toEqual([expect.objectContaining({ userId: respondentId })]);
     const accepted = attempts.find((response) => response.status === 201)!;
     expect(await prisma.surveyResponse.findMany({ where: { surveyId: survey.id }, select: { respondentId: true } }))
       .toEqual([{ respondentId: null }]);

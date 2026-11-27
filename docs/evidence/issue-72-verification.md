@@ -33,3 +33,33 @@ npm run test:e2e
 | Playwright E2E | 7 passed | [E2E output](issue-72-e2e.txt) |
 
 The concurrent duplicate test returned one `201` and one `409` without a transaction-acquisition timeout, so `transactionOptions.maxWait` was not changed.
+
+## PR #82 review-fix retest (27 Nov 2026)
+
+The requested review fixes remove the anonymous-draft publish block and assert the concurrent anonymous submission's response, claim, and answer state. All database runs below used the disposable container and `DATABASE_URL_TEST` above.
+
+Commands run:
+
+```powershell
+$env:NODE_ENV = 'test'
+$env:DATABASE_URL_TEST = 'postgresql://postgres:issue72testpass@127.0.0.1:54520/surveyhub_test?schema=public'
+
+# From server/
+npm test -- --runTestsByPath tests/response-submission-sprint2.integration.test.ts tests/f05-anonymous-mode.test.ts
+
+# From repository root
+npm test
+npm run typecheck
+npm run build
+npm run test:components --prefix client
+npm run test:e2e
+```
+
+| Check | Result | Output |
+|---|---|---|
+| Focused API/database retest | 2 suites; 16 tests passed | [Focused output](issue-72-pr82-focused.txt) |
+| Full Jest regression | 15 suites; 121 tests passed | [Full Jest output](issue-72-pr82-full-jest.txt) |
+| Typecheck | Server and client passed | [Typecheck output](issue-72-pr82-typecheck.txt) |
+| Production build | Client and server build exited 0; existing chunk-size and Prisma deprecation warnings | [Build output](issue-72-pr82-build.txt) |
+| Client component tests | 9 passed | [Component output](issue-72-pr82-client-components.txt) |
+| Playwright E2E | 7 passed | [E2E output](issue-72-pr82-e2e.txt) |
