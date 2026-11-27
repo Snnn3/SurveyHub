@@ -122,6 +122,12 @@ describe('F-07 scheduled-close API (STS-S2-04-01 to STS-S2-04-05)', () => {
 
     const detail = await request(app).get(`/api/surveys/${expired.id}`).set('Authorization', `Bearer ${ownerAToken}`);
     expect(detail.body.data).toMatchObject({ closesAt: '2020-01-01T00:00:00.000Z', acceptingResponses: false });
+    const activeBeforeReschedule = await request(app).get('/api/surveys/active')
+      .set('Authorization', `Bearer ${respondentToken}`);
+    expect(activeBeforeReschedule.body.data.find((survey: { id: string }) => survey.id === future.id))
+      .toMatchObject({ closesAt: '2099-01-01T00:00:00.000Z', acceptingResponses: true });
+    expect(activeBeforeReschedule.body.data.find((survey: { id: string }) => survey.id === expired.id))
+      .toMatchObject({ closesAt: '2020-01-01T00:00:00.000Z', acceptingResponses: false });
 
     const expiredForm = await request(app).get(`/api/surveys/${expired.id}/form`)
       .set('Authorization', `Bearer ${respondentToken}`);
@@ -133,6 +139,13 @@ describe('F-07 scheduled-close API (STS-S2-04-01 to STS-S2-04-05)', () => {
     expect(extended.status).toBe(200);
     expect(extended.body.data.acceptingResponses).toBe(true);
     expect(extended.body.data.closesAt).toBe('2099-01-01T00:00:00.000Z');
+    const ownerAfterReschedule = await request(app).get('/api/surveys').set('Authorization', `Bearer ${ownerAToken}`);
+    expect(ownerAfterReschedule.body.data.find((survey: { id: string }) => survey.id === expired.id))
+      .toMatchObject({ closesAt: '2099-01-01T00:00:00.000Z', acceptingResponses: true });
+    const activeAfterReschedule = await request(app).get('/api/surveys/active')
+      .set('Authorization', `Bearer ${respondentToken}`);
+    expect(activeAfterReschedule.body.data.find((survey: { id: string }) => survey.id === expired.id))
+      .toMatchObject({ closesAt: '2099-01-01T00:00:00.000Z', acceptingResponses: true });
     const reopenedForm = await request(app).get(`/api/surveys/${expired.id}/form`)
       .set('Authorization', `Bearer ${respondentToken}`);
     expect(reopenedForm.status).toBe(200);
