@@ -2,6 +2,7 @@ import { QuestionType, SurveyMode } from '@prisma/client';
 import { prisma } from '../utils/prisma';
 import { serializeCsv, type CsvCell } from '../utils/csv-export';
 import { NotFoundError } from '../utils/errors';
+import { getNumberStats } from '../utils/number-stats';
 import { getAuthorizedSurvey } from './survey.service';
 
 const identifiedHeader = [
@@ -25,11 +26,11 @@ const optionQuestionTypes = new Set<QuestionType>([
 const textQuestionTypes = new Set<QuestionType>([QuestionType.SHORT_TEXT, QuestionType.LONG_TEXT]);
 
 function numericStats(values: number[]) {
-  const count = values.length;
+  const { average, min, max } = getNumberStats(values);
   return {
-    average: count ? Number((values.reduce((sum, value) => sum + value, 0) / count).toFixed(2)) : '',
-    minimum: count ? values.reduce((minimum, value) => Math.min(minimum, value), values[0]) : '',
-    maximum: count ? values.reduce((maximum, value) => Math.max(maximum, value), values[0]) : '',
+    average: average ?? '',
+    minimum: min ?? '',
+    maximum: max ?? '',
   };
 }
 
