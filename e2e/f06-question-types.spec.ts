@@ -39,10 +39,25 @@ test('STS-F06-17/18: all question types round-trip and respondent input survives
   await expect(page.getByText(title)).toBeVisible();
   expect(surveyId).toMatch(/^[0-9a-f-]{36}$/i);
 
+  let releaseDetail!: () => void;
+  let resolveDetailStarted!: () => void;
+  const detailGate = new Promise<void>((resolve) => { releaseDetail = resolve; });
+  const detailStarted = new Promise<void>((resolve) => { resolveDetailStarted = resolve; });
+  await page.route(`**/api/surveys/${surveyId}`, async (route) => {
+    if (route.request().method() === 'GET') {
+      resolveDetailStarted();
+      await detailGate;
+    }
+    return route.continue();
+  });
   await page.goto(`/owner/surveys/${surveyId}/edit`);
+  await detailStarted;
+  await expect(page.getByText('Loading survey editor...')).toBeVisible();
+  releaseDetail();
   await expect(page.locator('#type-2')).toHaveValue('MULTI_CHOICE');
   await expect(page.locator('#type-7')).toHaveValue('DATE');
   await expect(page.locator('#type-8')).toHaveValue('INTEGER');
+  await page.unroute(`**/api/surveys/${surveyId}`);
   await expect(page.getByLabel('Maximum selections')).toHaveValue('2');
   await expect(page.getByLabel('Minimum value (optional)')).toHaveValue('-2');
 
@@ -116,9 +131,32 @@ test('STS-F06-17/18: all question types round-trip and respondent input survives
   await page.getByRole('button', { name: 'Publish Survey' }).click();
   await expect(page.getByText(title)).toBeVisible();
 
+  let releaseSummary!: () => void;
+  let resolveSummaryStarted!: () => void;
+  const summaryGate = new Promise<void>((resolve) => { releaseSummary = resolve; });
+  const summaryStarted = new Promise<void>((resolve) => { resolveSummaryStarted = resolve; });
+  await page.route(`**/api/surveys/${surveyId}/summary`, async (route) => {
+    resolveSummaryStarted();
+    await summaryGate;
+    return route.continue();
+  });
   await page.goto(`/owner/surveys/${surveyId}/summary`);
+  await summaryStarted;
+  await expect(page.getByRole('status', { name: 'Loading survey summary' })).toBeVisible();
+  releaseSummary();
   await expect(page.getByText('No numeric answers yet.')).toHaveCount(2);
   await expect(page.getByText('No date answers yet.')).toBeVisible();
+  await page.unroute(`**/api/surveys/${surveyId}/summary`);
+
+  await page.route(`**/api/surveys/${surveyId}/summary`, (route) => route.fulfill({
+    status: 500,
+    contentType: 'application/json',
+    body: JSON.stringify({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Summary service unavailable.' } }),
+  }));
+  await page.reload();
+  await expect(page.getByRole('alert')).toContainText('Summary service unavailable.');
+  await expect(page.getByText(title, { exact: true })).toHaveCount(0);
+  await page.unroute(`**/api/surveys/${surveyId}/summary`);
 
   await page.route(`**/api/surveys/${surveyId}/summary`, (route) => route.fulfill({
     status: 200,
