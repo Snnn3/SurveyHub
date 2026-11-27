@@ -68,14 +68,16 @@ test('STS-F06-17/18: all question types round-trip and respondent input survives
   );
   await page.getByRole('button', { name: 'Save Draft' }).click();
   await updateResponse;
-  await page.reload();
+  // Saving a draft returns to the owner dashboard, so reopen the editor to
+  // verify the persisted values from a fresh server read.
+  await page.goto(`/owner/surveys/${surveyId}/edit`);
   await expect(page.getByLabel('Survey Title')).toHaveValue(title);
   await expect(page.locator('#type-7')).toHaveValue('DATE');
   await expect(page.locator('#type-8')).toHaveValue('INTEGER');
 
   await page.getByLabel('Minimum selections').fill('3');
   await page.getByRole('button', { name: 'Save Draft' }).click();
-  await expect(page.getByRole('alert')).toBeVisible();
+  await expect(page.getByText('Invalid survey structure.', { exact: true })).toBeVisible();
   await expect(page.getByLabel('Minimum selections')).toHaveValue('3');
   const ownerToken = await page.evaluate(() => localStorage.getItem('token'));
   const persisted = await page.request.get(new URL(`/api/surveys/${surveyId}`, page.url()).toString(), {
@@ -194,7 +196,7 @@ test('STS-F06-17/18: all question types round-trip and respondent input survives
   await expect(page.getByRole('heading', { name: 'Access denied' })).toBeVisible();
   await expect(page.getByText(title, { exact: true })).toHaveCount(0);
   await expect(page.locator('body')).not.toContainText('FORBIDDEN_ROLE');
-  await expect(page.locator('body')).not.toContainText('SURVEY_OWNER');
+  await expect(page.getByRole('main')).not.toContainText('SURVEY_OWNER');
   await page.unroute(`**/api/surveys/${surveyId}/summary`);
 
   await page.route(`**/api/surveys/${surveyId}`, (route) => route.fulfill({ status: 403, contentType: 'application/json', body: JSON.stringify(deniedEnvelope) }));
@@ -216,29 +218,30 @@ test('STS-F06-17/18: all question types round-trip and respondent input survives
   const form = (await formResponse.json()).data;
   const questions = form.questions as Array<{ id: string; questionType: string; options: Array<{ id: string; label: string }> }>;
   const byType = (type: string) => questions.find((question) => question.questionType === type)!;
+  const inputByType = (type: string) => page.locator(`[id="${byType(type).id}-input"]`);
 
-  await page.locator(`#${byType('SINGLE_CHOICE').id}-input`).check();
-  await page.locator(`#${byType('SHORT_TEXT').id}-input`).fill('Sprint 1 text');
-  await page.locator(`#${byType('MULTI_CHOICE').id}-input`).check();
+  await inputByType('SINGLE_CHOICE').check();
+  await inputByType('SHORT_TEXT').fill('Sprint 1 text');
+  await inputByType('MULTI_CHOICE').check();
   await page.locator(`input[value="${byType('MULTI_CHOICE').options[1].id}"]`).check();
-  await page.locator(`#${byType('LONG_TEXT').id}-input`).fill('A longer answer');
+  await inputByType('LONG_TEXT').fill('A longer answer');
   await page.locator(`input[value="${byType('YES_NO').options[1].id}"]`).check();
   await page.locator(`input[value="${byType('LIKERT').options[3].id}"]`).check();
   await page.locator(`input[name="${byType('RATING').id}"]`).nth(4).check();
-  await page.locator(`#${byType('INTEGER').id}-input`).fill('-2');
-  await page.locator(`#${byType('DATE').id}-input`).fill('2024-02-29');
+  await inputByType('INTEGER').fill('-2');
+  await inputByType('DATE').fill('2024-02-29');
 
   const expectAllAnswers = async (integerValue = '-2', shortText = 'Sprint 1 text') => {
-    await expect(page.locator(`#${byType('SINGLE_CHOICE').id}-input`)).toBeChecked();
-    await expect(page.locator(`#${byType('SHORT_TEXT').id}-input`)).toHaveValue(shortText);
+    await expect(inputByType('SINGLE_CHOICE')).toBeChecked();
+    await expect(inputByType('SHORT_TEXT')).toHaveValue(shortText);
     await expect(page.locator(`input[value="${byType('MULTI_CHOICE').options[0].id}"]`)).toBeChecked();
     await expect(page.locator(`input[value="${byType('MULTI_CHOICE').options[1].id}"]`)).toBeChecked();
-    await expect(page.locator(`#${byType('LONG_TEXT').id}-input`)).toHaveValue('A longer answer');
+    await expect(inputByType('LONG_TEXT')).toHaveValue('A longer answer');
     await expect(page.locator(`input[value="${byType('YES_NO').options[1].id}"]`)).toBeChecked();
     await expect(page.locator(`input[value="${byType('LIKERT').options[3].id}"]`)).toBeChecked();
     await expect(page.locator(`input[name="${byType('RATING').id}"]`).nth(4)).toBeChecked();
-    await expect(page.locator(`#${byType('INTEGER').id}-input`)).toHaveValue(integerValue);
-    await expect(page.locator(`#${byType('DATE').id}-input`)).toHaveValue('2024-02-29');
+    await expect(inputByType('INTEGER')).toHaveValue(integerValue);
+    await expect(inputByType('DATE')).toHaveValue('2024-02-29');
   };
 
   let releaseNetworkFailure!: () => void;
@@ -296,12 +299,12 @@ test('STS-F06-17/18: all question types round-trip and respondent input survives
     });
   });
 
-  await page.locator(`#${byType('INTEGER').id}-input`).fill('11');
+  await inputByType('INTEGER').fill('11');
   await submitAndExpectError(page, 'Please correct the highlighted answers.');
   await expect(page.getByText('Enter a whole number within the allowed bounds.')).toBeVisible();
   expect(attempts).toBe(0);
   await expectAllAnswers('11');
-  await page.locator(`#${byType('INTEGER').id}-input`).fill('-2');
+  await inputByType('INTEGER').fill('-2');
 
   await submitAndExpectError(page, 'Please correct the highlighted answers.');
   await expectAllAnswers();

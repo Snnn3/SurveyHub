@@ -1,17 +1,17 @@
 {
-  "measuredAt": "2026-11-13T08:57:26.069Z",
+  "measuredAt": "2026-11-27T10:48:50.160Z",
   "command": "npm run bench:read --prefix server",
   "route": "GET /api/surveys/:id/form",
   "requestCount": 50,
-  "workload": "50 sequential authenticated reads of one published single-choice survey form",
+  "workload": "50 sequential authenticated reads of one published form with one each of MULTI_CHOICE, LONG_TEXT, YES_NO, LIKERT, RATING, INTEGER, and DATE",
   "targetP95Ms": 300,
-  "p50Ms": 7.693,
-  "p95Ms": 13.249,
-  "p99Ms": 22.422,
+  "p50Ms": 16.502,
+  "p95Ms": 70.154,
+  "p99Ms": 2139.614,
   "passed": true,
   "environment": {
     "node": "v24.14.1",
-    "postgres": "PostgreSQL 18.1 on x86_64-windows, compiled by msvc-19.44.35221, 64-bit",
+    "postgres": "PostgreSQL 16.15 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
     "platform": "win32 10.0.26200 x64",
     "cpu": "Intel(R) Core(TM) i5-8250U CPU @ 1.60GHz",
     "database": "surveyhub_test"
