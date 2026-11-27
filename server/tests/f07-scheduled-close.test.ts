@@ -17,11 +17,13 @@ describe('F-07 scheduled-close API (STS-S2-04-01 to STS-S2-04-05)', () => {
   let ownerBToken: string;
   let respondentToken: string;
   let ownerAId: string;
+  let respondentId: string;
 
   beforeEach(async () => {
     await truncateTestDatabase();
     const users = await prisma.$transaction((tx) => seedUsers(tx, password));
     ownerAId = users['owner1@survey.local'].id;
+    respondentId = users['resp1@survey.local'].id;
     [ownerAToken, ownerBToken, respondentToken] = await Promise.all([
       loginAs('owner1@survey.local'), loginAs('owner2@survey.local'), loginAs('resp1@survey.local'),
     ]);
@@ -39,19 +41,37 @@ describe('F-07 scheduled-close API (STS-S2-04-01 to STS-S2-04-05)', () => {
     expect(initial.body.data).toMatchObject({ status: 'PUBLISHED', closesAt: null, acceptingResponses: true });
 
     const saved = await request(app).patch(endpoint).set('Authorization', `Bearer ${ownerAToken}`)
-      .send({ closesAt: '2026-11-30T16:00:00+07:00' });
+      .send({ closesAt: '2099-11-30T16:00:00+07:00' });
     expect(saved.status).toBe(200);
-    expect(saved.body.data.closesAt).toBe('2026-11-30T09:00:00.000Z');
+    expect(saved.body.data.closesAt).toBe('2099-11-30T09:00:00.000Z');
     expect(saved.body.data.acceptingResponses).toBe(true);
 
+    const changed = await request(app).patch(endpoint).set('Authorization', `Bearer ${ownerAToken}`)
+      .send({ closesAt: '2099-12-01T16:00:00+07:00' });
+    expect(changed.status).toBe(200);
+    expect(changed.body.data.closesAt).toBe('2099-12-01T09:00:00.000Z');
+
     const persisted = await prisma.survey.findUniqueOrThrow({ where: { id: survey.id } });
-    expect(persisted.closesAt?.toISOString()).toBe('2026-11-30T09:00:00.000Z');
+    expect(persisted.closesAt?.toISOString()).toBe('2099-12-01T09:00:00.000Z');
     expect(persisted.status).toBe(SurveyStatus.PUBLISHED);
     expect(persisted.closedAt).toBeNull();
 
     const cleared = await request(app).patch(endpoint).set('Authorization', `Bearer ${ownerAToken}`).send({ closesAt: null });
     expect(cleared.status).toBe(200);
     expect(cleared.body.data).toMatchObject({ closesAt: null, acceptingResponses: true });
+
+    const draft = await createSurvey(SurveyStatus.DRAFT);
+    const draftEndpoint = `/api/surveys/${draft.id}/schedule`;
+    const draftSchedule = await request(app).patch(draftEndpoint).set('Authorization', `Bearer ${ownerAToken}`)
+      .send({ closesAt: '2099-11-30T16:00:00+07:00' });
+    expect(draftSchedule.status).toBe(200);
+    expect(draftSchedule.body.data).toMatchObject({
+      status: 'DRAFT', closesAt: '2099-11-30T09:00:00.000Z', acceptingResponses: false,
+    });
+    const clearedDraft = await request(app).patch(draftEndpoint).set('Authorization', `Bearer ${ownerAToken}`)
+      .send({ closesAt: null });
+    expect(clearedDraft.status).toBe(200);
+    expect(clearedDraft.body.data).toMatchObject({ status: 'DRAFT', closesAt: null, acceptingResponses: false });
   });
 
   it('rejects invalid, timezone-free, and past deadlines without changing the saved instant', async () => {
@@ -102,5 +122,24 @@ describe('F-07 scheduled-close API (STS-S2-04-01 to STS-S2-04-05)', () => {
 
     const detail = await request(app).get(`/api/surveys/${expired.id}`).set('Authorization', `Bearer ${ownerAToken}`);
     expect(detail.body.data).toMatchObject({ closesAt: '2020-01-01T00:00:00.000Z', acceptingResponses: false });
+
+    const expiredForm = await request(app).get(`/api/surveys/${expired.id}/form`)
+      .set('Authorization', `Bearer ${respondentToken}`);
+    expect(expiredForm.status).toBe(400);
+    expect(expiredForm.body.error.code).toBe('SURVEY_NOT_ACCEPTING_RESPONSES');
+
+    const extended = await request(app).patch(`/api/surveys/${expired.id}/schedule`)
+      .set('Authorization', `Bearer ${ownerAToken}`).send({ closesAt: '2099-01-01T00:00:00Z' });
+    expect(extended.status).toBe(200);
+    expect(extended.body.data.acceptingResponses).toBe(true);
+    expect(extended.body.data.closesAt).toBe('2099-01-01T00:00:00.000Z');
+    const reopenedForm = await request(app).get(`/api/surveys/${expired.id}/form`)
+      .set('Authorization', `Bearer ${respondentToken}`);
+    expect(reopenedForm.status).toBe(200);
+
+    const cleared = await request(app).patch(`/api/surveys/${expired.id}/schedule`)
+      .set('Authorization', `Bearer ${ownerAToken}`).send({ closesAt: null });
+    expect(cleared.status).toBe(200);
+    expect(cleared.body.data).toMatchObject({ closesAt: null, acceptingResponses: true });
   });
 });
