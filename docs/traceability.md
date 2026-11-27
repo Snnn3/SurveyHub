@@ -48,7 +48,7 @@ Status values: **PLANNED** (designed, not implemented), **IMPLEMENTED** (code ex
 | **BR-08** | Role and eligibility guard for submission | F-03, F-07, #72 | 1, 2 | AC-F03-09, AC-S2-03-03..07 | STS-F03-09, STS-S2-03-03..07 | PLANNED |
 | **BR-09** | CLOSED is terminal; invalid transitions rejected | F-02 | 1 | AC-F02-11 | STS-F02-11 | PLANNED |
 | **BR-10** | Anonymous identity/answer separation | F-05, [Issue #60](https://github.com/Snnn3/SurveyHub/issues/60) | 2 | AC-F05-04..10 | STS-F05-04..10 | PLANNED |
-| **BR-11** | No identity in aggregates or anonymous exports; identified raw access is owner-only | F-04, F-08, [Issue #63](https://github.com/Snnn3/SurveyHub/issues/63) | 1, 3 | AC-F04-01, AC-S3-03, AC-S3-06..07 | STS-F04-01, STS-S3-03, STS-S3-06..08 ([F-08 contract](sprints/sprint-3/f-08.md)) | PLANNED |
+| **BR-11** | No identity in aggregates or anonymous exports; identified raw access is owner-only | F-04, F-08, [Issue #63](https://github.com/Snnn3/SurveyHub/issues/63) | 1, 3 | AC-F04-01, AC-S3-03, AC-S3-05..07 | STS-F04-01, STS-S3-03, STS-S3-05..08 ([F-08 contract](sprints/sprint-3/f-08.md)) | PLANNED |
 
 ### 2.3 Non-functional requirements
 
