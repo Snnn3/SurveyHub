@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { QuestionType } from '@prisma/client';
+import { isDatabaseInteger } from '../utils/database-integer';
 
 const responseAnswerSchema = z
   .object({
@@ -123,7 +124,7 @@ export function validateResponseAnswers(
 
     if (question.questionType === QuestionType.INTEGER) {
       const value = answer.numberValue;
-      if (!hasNumber || !Number.isInteger(value) ||
+      if (!hasNumber || !isDatabaseInteger(value) ||
           (question.numberMin != null && value! < question.numberMin) ||
           (question.numberMax != null && value! > question.numberMax)) {
         return invalid(`${field}.numberValue`, 'Enter a whole number within the allowed bounds.');

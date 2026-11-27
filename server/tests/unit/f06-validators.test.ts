@@ -60,6 +60,8 @@ describe('F-06 validators', () => {
     ['rating below range', { questionId: ids.rating, numberValue: 0 }],
     ['fractional integer', { questionId: ids.integer, numberValue: 1.5 }],
     ['integer out of range', { questionId: ids.integer, numberValue: 11 }],
+    ['integer above PostgreSQL Int range', { questionId: ids.integer, numberValue: 2_147_483_648 }],
+    ['integer below PostgreSQL Int range', { questionId: ids.integer, numberValue: -2_147_483_649 }],
     ['invalid leap date', { questionId: ids.date, dateValue: '2025-02-29' }],
     ['timestamp date', { questionId: ids.date, dateValue: '2026-11-20T00:00:00Z' }],
   ])('rejects %s', (_name, answer) => {
@@ -88,6 +90,9 @@ describe('F-06 validators', () => {
     expect(parseSurveyInput({ title: 'F-06', questions: [question] }).success).toBe(true);
     expect(parseSurveyInput({ title: 'F-06', questions: [{ ...question, minSelections: 0 }] }).success).toBe(false);
     expect(parseSurveyInput({ title: 'F-06', questions: [{ prompt: 'Integer', questionType: QuestionType.INTEGER, numberMin: 3, numberMax: 2 }] }).success).toBe(false);
+    expect(parseSurveyInput({ title: 'F-06', questions: [{ prompt: 'Integer', questionType: QuestionType.INTEGER, numberMin: 2_147_483_648 }] }).success).toBe(false);
+    expect(validateSurveyStructure({ questions: [{ prompt: 'Integer', questionType: QuestionType.INTEGER, options: [], numberMax: 2_147_483_648 }] }))
+      .toMatchObject({ isValid: false, error: { code: 'INVALID_NUMBER_BOUNDS' } });
   });
 
   it('requires canonical ordered fixed options at publish time', () => {

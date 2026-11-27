@@ -1,5 +1,6 @@
 import { QuestionType, SurveyMode } from '@prisma/client';
 import { z } from 'zod';
+import { databaseIntegerSchema, isDatabaseInteger } from '../utils/database-integer';
 
 export const FIXED_QUESTION_OPTIONS: Partial<Record<QuestionType, string[]>> = {
   [QuestionType.YES_NO]: ['Yes', 'No'],
@@ -26,8 +27,8 @@ export const questionInputSchema = z
     options: z.array(questionOptionInputSchema).optional().default([]),
     minSelections: z.number().int().optional(),
     maxSelections: z.number().int().optional(),
-    numberMin: z.number().int().optional(),
-    numberMax: z.number().int().optional(),
+    numberMin: databaseIntegerSchema.optional(),
+    numberMax: databaseIntegerSchema.optional(),
   })
   .strict()
   .superRefine((question, context) => {
@@ -176,8 +177,8 @@ export function validateSurveyStructure(
     }
 
     if (question.questionType === QuestionType.INTEGER &&
-      ((question.numberMin != null && !Number.isInteger(question.numberMin)) ||
-       (question.numberMax != null && !Number.isInteger(question.numberMax)) ||
+      ((question.numberMin != null && !isDatabaseInteger(question.numberMin)) ||
+       (question.numberMax != null && !isDatabaseInteger(question.numberMax)) ||
        (question.numberMin != null && question.numberMax != null && question.numberMin > question.numberMax))) {
       return invalidStructure('INVALID_NUMBER_BOUNDS', 'Integer bounds must be whole numbers and minimum must not exceed maximum.', index);
     }

@@ -7,7 +7,7 @@ async function submitAndExpectError(page: Page, message: string) {
 }
 
 test('STS-F06-17/18: all question types round-trip and respondent input survives failed attempts', async ({ page }) => {
-  const title = `F-06 question types ${Date.now()}`;
+  let title = `F-06 question types ${Date.now()}`;
   let surveyId = '';
 
   await signIn(page, 'owner1@survey.local', '/owner/surveys');
@@ -45,6 +45,18 @@ test('STS-F06-17/18: all question types round-trip and respondent input survives
   await expect(page.locator('#type-8')).toHaveValue('INTEGER');
   await expect(page.getByLabel('Maximum selections')).toHaveValue('2');
   await expect(page.getByLabel('Minimum value (optional)')).toHaveValue('-2');
+
+  title = `${title} edited`;
+  await page.getByLabel('Survey Title').fill(title);
+  const updateResponse = page.waitForResponse((response) =>
+    response.url().endsWith(`/api/surveys/${surveyId}`) && response.request().method() === 'PUT' && response.status() === 200
+  );
+  await page.getByRole('button', { name: 'Save Draft' }).click();
+  await updateResponse;
+  await page.reload();
+  await expect(page.getByLabel('Survey Title')).toHaveValue(title);
+  await expect(page.locator('#type-7')).toHaveValue('DATE');
+  await expect(page.locator('#type-8')).toHaveValue('INTEGER');
 
   await page.getByLabel('Minimum selections').fill('3');
   await page.getByRole('button', { name: 'Save Draft' }).click();
@@ -106,6 +118,33 @@ test('STS-F06-17/18: all question types round-trip and respondent input survives
   await expect(page.getByText('No numeric answers yet.')).toHaveCount(2);
   await expect(page.getByText('No date answers yet.')).toBeVisible();
 
+  await page.route(`**/api/surveys/${surveyId}/summary`, (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      success: true,
+      data: {
+        surveyId,
+        title,
+        description: null,
+        status: 'PUBLISHED',
+        mode: 'IDENTIFIED',
+        totalResponses: 1,
+        createdAt: '2026-11-27T00:00:00.000Z',
+        questions: [
+          { questionId: byType('RATING').id, prompt: 'Question 7', questionType: 'RATING', answeredCount: 1, numberStats: { count: 1, average: 5, min: 5, max: 5 }, ratingDistribution: [{ rating: 5, count: 1 }] },
+          { questionId: byType('INTEGER').id, prompt: 'Question 8', questionType: 'INTEGER', answeredCount: 0, numberStats: { count: 0, average: null, min: null, max: null } },
+          { questionId: byType('DATE').id, prompt: 'Question 9', questionType: 'DATE', answeredCount: 0, dateCounts: [] },
+        ],
+      },
+    }),
+  }));
+  await page.reload();
+  await expect(page.getByText('Total responses').locator('..')).toContainText('1');
+  await expect(page.locator('[aria-label="Question 7 numeric summary"]')).toContainText('Average');
+  await expect(page.locator('[aria-label="Question 8 numeric summary"]')).toContainText('No numeric answers yet.');
+  await expect(page.getByText('No date answers yet.')).toBeVisible();
+
   const deniedEnvelope = {
     success: false,
     error: { code: 'FORBIDDEN_ROLE', message: 'Access denied', details: { requiredRole: 'SURVEY_OWNER' } },
@@ -149,9 +188,9 @@ test('STS-F06-17/18: all question types round-trip and respondent input survives
   await page.locator(`#${byType('INTEGER').id}-input`).fill('-2');
   await page.locator(`#${byType('DATE').id}-input`).fill('2024-02-29');
 
-  const expectAllAnswers = async (integerValue = '-2') => {
+  const expectAllAnswers = async (integerValue = '-2', shortText = 'Sprint 1 text') => {
     await expect(page.locator(`#${byType('SINGLE_CHOICE').id}-input`)).toBeChecked();
-    await expect(page.locator(`#${byType('SHORT_TEXT').id}-input`)).toHaveValue('Sprint 1 text');
+    await expect(page.locator(`#${byType('SHORT_TEXT').id}-input`)).toHaveValue(shortText);
     await expect(page.locator(`input[value="${byType('MULTI_CHOICE').options[0].id}"]`)).toBeChecked();
     await expect(page.locator(`input[value="${byType('MULTI_CHOICE').options[1].id}"]`)).toBeChecked();
     await expect(page.locator(`#${byType('LONG_TEXT').id}-input`)).toHaveValue('A longer answer');
@@ -175,6 +214,7 @@ test('STS-F06-17/18: all question types round-trip and respondent input survives
     postedAnswers = route.request().postDataJSON().answers;
     const errors = [
       { status: 400, code: 'INVALID_ANSWER', message: 'Enter a whole number within the allowed bounds.', details: [{ field: 'answers.8.numberValue', message: 'Enter a whole number within the allowed bounds.' }] },
+      { status: 400, code: 'MISSING_REQUIRED_QUESTIONS', message: 'Please complete all required questions.', details: { questionIds: [byType('SHORT_TEXT').id] } },
       { status: 409, code: 'DUPLICATE_SUBMISSION', message: 'You have already submitted a response to this survey.' },
       { status: 400, code: 'SURVEY_NOT_ACCEPTING_RESPONSES', message: 'This survey is no longer accepting responses.' },
       { status: 500, code: 'INTERNAL_ERROR', message: 'Unable to submit response.' },
@@ -225,6 +265,9 @@ test('STS-F06-17/18: all question types round-trip and respondent input survives
 
   await submitAndExpectError(page, 'Please correct the highlighted answers.');
   await expectAllAnswers();
+  await submitAndExpectError(page, 'Please complete all required questions.');
+  await expectAllAnswers();
+  await expect(page.getByText('This question is required.')).toBeVisible();
   await submitAndExpectError(page, 'You have already submitted a response to this survey.');
   await expectAllAnswers();
   await submitAndExpectError(page, 'This survey is no longer accepting responses.');
@@ -241,7 +284,7 @@ test('STS-F06-17/18: all question types round-trip and respondent input survives
   await page.getByRole('button', { name: 'Submit response' }).click();
   await expect(page.getByRole('heading', { name: 'Your response is recorded' })).toBeVisible();
   await expect(page.getByText('2024-02-29', { exact: true })).toBeVisible();
-  expect(attempts).toBe(6);
+  expect(attempts).toBe(7);
 
   const value = (type: string) => postedAnswers.find((answer) => answer.questionId === byType(type).id)!;
   expect(value('SINGLE_CHOICE')).toHaveProperty('selectedOptionIds', [byType('SINGLE_CHOICE').options[0].id]);
