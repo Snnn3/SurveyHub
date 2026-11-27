@@ -88,6 +88,10 @@ test('STS-S2-03-06 / STS-S2-04-05: owner manages and reloads eligibility and sch
   await page.getByRole('button', { name: 'Save eligibility list' }).click();
   await expect(page.getByRole('status')).toContainText('Eligibility list saved.');
   await expect(page.getByLabel('Respondent emails')).toHaveValue('resp2@survey.local');
+  await page.getByLabel('Respondent emails').fill('');
+  await page.getByRole('button', { name: 'Save eligibility list' }).click();
+  await expect(page.getByRole('status')).toContainText('Eligibility list saved.');
+  await expect(page.getByLabel('Respondent emails')).toHaveValue('');
 
   const closeInput = page.locator('#closes-at');
   const futureLocalTime = await page.evaluate(() => {

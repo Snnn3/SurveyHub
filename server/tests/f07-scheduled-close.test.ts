@@ -55,6 +55,9 @@ describe('F-07 scheduled-close API (STS-S2-04-01 to STS-S2-04-05)', () => {
     expect(persisted.closesAt?.toISOString()).toBe('2099-12-01T09:00:00.000Z');
     expect(persisted.status).toBe(SurveyStatus.PUBLISHED);
     expect(persisted.closedAt).toBeNull();
+    const reloaded = await request(app).get(endpoint).set('Authorization', `Bearer ${ownerAToken}`);
+    expect(reloaded.status).toBe(200);
+    expect(reloaded.body.data.closesAt).toBe('2099-12-01T09:00:00.000Z');
 
     const cleared = await request(app).patch(endpoint).set('Authorization', `Bearer ${ownerAToken}`).send({ closesAt: null });
     expect(cleared.status).toBe(200);
@@ -62,12 +65,18 @@ describe('F-07 scheduled-close API (STS-S2-04-01 to STS-S2-04-05)', () => {
 
     const draft = await createSurvey(SurveyStatus.DRAFT);
     const draftEndpoint = `/api/surveys/${draft.id}/schedule`;
+    const draftInitial = await request(app).get(draftEndpoint).set('Authorization', `Bearer ${ownerAToken}`);
+    expect(draftInitial.status).toBe(200);
+    expect(draftInitial.body.data).toMatchObject({ status: 'DRAFT', closesAt: null, acceptingResponses: false });
     const draftSchedule = await request(app).patch(draftEndpoint).set('Authorization', `Bearer ${ownerAToken}`)
       .send({ closesAt: '2099-11-30T16:00:00+07:00' });
     expect(draftSchedule.status).toBe(200);
     expect(draftSchedule.body.data).toMatchObject({
       status: 'DRAFT', closesAt: '2099-11-30T09:00:00.000Z', acceptingResponses: false,
     });
+    const reloadedDraft = await request(app).get(draftEndpoint).set('Authorization', `Bearer ${ownerAToken}`);
+    expect(reloadedDraft.status).toBe(200);
+    expect(reloadedDraft.body.data.closesAt).toBe('2099-11-30T09:00:00.000Z');
     const clearedDraft = await request(app).patch(draftEndpoint).set('Authorization', `Bearer ${ownerAToken}`)
       .send({ closesAt: null });
     expect(clearedDraft.status).toBe(200);

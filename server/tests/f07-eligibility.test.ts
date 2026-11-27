@@ -106,6 +106,24 @@ describe('F-07 respondent eligibility API (STS-S2-03-01 to STS-S2-03-06)', () =>
         .toEqual([{ userId: respondentAId }]);
     }
 
+    const cleared = await request(app).put(endpoint).set('Authorization', `Bearer ${ownerAToken}`)
+      .send({ respondentEmails: [] });
+    expect(cleared.status).toBe(200);
+    expect(cleared.body.data.eligibleRespondents).toEqual([]);
+    expect(await prisma.surveyEligibility.findMany({ where: { surveyId: survey.id } })).toEqual([]);
+
+    const restored = await request(app).put(endpoint).set('Authorization', `Bearer ${ownerAToken}`)
+      .send({ respondentEmails: ['resp2@survey.local'] });
+    expect(restored.status).toBe(200);
+    expect(restored.body.data.eligibleRespondents.map((entry: { userId: string }) => entry.userId)).toEqual([respondentBId]);
+
+    const published = await createSurvey(ownerAId, SurveyStatus.PUBLISHED);
+    const publishedUpdate = await request(app).put(`/api/surveys/${published.id}/eligibility`)
+      .set('Authorization', `Bearer ${ownerAToken}`).send({ respondentEmails: ['resp1@survey.local'] });
+    expect(publishedUpdate.status).toBe(200);
+    expect(publishedUpdate.body.data.eligibleRespondents.map((entry: { userId: string }) => entry.userId))
+      .toEqual([respondentAId]);
+
     const closed = await createSurvey(ownerAId, SurveyStatus.CLOSED);
     await prisma.surveyEligibility.create({ data: { surveyId: closed.id, userId: respondentBId } });
     const closedUpdate = await request(app).put(`/api/surveys/${closed.id}/eligibility`)
