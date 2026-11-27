@@ -20,6 +20,13 @@ export interface OptionSummary {
   percentage: number;
 }
 
+export interface NumberStats {
+  count: number;
+  average: number | null;
+  min: number | null;
+  max: number | null;
+}
+
 export interface QuestionSummary {
   questionId: string;
   prompt: string;
@@ -27,6 +34,9 @@ export interface QuestionSummary {
   answeredCount: number;
   options?: OptionSummary[];
   textAnswers?: string[];
+  numberStats?: NumberStats;
+  ratingDistribution?: Array<{ rating: number; count: number }>;
+  dateCounts?: Array<{ date: string; count: number }>;
 }
 
 export interface SurveySummary {
@@ -156,7 +166,7 @@ export function SurveySummaryPage() {
   if (isForbidden) {
     return (
       <div className="rounded-xl border border-red-200 bg-red-50 p-6 shadow-sm">
-        <h2 className="text-xl font-bold text-red-900">Access Denied</h2>
+        <h2 className="text-xl font-bold text-red-900">Access denied</h2>
         <p className="mt-2 text-sm text-red-700">You do not have permission to view this survey summary.</p>
         <Link
           to="/owner/surveys"
@@ -323,6 +333,44 @@ export function SurveySummaryPage() {
                         className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-sm text-slate-800"
                       >
                         {answer}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
+            {question.numberStats && (
+              <div className="pt-2" aria-label={`${question.prompt} numeric summary`}>
+                {question.numberStats.count === 0 ? (
+                  <p className="text-sm italic text-slate-500">No numeric answers yet.</p>
+                ) : (
+                  <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div><dt className="text-xs text-slate-500">Count</dt><dd className="font-semibold text-slate-900">{question.numberStats.count}</dd></div>
+                    <div><dt className="text-xs text-slate-500">Average</dt><dd className="font-semibold text-slate-900">{question.numberStats.average}</dd></div>
+                    <div><dt className="text-xs text-slate-500">Minimum</dt><dd className="font-semibold text-slate-900">{question.numberStats.min}</dd></div>
+                    <div><dt className="text-xs text-slate-500">Maximum</dt><dd className="font-semibold text-slate-900">{question.numberStats.max}</dd></div>
+                  </dl>
+                )}
+                {question.ratingDistribution && (
+                  <ul className="mt-3 flex flex-wrap gap-2" aria-label="Rating distribution">
+                    {question.ratingDistribution.map(({ rating, count }) => (
+                      <li key={rating} className="rounded-md bg-slate-100 px-3 py-1 text-sm text-slate-700">{rating}: {count}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
+            {question.dateCounts && (
+              <div className="pt-2">
+                {question.dateCounts.length === 0 ? (
+                  <p className="text-sm italic text-slate-500">No date answers yet.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {question.dateCounts.map(({ date, count }) => (
+                      <li key={date} className="flex justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm">
+                        <time dateTime={date}>{date}</time><span>{count}</span>
                       </li>
                     ))}
                   </ul>

@@ -5,6 +5,7 @@ import { getValidUuid } from '../utils/uuid';
 import { parseResponseInput } from '../validators/response.validator';
 import { formatZodDetails } from '../validators/validation';
 import * as responseService from '../services/response.service';
+import * as surveyService from '../services/survey.service';
 import * as anonymousModeService from '../services/anonymous-mode.service';
 import { assertAnonymousSubmissionReady } from '../policies/anonymous-response.policy';
 
@@ -20,11 +21,25 @@ export async function listActiveSurveys(req: Request, res: Response, next: NextF
 export async function getSurveyForm(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const surveyId = getValidUuid(req.params.id, 'Survey');
-    const [form, mode] = await Promise.all([
+    const [form, mode, questionSettings] = await Promise.all([
       responseService.getSurveyForm(surveyId),
       anonymousModeService.getSurveyMode(surveyId),
+      surveyService.getSurveyQuestionSettings(surveyId),
     ]);
-    const data = { ...form, mode };
+    const data = {
+      ...form,
+      mode,
+      questions: form.questions.map((question) => {
+        const settings = questionSettings.get(question.id);
+        return {
+          ...question,
+          ...(settings?.minSelections != null ? { minSelections: settings.minSelections } : {}),
+          ...(settings?.maxSelections != null ? { maxSelections: settings.maxSelections } : {}),
+          ...(settings?.numberMin != null ? { numberMin: settings.numberMin } : {}),
+          ...(settings?.numberMax != null ? { numberMax: settings.numberMax } : {}),
+        };
+      }),
+    };
     res.status(200).json({ success: true, data });
   } catch (error) {
     next(error);
