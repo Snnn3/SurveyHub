@@ -13,6 +13,7 @@ if (!testDatabaseUrl || new URL(testDatabaseUrl).pathname.replace(/^\//, '') !==
 }
 
 const { QuestionType, SurveyStatus } = require('@prisma/client') as typeof import('@prisma/client');
+const { FIXED_QUESTION_OPTIONS } = require('../src/validators/survey.validator') as typeof import('../src/validators/survey.validator');
 const request = require('supertest') as typeof import('supertest');
 const { prisma } = require('../src/utils/prisma') as typeof import('../src/utils/prisma');
 const app = require('../src/app').default as typeof import('../src/app').default;
@@ -51,20 +52,14 @@ async function main(): Promise<void> {
             questionType: QuestionType.YES_NO,
             isRequired: true,
             orderIndex: 2,
-            options: { create: [{ label: 'Yes', orderIndex: 0 }, { label: 'No', orderIndex: 1 }] },
+            options: { create: FIXED_QUESTION_OPTIONS[QuestionType.YES_NO]!.map((label, orderIndex) => ({ label, orderIndex })) },
           },
           {
             prompt: 'Benchmark Likert question',
             questionType: QuestionType.LIKERT,
             isRequired: true,
             orderIndex: 3,
-            options: { create: [
-              { label: 'Strongly disagree', orderIndex: 0 },
-              { label: 'Disagree', orderIndex: 1 },
-              { label: 'Neither agree nor disagree', orderIndex: 2 },
-              { label: 'Agree', orderIndex: 3 },
-              { label: 'Strongly agree', orderIndex: 4 },
-            ] },
+            options: { create: FIXED_QUESTION_OPTIONS[QuestionType.LIKERT]!.map((label, orderIndex) => ({ label, orderIndex })) },
           },
           { prompt: 'Benchmark rating question', questionType: QuestionType.RATING, isRequired: true, orderIndex: 4 },
           {
