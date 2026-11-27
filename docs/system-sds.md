@@ -755,7 +755,7 @@ This section exists now because the schema must not need a breaking migration la
 - Rating and integer statistics and date counts.
 - Unlinked short- and long-text answers.
 - No respondent names, emails or ids.
-- Export for an anonymous survey contains aggregates and unlinked text only.
+- Export for an anonymous survey contains aggregates only; raw text is not exported.
 
 ### 7.3 Receipt and residual risk
 

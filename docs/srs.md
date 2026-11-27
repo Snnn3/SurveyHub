@@ -185,7 +185,7 @@ Stable IDs are used in Parts B–F. "Sprint" is the planned delivery sprint.
 | **BR-08** | Response eligibility | Only authenticated users with the `RESPONDENT` role may submit. From Sprint 2, if a survey has eligibility entries, the respondent must be on the list; otherwise `403 NOT_ELIGIBLE`. In Sprint 1 an empty eligibility list means all respondents are eligible. | 1 (role) / 2 (allowlist) |
 | **BR-09** | Terminal closed state | `CLOSED` is terminal. Publishing a published or closed survey, or closing a draft or closed survey, returns `400 INVALID_STATE_TRANSITION`. | 1 |
 | **BR-10** | Anonymous identity separation | In anonymous mode, `SurveyResponse.respondentId` is `NULL`; no name, email, IP address or user agent is stored with the response; `ResponseClaim` records the survey and claimant only, with no response ID, response relation, timestamp or reverse lookup. Owners see aggregates and unlinked text only. Anonymous receipts contain confirmation metadata only. | 2 |
-| **BR-11** | Result privacy | Aggregate and export responses never include respondent identity fields. Identified raw-response browsing is available only to the owning Survey Owner and only for identified surveys. | 1 (aggregate) / 3 (raw) |
+| **BR-11** | Result privacy | Aggregate results and anonymous exports never include respondent identity fields. Identified raw-response browsing and identified raw export are available only to the owning Survey Owner and only for identified surveys. | 1 (aggregate) / 3 (raw) |
 
 ### 5.1 Access-to-raw-data policy
 

@@ -23,7 +23,7 @@
 | **F-05** | Anonymous mode | Survey-level anonymous mode with identity/answer separation and duplicate prevention through claims | FR-11; BR-10; NFR-PRIV-01 | F-01, F-03, F-04 | **2** |
 | **F-06** ([Issue #9](https://github.com/Snnn3/SurveyHub/issues/9)) | Expanded question types | Multi-choice, long text, yes/no, five-point Likert, 1–5 rating, bounded integer and date questions across authoring, response and summary | FR-12 | F-02, F-03, F-04 | **2** |
 | **F-07** | Eligibility and scheduled close | Explicit respondent allowlist and a closing date/time evaluated by the server | FR-14, FR-15; BR-02, BR-08 | F-02, F-03 | **2** |
-| **F-08** | Rich analytics, response browsing and export | Charts, identified raw-response browser and CSV/JSON export with mode-aware privacy | FR-13, FR-16; BR-11 | F-04, F-06 | **3** |
+| **F-08** ([Issue #63](https://github.com/Snnn3/SurveyHub/issues/63); [contract](sprints/sprint-3/f-08.md)) | Rich analytics, response browsing and export | Charts, identified raw-response browser and CSV/JSON export with mode-aware privacy | FR-13, FR-16; BR-11 | F-04, F-06 | **3** |
 
 ### 1.1 Feature allocation summary
 
