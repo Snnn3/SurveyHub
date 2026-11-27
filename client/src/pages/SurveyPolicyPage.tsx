@@ -95,25 +95,18 @@ export function SurveyPolicyPage() {
     }
   }
 
-  async function saveSchedule(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function persistSchedule(nextClosesAt: string | null, action: 'save' | 'clear') {
     setSaving(true);
     setError(null);
     setSuccess(null);
     try {
-      const existingClosesAt = policy?.schedule.closesAt ?? null;
-      const unchangedLocalValue = existingClosesAt !== null && closesAt === toLocalDateTime(existingClosesAt);
-      const response = await api.patch<{ data: SurveySchedule }>(`/surveys/${id}/schedule`, {
-        closesAt: closesAt
-          ? unchangedLocalValue ? existingClosesAt : new Date(closesAt).toISOString()
-          : null,
-      });
+      const response = await api.patch<{ data: SurveySchedule }>(`/surveys/${id}/schedule`, { closesAt: nextClosesAt });
       const next = response.data.data;
       setPolicy((current) => current ? { ...current, schedule: next } : current);
       setClosesAt(toLocalDateTime(next.closesAt));
-      setSuccess('Schedule saved.');
-    } catch (saveError: unknown) {
-      const result = getPolicyError(saveError, 'Failed to save schedule.');
+      setSuccess(action === 'clear' ? 'Schedule cleared.' : 'Schedule saved.');
+    } catch (scheduleError: unknown) {
+      const result = getPolicyError(scheduleError, `Failed to ${action} schedule.`);
       setDenied(result.denied);
       if (!result.denied) setError(result.message);
     } finally {
@@ -121,23 +114,18 @@ export function SurveyPolicyPage() {
     }
   }
 
+  async function saveSchedule(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const existingClosesAt = policy?.schedule.closesAt ?? null;
+    const unchangedLocalValue = existingClosesAt !== null && closesAt === toLocalDateTime(existingClosesAt);
+    const nextClosesAt = closesAt
+      ? unchangedLocalValue ? existingClosesAt : new Date(closesAt).toISOString()
+      : null;
+    await persistSchedule(nextClosesAt, 'save');
+  }
+
   async function clearSchedule() {
-    setSaving(true);
-    setError(null);
-    setSuccess(null);
-    try {
-      const response = await api.patch<{ data: SurveySchedule }>(`/surveys/${id}/schedule`, { closesAt: null });
-      const next = response.data.data;
-      setPolicy((current) => current ? { ...current, schedule: next } : current);
-      setClosesAt('');
-      setSuccess('Schedule cleared.');
-    } catch (clearError: unknown) {
-      const result = getPolicyError(clearError, 'Failed to clear schedule.');
-      setDenied(result.denied);
-      if (!result.denied) setError(result.message);
-    } finally {
-      setSaving(false);
-    }
+    await persistSchedule(null, 'clear');
   }
 
   return (
