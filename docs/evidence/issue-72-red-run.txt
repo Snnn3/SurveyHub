@@ -1,0 +1,180 @@
+
+> surveyhub-server@0.1.0 test
+> jest --runInBand --detectOpenHandles --forceExit --runTestsByPath tests/response-submission-sprint2.integration.test.ts
+
+  console.log
+    prisma:error 
+    Invalid `tx.responseClaim.create()` invocation in
+    C:\Users\lchan\.codex\worktrees\issue-9-f06-contract\SEProject\server\src\services\response.service.ts:162:30
+    
+      159 const answers = normalizeAnswers(survey.questions, input.answers);
+      160 
+      161 try {
+    → 162   await tx.responseClaim.create(
+    Unique constraint failed on the fields: (`survey_id`,`user_id`)
+
+      at Object.zc (../node_modules/@prisma/internals/src/logger.ts:13:11)
+
+FAIL tests/response-submission-sprint2.integration.test.ts (23.396 s)
+  Issue #72 atomic response submission integration
+    × persists all seven F-06 types and returns typed values in the identified receipt (1027 ms)
+    × accepts one anonymous concurrent submission, stores no respondent link, and returns metadata only (982 ms)
+    √ rejects an identified duplicate without adding response, claim, or answer rows (3190 ms)
+    √ rejects a closed survey without adding response, claim, or answer rows (897 ms)
+    × rejects an ineligible respondent without adding response, claim, or answer rows (857 ms)
+    × rejects submissions after the stored deadline without adding response, claim, or answer rows (833 ms)
+
+  ● Issue #72 atomic response submission integration › persists all seven F-06 types and returns typed values in the identified receipt
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 201
+    Received: 400
+
+      140 |       .send({ answers });
+      141 |
+    > 142 |     expect(submitted.status).toBe(201);
+          |                              ^
+      143 |     const persisted = await prisma.surveyResponse.findUnique({
+      144 |       where: { id: submitted.body.data.responseId },
+      145 |       include: { answers: { include: { selectedOptions: true } } },
+
+      at Object.<anonymous> (tests/response-submission-sprint2.integration.test.ts:142:30)
+
+  ● Issue #72 atomic response submission integration › accepts one anonymous concurrent submission, stores no respondent link, and returns metadata only
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 2
+    + Received  + 2
+
+      Array [
+    -   201,
+    -   409,
+    +   400,
+    +   400,
+      ]
+
+      177 |
+      178 |     const attempts = await Promise.all([submit(), submit()]);
+    > 179 |     expect(attempts.map((response) => response.status).sort()).toEqual([201, 409]);
+          |                                                                ^
+      180 |     const accepted = attempts.find((response) => response.status === 201)!;
+      181 |     expect(await prisma.surveyResponse.findMany({ where: { surveyId: survey.id }, select: { respondentId: true } }))
+      182 |       .toEqual([{ respondentId: null }]);
+
+      at Object.<anonymous> (tests/response-submission-sprint2.integration.test.ts:179:64)
+
+  ● Issue #72 atomic response submission integration › rejects an ineligible respondent without adding response, claim, or answer rows
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  -  4
+    + Received  + 28
+
+      Object {
+    -   "code": "NOT_ELIGIBLE",
+    +   "code": undefined,
+        "state": Object {
+    -     "claims": Array [],
+    -     "responses": Array [],
+    +     "claims": Array [
+    +       Object {
+    +         "id": "077d8a92-4f61-4bce-8df2-46ce9570aff7",
+    +         "userId": "8d451b3f-9480-40ac-9b2e-ad8aa5e168cb",
+            },
+    -   "status": 403,
+    +     ],
+    +     "responses": Array [
+    +       Object {
+    +         "answers": Array [
+    +           Object {
+    +             "dateValue": null,
+    +             "id": "64cad442-c3ef-4558-ad83-d1aa00b70910",
+    +             "numberValue": null,
+    +             "questionId": "2995a3ad-a368-4e36-844a-9e3a7c20c75c",
+    +             "selectedOptions": Array [
+    +               Object {
+    +                 "optionId": "aa978af0-f37b-4d92-8e60-1cee1b1d4ff7",
+    +               },
+    +             ],
+    +             "textValue": null,
+    +           },
+    +         ],
+    +         "id": "5804e974-3f73-41e6-a950-b9f564873d36",
+    +         "respondentId": "8d451b3f-9480-40ac-9b2e-ad8aa5e168cb",
+    +       },
+    +     ],
+    +   },
+    +   "status": 201,
+      }
+
+      241 |       .send({ answers: [{ questionId: survey.questions[0].id, selectedOptionIds: [survey.questions[0].options[0].id] }] });
+      242 |
+    > 243 |     expect({ status: rejected.status, code: rejected.body.error?.code, state: await submissionState(survey.id) }).toEqual({
+          |                                                                                                                   ^
+      244 |       status: 403,
+      245 |       code: 'NOT_ELIGIBLE',
+      246 |       state: before,
+
+      at Object.<anonymous> (tests/response-submission-sprint2.integration.test.ts:243:115)
+
+  ● Issue #72 atomic response submission integration › rejects submissions after the stored deadline without adding response, claim, or answer rows
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  -  4
+    + Received  + 28
+
+      Object {
+    -   "code": "SURVEY_NOT_ACCEPTING_RESPONSES",
+    +   "code": undefined,
+        "state": Object {
+    -     "claims": Array [],
+    -     "responses": Array [],
+    +     "claims": Array [
+    +       Object {
+    +         "id": "aabe793f-4e95-4f85-8916-fc0eb0731551",
+    +         "userId": "4d7d3805-4b18-4108-bed4-78817b203ff7",
+            },
+    -   "status": 400,
+    +     ],
+    +     "responses": Array [
+    +       Object {
+    +         "answers": Array [
+    +           Object {
+    +             "dateValue": null,
+    +             "id": "e7905320-b577-46b4-84a7-180290a6e29d",
+    +             "numberValue": null,
+    +             "questionId": "55549264-0b6e-40b4-b095-7f39226115f6",
+    +             "selectedOptions": Array [
+    +               Object {
+    +                 "optionId": "a915f755-647d-4256-815d-49b3fd1633d6",
+    +               },
+    +             ],
+    +             "textValue": null,
+    +           },
+    +         ],
+    +         "id": "3c768619-2acc-437b-a2c1-047bc73993fb",
+    +         "respondentId": "4d7d3805-4b18-4108-bed4-78817b203ff7",
+    +       },
+    +     ],
+    +   },
+    +   "status": 201,
+      }
+
+      257 |       .send({ answers: [{ questionId: survey.questions[0].id, selectedOptionIds: [survey.questions[0].options[0].id] }] });
+      258 |
+    > 259 |     expect({ status: rejected.status, code: rejected.body.error?.code, state: await submissionState(survey.id) }).toEqual({
+          |                                                                                                                   ^
+      260 |       status: 400,
+      261 |       code: 'SURVEY_NOT_ACCEPTING_RESPONSES',
+      262 |       state: before,
+
+      at Object.<anonymous> (tests/response-submission-sprint2.integration.test.ts:259:115)
+
+Test Suites: 1 failed, 1 total
+Tests:       4 failed, 2 passed, 6 total
+Snapshots:   0 total
+Time:        23.603 s, estimated 24 s
+Ran all test suites within paths "tests/response-submission-sprint2.integration.test.ts".

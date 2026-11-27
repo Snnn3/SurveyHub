@@ -1,4 +1,4 @@
-import { SurveyMode, SurveyStatus } from '@prisma/client';
+import { SurveyMode } from '@prisma/client';
 import { NextFunction, Request, Response } from 'express';
 import { HttpError } from '../utils/errors';
 import { getValidUuid } from '../utils/uuid';
@@ -7,7 +7,6 @@ import { formatZodDetails } from '../validators/validation';
 import * as responseService from '../services/response.service';
 import * as surveyService from '../services/survey.service';
 import * as anonymousModeService from '../services/anonymous-mode.service';
-import { assertAnonymousSubmissionReady } from '../policies/anonymous-response.policy';
 import * as surveyPolicyService from '../services/survey-policy.service';
 
 export async function listActiveSurveys(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -61,10 +60,6 @@ export async function submitSurveyResponse(req: Request, res: Response, next: Ne
         formatZodDetails(parsed.error)
       );
     }
-
-    // shortcut: #72 removes this gate when its transaction path consumes the F-05 policy.
-    const { mode, status } = await anonymousModeService.getSurveySubmissionState(surveyId);
-    if (status === SurveyStatus.PUBLISHED) assertAnonymousSubmissionReady(mode);
 
     const response = await responseService.submitSurveyResponse(
       surveyId,

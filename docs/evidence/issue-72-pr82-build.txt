@@ -1,0 +1,38 @@
+
+> surveyhub@0.1.0 build
+> npm run build --prefix client && npm run build --prefix server
+
+
+> surveyhub-client@0.1.0 build
+> tsc && vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 104 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.56 kB │ gzip:   0.37 kB
+dist/assets/index-C1SJu3Ek.css   20.56 kB │ gzip:   4.42 kB
+dist/assets/index-DmsshOGe.js   568.92 kB │ gzip: 154.56 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 9.46s
+
+> surveyhub-server@0.1.0 build
+> prisma generate && tsc && tsc prisma/seed.ts --outDir dist/prisma --module commonjs --target ES2022 --moduleResolution node --skipLibCheck --esModuleInterop
+
+warn The configuration property `package.json#prisma` is deprecated and will be removed in Prisma 7. Please migrate to a Prisma config file (e.g., `prisma.config.ts`).
+For more information, see: https://pris.ly/prisma-config
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+
+✔ Generated Prisma Client (v6.19.3) to .\..\node_modules\@prisma\client in 204ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Interested in query caching in just a few lines of code? Try Accelerate today! https://pris.ly/tip-3-accelerate
+

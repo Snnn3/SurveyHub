@@ -1,0 +1,17 @@
+
+> surveyhub-server@0.1.0 test
+> jest --runInBand --detectOpenHandles --forceExit --runTestsByPath tests/f05-anonymous-mode.test.ts
+
+PASS tests/f05-anonymous-mode.test.ts (13.038 s)
+  F-05 anonymous mode foundations (STS-F05-01 to STS-F05-08)
+    √ defaults new drafts to identified and persists anonymous mode through owner reads and updates (931 ms)
+    √ rejects invalid, wrong-role, non-owner, and non-draft mode changes without changing stored mode (807 ms)
+    √ keeps the draft publish gate and accepts submissions to published anonymous surveys through #72 (978 ms)
+    √ returns anonymous receipts with metadata only and keeps owner summary unlinked (806 ms)
+    √ drops only the claim timestamp while retaining existing claims and their unique key (774 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       5 passed, 5 total
+Snapshots:   0 total
+Time:        13.274 s
+Ran all test suites within paths "tests/f05-anonymous-mode.test.ts".
