@@ -3,6 +3,8 @@ import { test } from 'node:test';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { SurveyQuestionInput, type SurveyQuestionInputModel } from '../src/components/SurveyQuestionInput';
+import { toLocalDateTime } from '../src/utils/survey-schedule';
+import { SurveyStartAction } from '../src/components/SurveyStartAction';
 
 const options = [
   { id: 'option-1', label: 'First' },
@@ -101,4 +103,26 @@ test('DATE renders a native date input and preserves its calendar-date value', (
   assert.match(markup, /type="date"/);
   assert.match(markup, /value="2026-11-27"/);
   assert.match(markup, /required=""/);
+});
+
+test('scheduled-close local input preserves the same instant including milliseconds', () => {
+  const instant = '2026-11-30T09:00:00.123Z';
+  const localValue = toLocalDateTime(instant);
+
+  assert.equal(new Date(localValue).getTime(), new Date(instant).getTime());
+  assert.equal(toLocalDateTime(null), '');
+});
+
+test('expired published surveys disable Start and announce that responses are closed', () => {
+  const markup = renderToStaticMarkup(createElement(SurveyStartAction, {
+    survey: {
+      id: 'survey-1', title: 'Expired', description: null, status: 'PUBLISHED',
+      closesAt: '2020-01-01T00:00:00.000Z', acceptingResponses: false,
+      questionCount: 1, hasSubmitted: false,
+    },
+  }));
+
+  assert.match(markup, /<button[^>]*disabled=""[^>]*>Start survey<\/button>/);
+  assert.match(markup, /role="status"/);
+  assert.match(markup, /This survey is no longer accepting responses\./);
 });

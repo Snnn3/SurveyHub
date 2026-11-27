@@ -19,6 +19,8 @@ export interface SurveyListItem {
   mode: SurveyMode;
   questionCount: number;
   responseCount: number;
+  closesAt: string | null;
+  acceptingResponses: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -299,6 +301,13 @@ export function OwnerSurveysPage() {
                     Close
                   </button>
                 )}
+
+                <Link
+                  to={`/owner/surveys/${survey.id}/policies`}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-indigo-200 text-indigo-700 hover:bg-indigo-50 transition"
+                >
+                  Eligibility & schedule
+                </Link>
 
                 <Link
                   to={`/owner/surveys/${survey.id}/summary`}

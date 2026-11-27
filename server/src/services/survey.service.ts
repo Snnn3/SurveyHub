@@ -3,6 +3,7 @@ import { prisma } from '../utils/prisma';
 import { HttpError, NotFoundError } from '../utils/errors';
 import { parseUuid } from '../utils/uuid';
 import { assertAnonymousSubmissionReady } from '../policies/anonymous-response.policy';
+import { isSurveyAcceptingResponses } from '../policies/scheduled-close.policy';
 import {
   FIXED_QUESTION_OPTIONS,
   validateSurveyStructure,
@@ -109,6 +110,7 @@ export async function listOwnerSurveys(ownerId: string) {
       title: true,
       status: true,
       mode: true,
+      closesAt: true,
       createdAt: true,
       updatedAt: true,
       _count: {
@@ -120,11 +122,14 @@ export async function listOwnerSurveys(ownerId: string) {
     },
   });
 
+  const now = new Date();
   return surveys.map((survey) => ({
     id: survey.id,
     title: survey.title,
     status: survey.status,
     mode: survey.mode,
+    closesAt: survey.closesAt?.toISOString() ?? null,
+    acceptingResponses: isSurveyAcceptingResponses({ status: survey.status, closesAt: survey.closesAt, now }),
     questionCount: survey._count.questions,
     responseCount: survey._count.responses,
     createdAt: survey.createdAt.toISOString(),
@@ -151,7 +156,12 @@ export async function createSurvey(ownerId: string, input: SurveyInput) {
 }
 
 export async function getSurveyById(surveyId: string, ownerId: string) {
-  return getAuthorizedSurvey(surveyId, ownerId, true);
+  const survey = await getAuthorizedSurvey(surveyId, ownerId, true);
+  return {
+    ...survey,
+    closesAt: survey.closesAt?.toISOString() ?? null,
+    acceptingResponses: isSurveyAcceptingResponses({ status: survey.status, closesAt: survey.closesAt, now: new Date() }),
+  };
 }
 
 export async function getSurveyQuestionSettings(surveyId: string) {

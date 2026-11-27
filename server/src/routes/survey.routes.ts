@@ -16,6 +16,10 @@ import {
   publishSurvey,
   closeSurvey,
   getSurveySummary,
+  getSurveyEligibility,
+  replaceSurveyEligibility,
+  getSurveySchedule,
+  updateSurveySchedule,
 } from '../controllers/survey.controller';
 
 const router = Router();
@@ -30,6 +34,10 @@ router.get('/:id/responses/:responseId', ...requireRespondent, getSurveyReceipt)
 
 router.get('/', ...requireOwner, listOwnerSurveys);
 router.post('/', ...requireOwner, createSurvey);
+router.get('/:id/eligibility', ...requireOwner, getSurveyEligibility);
+router.put('/:id/eligibility', ...requireOwner, replaceSurveyEligibility);
+router.get('/:id/schedule', ...requireOwner, getSurveySchedule);
+router.patch('/:id/schedule', ...requireOwner, updateSurveySchedule);
 
 // Route registration order per SDS §4.4: F-03 GET /active must precede /:id so literal path is not captured as id
 router.get('/:id/summary', ...requireOwner, getSurveySummary);

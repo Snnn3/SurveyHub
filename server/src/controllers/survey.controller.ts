@@ -4,6 +4,7 @@ import { getValidUuid } from '../utils/uuid';
 import { formatZodDetails } from '../validators/validation';
 import { parseSurveyInput } from '../validators/survey.validator';
 import * as surveyService from '../services/survey.service';
+import * as surveyPolicyService from '../services/survey-policy.service';
 
 export async function listOwnerSurveys(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -119,6 +120,46 @@ export async function getSurveySummary(req: Request, res: Response, next: NextFu
     const ownerId = req.auth!.id;
     const summary = await surveyService.getSurveySummary(id, ownerId);
     res.status(200).json({ success: true, data: summary });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getSurveyEligibility(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const id = getValidUuid(req.params.id, 'Survey');
+    const data = await surveyPolicyService.getSurveyEligibility(id, req.auth!.id);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function replaceSurveyEligibility(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const id = getValidUuid(req.params.id, 'Survey');
+    const data = await surveyPolicyService.replaceSurveyEligibility(id, req.auth!.id, req.body);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getSurveySchedule(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const id = getValidUuid(req.params.id, 'Survey');
+    const data = await surveyPolicyService.getSurveySchedule(id, req.auth!.id);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateSurveySchedule(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const id = getValidUuid(req.params.id, 'Survey');
+    const data = await surveyPolicyService.updateSurveySchedule(id, req.auth!.id, req.body);
+    res.status(200).json({ success: true, data });
   } catch (error) {
     next(error);
   }

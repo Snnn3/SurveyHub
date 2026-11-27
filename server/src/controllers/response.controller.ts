@@ -8,10 +8,12 @@ import * as responseService from '../services/response.service';
 import * as surveyService from '../services/survey.service';
 import * as anonymousModeService from '../services/anonymous-mode.service';
 import { assertAnonymousSubmissionReady } from '../policies/anonymous-response.policy';
+import * as surveyPolicyService from '../services/survey-policy.service';
 
 export async function listActiveSurveys(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const data = await responseService.listActiveSurveys(req.auth!.id);
+    const surveys = await responseService.listActiveSurveys(req.auth!.id);
+    const data = await surveyPolicyService.applyRespondentPolicies(req.auth!.id, surveys);
     res.status(200).json({ success: true, data });
   } catch (error) {
     next(error);
@@ -21,6 +23,7 @@ export async function listActiveSurveys(req: Request, res: Response, next: NextF
 export async function getSurveyForm(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const surveyId = getValidUuid(req.params.id, 'Survey');
+    await surveyPolicyService.assertRespondentCanViewForm(surveyId, req.auth!.id);
     const [form, mode, questionSettings] = await Promise.all([
       responseService.getSurveyForm(surveyId),
       anonymousModeService.getSurveyMode(surveyId),
