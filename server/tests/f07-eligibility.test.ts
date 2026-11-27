@@ -107,10 +107,13 @@ describe('F-07 respondent eligibility API (STS-S2-03-01 to STS-S2-03-06)', () =>
     }
 
     const closed = await createSurvey(ownerAId, SurveyStatus.CLOSED);
+    await prisma.surveyEligibility.create({ data: { surveyId: closed.id, userId: respondentBId } });
     const closedUpdate = await request(app).put(`/api/surveys/${closed.id}/eligibility`)
       .set('Authorization', `Bearer ${ownerAToken}`).send({ respondentEmails: ['bad'] });
     expect(closedUpdate.status).toBe(400);
     expect(closedUpdate.body.error.code).toBe('SURVEY_NOT_EDITABLE');
+    expect(await prisma.surveyEligibility.findMany({ where: { surveyId: closed.id }, select: { userId: true } }))
+      .toEqual([{ userId: respondentBId }]);
   });
 
   it('filters the active list by allowlist and returns non-acceptance without hiding expired published surveys', async () => {
