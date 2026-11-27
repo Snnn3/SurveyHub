@@ -3,6 +3,7 @@ import { prisma } from '../utils/prisma';
 import { HttpError, NotFoundError } from '../utils/errors';
 import { parseUuid } from '../utils/uuid';
 import { isSurveyAcceptingResponses } from '../policies/scheduled-close.policy';
+import { getNumberStats } from '../utils/number-stats';
 import {
   FIXED_QUESTION_OPTIONS,
   validateSurveyStructure,
@@ -376,18 +377,12 @@ export async function getSurveySummary(surveyId: string, ownerId: string) {
       const values = question.answers
         .map((answer) => answer.numberValue)
         .filter((value): value is number => value !== null && Number.isInteger(value));
-      const count = values.length;
-      const numberStats = {
-        count,
-        average: count ? Number((values.reduce((sum, value) => sum + value, 0) / count).toFixed(2)) : null,
-        min: count ? values.reduce((minimum, value) => Math.min(minimum, value), values[0]) : null,
-        max: count ? values.reduce((maximum, value) => Math.max(maximum, value), values[0]) : null,
-      };
+      const numberStats = getNumberStats(values);
       return {
         questionId: question.id,
         prompt: question.prompt,
         questionType: question.questionType,
-        answeredCount: count,
+        answeredCount: numberStats.count,
         numberStats,
         ...(question.questionType === QuestionType.RATING
           ? { ratingDistribution: [1, 2, 3, 4, 5].map((rating) => ({ rating, count: values.filter((value) => value === rating).length })) }
