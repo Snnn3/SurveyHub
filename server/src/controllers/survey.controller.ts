@@ -4,6 +4,7 @@ import { getValidUuid } from '../utils/uuid';
 import { formatZodDetails } from '../validators/validation';
 import { parseSurveyInput } from '../validators/survey.validator';
 import * as surveyService from '../services/survey.service';
+import * as surveyExportService from '../services/survey-export.service';
 import * as surveyPolicyService from '../services/survey-policy.service';
 
 export async function listOwnerSurveys(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -120,6 +121,19 @@ export async function getSurveySummary(req: Request, res: Response, next: NextFu
     const ownerId = req.auth!.id;
     const summary = await surveyService.getSurveySummary(id, ownerId);
     res.status(200).json({ success: true, data: summary });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function exportSurveyCsv(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    if (req.query.format !== 'csv') {
+      throw new HttpError(400, 'VALIDATION_ERROR', 'Export format must be csv.');
+    }
+    const id = getValidUuid(req.params.id, 'Survey');
+    const result = await surveyExportService.exportSurveyCsv(id, req.auth!.id);
+    res.status(200).attachment(result.filename).send(result.csv);
   } catch (error) {
     next(error);
   }

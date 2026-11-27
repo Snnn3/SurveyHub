@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 import { signIn, signOut } from './auth';
 const seedSurveyId = '00000000-0000-4000-a000-000000000001';
@@ -40,6 +41,19 @@ test('STS-E2E-01: owner publishes, respondent submits, and owner sees persisted 
   await page.goto(`/owner/surveys/${surveyId}/summary`);
   await expect(page.getByText('Total responses').locator('..').getByText('1', { exact: true })).toBeVisible();
   await expect(page.getByRole('progressbar', { name: 'Yes percentage' })).toHaveAttribute('aria-valuenow', '100');
+
+  const downloadReady = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Download identified CSV with raw answers' }).click();
+  const download = await downloadReady;
+  expect(download.suggestedFilename()).toBe(`survey-${surveyId}-identified.csv`);
+  const downloadPath = await download.path();
+  expect(downloadPath).not.toBeNull();
+  const csv = await readFile(downloadPath!, 'utf8');
+  expect(csv.split('\r\n')[0]).toBe(
+    'survey_id,survey_title,response_id,submitted_at,respondent_id,respondent_full_name,respondent_email,question_id,question_order,question_prompt,question_type,text_value,number_value,date_value,selected_options_json'
+  );
+  expect(csv).toContain(title);
+  expect(csv).toContain('Yes');
 });
 
 test('STS-E2E-02: duplicate, cross-receipt access, and a logged-out token are rejected', async ({ page }) => {

@@ -70,6 +70,7 @@ export function SurveySummaryPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshError, setRefreshError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
   const [isForbidden, setIsForbidden] = useState(false);
   const [isNotFound, setIsNotFound] = useState(false);
   const activeIdRef = useRef(id);
@@ -84,6 +85,7 @@ export function SurveySummaryPage() {
     setRefreshing(false);
     setError(null);
     setRefreshError(null);
+    setExporting(false);
     setIsForbidden(false);
     setIsNotFound(false);
 
@@ -146,6 +148,40 @@ export function SurveySummaryPage() {
       if (activeIdRef.current === targetId) {
         setRefreshing(false);
       }
+    }
+  };
+
+  const handleExportCsv = async () => {
+    const targetId = id;
+    setExporting(true);
+    setError(null);
+
+    try {
+      const response = await api.get<Blob>(`/surveys/${targetId}/export?format=csv`, { responseType: 'blob' });
+      if (activeIdRef.current !== targetId || !summary) return;
+
+      const mode = summary.mode === 'IDENTIFIED' ? 'identified' : 'aggregate';
+      const url = URL.createObjectURL(new Blob([response.data], { type: 'text/csv;charset=utf-8' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `survey-${targetId}-${mode}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    } catch (err: unknown) {
+      if (activeIdRef.current !== targetId) return;
+      setSummary(null);
+      const status = getApiErrorStatus(err);
+      if (status === 403) {
+        setIsForbidden(true);
+      } else if (status === 404) {
+        setIsNotFound(true);
+      } else {
+        setError(getApiErrorMessage(err, 'Failed to download survey CSV.'));
+      }
+    } finally {
+      if (activeIdRef.current === targetId) setExporting(false);
     }
   };
 
@@ -223,14 +259,31 @@ export function SurveySummaryPage() {
               {summary.status}
             </span>
           </div>
-          <button
-            type="button"
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 transition"
-          >
-            {refreshing ? 'Refreshing…' : 'Refresh results'}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 transition"
+            >
+              {refreshing ? 'Refreshing…' : 'Refresh results'}
+            </button>
+            <button
+              type="button"
+              onClick={handleExportCsv}
+              disabled={exporting}
+              aria-label={summary.mode === 'ANONYMOUS'
+                ? 'Download aggregate CSV; raw text answers are omitted'
+                : 'Download identified CSV with raw answers'}
+              className="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50 transition"
+            >
+              {exporting
+                ? 'Preparing CSV…'
+                : summary.mode === 'ANONYMOUS'
+                  ? 'Download aggregate CSV (no raw text)'
+                  : 'Download identified CSV'}
+            </button>
+          </div>
         </div>
         {summary.description && (
           <p className="mt-2 text-sm text-slate-600">{summary.description}</p>
