@@ -2,6 +2,7 @@ import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import api, { getApiErrorMessage } from '../api';
+import { SurveyQuestionInput } from '../components/SurveyQuestionInput';
 import type { SurveyMode } from '../types/survey';
 
 interface SurveyQuestion {
@@ -217,100 +218,17 @@ export function SurveyTakePage() {
           const missing = missingIds.includes(question.id);
           const validationError = missing ? 'This question is required.' : fieldErrors[question.id];
           const answer = answers[question.id];
-          const textAnswer = typeof answer === 'string' ? answer : '';
-          const selectedIds = Array.isArray(answer) ? answer : [];
-          const choiceQuestion = ['SINGLE_CHOICE', 'YES_NO', 'LIKERT'].includes(question.questionType);
-          const textQuestion = question.questionType === 'SHORT_TEXT' || question.questionType === 'LONG_TEXT';
           return (
             <fieldset key={question.id} aria-describedby={validationError ? `${question.id}-error` : undefined} className={`rounded-xl border bg-white p-5 ${validationError ? 'border-red-400' : 'border-slate-200'}`}>
               <legend className="max-w-full px-1 text-sm font-semibold text-slate-900">
                 {question.prompt} {question.isRequired && <span className="text-red-600">Required</span>}
               </legend>
-              {choiceQuestion ? (
-                <div className="mt-3 space-y-2">
-                  {question.options.map((option, index) => (
-                    <label key={option.id} className="flex items-center gap-3 text-sm text-slate-700">
-                      <input
-                        id={index === 0 ? `${question.id}-input` : undefined}
-                        type="radio"
-                        name={question.id}
-                        value={option.id}
-                        checked={textAnswer === option.id}
-                        required={question.isRequired}
-                        aria-invalid={Boolean(validationError)}
-                        onChange={() => updateAnswer(question.id, option.id)}
-                        className="h-4 w-4 accent-indigo-600"
-                      />
-                      {option.label}
-                    </label>
-                  ))}
-                </div>
-              ) : question.questionType === 'MULTI_CHOICE' ? (
-                <div className="mt-3 space-y-2">
-                  {question.options.map((option, index) => (
-                    <label key={option.id} className="flex items-center gap-3 text-sm text-slate-700">
-                      <input
-                        id={index === 0 ? `${question.id}-input` : undefined}
-                        type="checkbox"
-                        value={option.id}
-                        checked={selectedIds.includes(option.id)}
-                        aria-invalid={Boolean(validationError)}
-                        onChange={(event) => updateAnswer(question.id, event.target.checked
-                          ? [...selectedIds, option.id]
-                          : selectedIds.filter((id) => id !== option.id))}
-                        className="h-4 w-4 rounded accent-indigo-600"
-                      />
-                      {option.label}
-                    </label>
-                  ))}
-                  <p className="text-xs text-slate-500" aria-live="polite">
-                    {selectedIds.length} selected. Choose {question.minSelections ?? 1}–{question.maxSelections ?? question.options.length} options.
-                  </p>
-                </div>
-              ) : textQuestion ? (
-                <div className="mt-3">
-                  <label htmlFor={`${question.id}-input`} className="mb-1 block text-sm font-medium text-slate-700">
-                    Your answer
-                  </label>
-                  <textarea
-                    id={`${question.id}-input`}
-                    value={textAnswer}
-                    maxLength={question.questionType === 'SHORT_TEXT' ? 2000 : 10000}
-                    required={question.isRequired}
-                    aria-invalid={Boolean(validationError)}
-                    aria-describedby={`${validationError ? `${question.id}-error ` : ''}${question.id}-counter`}
-                    onChange={(event) => updateAnswer(question.id, event.target.value)}
-                    className="min-h-28 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-                  />
-                  <p id={`${question.id}-counter`} className="mt-1 text-right text-xs text-slate-500">{textAnswer.length}/{question.questionType === 'SHORT_TEXT' ? '2,000' : '10,000'}</p>
-                </div>
-              ) : question.questionType === 'RATING' ? (
-                <div className="mt-3 flex gap-3" role="group" aria-label="Rating from 1 to 5">
-                  {[1, 2, 3, 4, 5].map((rating) => (
-                    <label key={rating} className="flex items-center gap-1 text-sm text-slate-700">
-                      <input id={rating === 1 ? `${question.id}-input` : undefined} type="radio" name={question.id}
-                        checked={textAnswer === String(rating)} required={question.isRequired}
-                        aria-invalid={Boolean(validationError)} onChange={() => updateAnswer(question.id, String(rating))}
-                        className="h-4 w-4 accent-indigo-600" />{rating}
-                    </label>
-                  ))}
-                </div>
-              ) : question.questionType === 'INTEGER' ? (
-                <div className="mt-3">
-                  <label htmlFor={`${question.id}-input`} className="mb-1 block text-sm font-medium text-slate-700">Whole number</label>
-                  <input id={`${question.id}-input`} type="number" step={1} min={question.numberMin} max={question.numberMax}
-                    value={textAnswer} required={question.isRequired} aria-invalid={Boolean(validationError)}
-                    onChange={(event) => updateAnswer(question.id, event.target.value)}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-                </div>
-              ) : (
-                <div className="mt-3">
-                  <label htmlFor={`${question.id}-input`} className="mb-1 block text-sm font-medium text-slate-700">Date</label>
-                  <input id={`${question.id}-input`} type="date" value={textAnswer} required={question.isRequired}
-                    aria-invalid={Boolean(validationError)} onChange={(event) => updateAnswer(question.id, event.target.value)}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-                </div>
-              )}
+              <SurveyQuestionInput
+                question={question}
+                answer={answer}
+                validationError={validationError}
+                onChange={(value) => updateAnswer(question.id, value)}
+              />
               {validationError && <p id={`${question.id}-error`} className="mt-2 text-sm text-red-700">{validationError}</p>}
             </fieldset>
           );
