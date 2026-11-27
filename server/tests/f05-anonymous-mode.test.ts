@@ -121,7 +121,7 @@ describe('F-05 anonymous mode foundations (STS-F05-01 to STS-F05-08)', () => {
       .toEqual({ mode: SurveyMode.IDENTIFIED });
   });
 
-  it('blocks anonymous publish and submit until #72 integration without writing data', async () => {
+  it('keeps the draft publish gate and accepts submissions to published anonymous surveys through #72', async () => {
     const draft = await createSurvey(ownerId, SurveyMode.ANONYMOUS, SurveyStatus.DRAFT);
     const publish = await request(app)
       .patch(`/api/surveys/${draft.id}/publish`)
@@ -155,11 +155,27 @@ describe('F-05 anonymous mode foundations (STS-F05-01 to STS-F05-08)', () => {
       .set('Authorization', `Bearer ${respondentToken}`)
       .send({ answers: [] });
 
-    expect(response.status).toBe(400);
-    expect(response.body.error.code).toBe('ANONYMOUS_MODE_NOT_READY');
-    expect(await prisma.surveyResponse.count({ where: { surveyId: publishedFixture.id } })).toBe(0);
-    expect(await prisma.responseClaim.count({ where: { surveyId: publishedFixture.id } })).toBe(0);
+    expect(response.status).toBe(201);
+    const saved = await prisma.surveyResponse.findUnique({
+      where: { id: response.body.data.responseId },
+      select: { respondentId: true },
+    });
+    expect(saved).toEqual({ respondentId: null });
+    expect(await prisma.responseClaim.count({ where: { surveyId: publishedFixture.id, userId: respondentId } })).toBe(1);
     expect(await prisma.answer.count({ where: { response: { surveyId: publishedFixture.id } } })).toBe(0);
+
+    const receipt = await request(app)
+      .get(`/api/surveys/${publishedFixture.id}/responses/${response.body.data.responseId}`)
+      .set('Authorization', `Bearer ${respondentToken}`);
+    expect(receipt.status).toBe(200);
+    expect(receipt.body.data).toMatchObject({
+      responseId: response.body.data.responseId,
+      surveyId: publishedFixture.id,
+      mode: SurveyMode.ANONYMOUS,
+      answers: [],
+    });
+    expect(receipt.body.data).not.toHaveProperty('respondentId');
+    expect(receipt.body.data).not.toHaveProperty('userId');
   });
 
   it('returns anonymous receipts with metadata only and keeps owner summary unlinked', async () => {

@@ -1,0 +1,112 @@
+
+> surveyhub-server@0.1.0 test
+> jest --runInBand --detectOpenHandles --forceExit --runTestsByPath tests/response-submission-sprint2.integration.test.ts
+
+  console.log
+    prisma:error
+    Invalid `tx.surveyResponse.create()` invocation in
+    C:\Users\lchan\.codex\worktrees\issue-9-f06-contract\SEProject\server\src\services\response.service.ts:148:38
+
+      145
+      146 try {
+      147   await tx.responseClaim.create({ data: { surveyId, userId: identity.claimUserId } });
+    → 148   return await tx.surveyResponse.create(
+    Error occurred during query execution:
+    ConnectorError(ConnectorError { user_facing_error: None, kind: QueryError(PostgresError { code: "P0001", message: "issue72 forced answer insert failure", severity: "ERROR", detail: None, column: None, hint: None }), transient: false })
+
+      at Object.zc (../node_modules/@prisma/internals/src/logger.ts:13:11)
+
+  console.error
+    [Unhandled Server Error]: PrismaClientUnknownRequestError:
+    Invalid `tx.surveyResponse.create()` invocation in
+    C:\Users\lchan\.codex\worktrees\issue-9-f06-contract\SEProject\server\src\services\response.service.ts:148:38
+
+      145
+      146 try {
+      147   await tx.responseClaim.create({ data: { surveyId, userId: identity.claimUserId } });
+    → 148   return await tx.surveyResponse.create(
+    Error occurred during query execution:
+    ConnectorError(ConnectorError { user_facing_error: None, kind: QueryError(PostgresError { code: "P0001", message: "issue72 forced answer insert failure", severity: "ERROR", detail: None, column: None, hint: None }), transient: false })
+        at ei.handleRequestError (C:\Users\lchan\.codex\worktrees\issue-9-f06-contract\SEProject\node_modules\@prisma\client\src\runtime\RequestHandler.ts:237:13)
+        at ei.handleAndLogRequestError (C:\Users\lchan\.codex\worktrees\issue-9-f06-contract\SEProject\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+        at ei.request (C:\Users\lchan\.codex\worktrees\issue-9-f06-contract\SEProject\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+        at async a (C:\Users\lchan\.codex\worktrees\issue-9-f06-contract\SEProject\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:833:24)
+        at async C:\Users\lchan\.codex\worktrees\issue-9-f06-contract\SEProject\server\src\services\response.service.ts:148:14
+        at async Proxy._transactionWithCallback (C:\Users\lchan\.codex\worktrees\issue-9-f06-contract\SEProject\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:722:18)
+        at async submitSurveyResponse (C:\Users\lchan\.codex\worktrees\issue-9-f06-contract\SEProject\server\src\controllers\response.controller.ts:64:22) {
+      clientVersion: '6.19.3'
+    }
+
+      55 |   // Handle Unexpected Server Errors
+      56 |   if (env.NODE_ENV !== 'production') {
+    > 57 |     console.error('[Unhandled Server Error]:', err);
+         |             ^
+      58 |   }
+      59 |
+      60 |   res.status(500).json({
+
+      at errorHandler (src/middleware/error.middleware.ts:57:13)
+      at Layer.handle_error (../node_modules/express/lib/router/layer.js:71:5)
+      at trim_prefix (../node_modules/express/lib/router/index.js:326:13)
+      at ../node_modules/express/lib/router/index.js:286:9
+      at router.process_params (../node_modules/express/lib/router/index.js:346:12)
+      at next (../node_modules/express/lib/router/index.js:280:10)
+      at Layer.handle_error (../node_modules/express/lib/router/layer.js:67:12)
+      at trim_prefix (../node_modules/express/lib/router/index.js:326:13)
+      at ../node_modules/express/lib/router/index.js:286:9
+      at param (../node_modules/express/lib/router/index.js:365:14)
+      at param (../node_modules/express/lib/router/index.js:376:14)
+      at router.process_params (../node_modules/express/lib/router/index.js:421:3)
+      at next (../node_modules/express/lib/router/index.js:280:10)
+      at Layer.handle_error (../node_modules/express/lib/router/layer.js:67:12)
+      at trim_prefix (../node_modules/express/lib/router/index.js:326:13)
+      at ../node_modules/express/lib/router/index.js:286:9
+      at router.process_params (../node_modules/express/lib/router/index.js:346:12)
+      at Immediate.next (../node_modules/express/lib/router/index.js:280:10)
+      at Immediate._onImmediate (../node_modules/express/lib/router/index.js:646:15)
+
+  console.log
+    prisma:error
+    Invalid `tx.responseClaim.create()` invocation in
+    C:\Users\lchan\.codex\worktrees\issue-9-f06-contract\SEProject\server\src\services\response.service.ts:147:30
+
+      144 const identity = getSubmissionIdentity(survey.mode, userId);
+      145
+      146 try {
+    → 147   await tx.responseClaim.create(
+    Unique constraint failed on the fields: (`survey_id`,`user_id`)
+
+      at Object.zc (../node_modules/@prisma/internals/src/logger.ts:13:11)
+
+  console.log
+    prisma:error
+    Invalid `tx.responseClaim.create()` invocation in
+    C:\Users\lchan\.codex\worktrees\issue-9-f06-contract\SEProject\server\src\services\response.service.ts:147:30
+
+      144 const identity = getSubmissionIdentity(survey.mode, userId);
+      145
+      146 try {
+    → 147   await tx.responseClaim.create(
+    Unique constraint failed on the fields: (`survey_id`,`user_id`)
+
+      at Object.zc (../node_modules/@prisma/internals/src/logger.ts:13:11)
+
+PASS tests/response-submission-sprint2.integration.test.ts (15.372 s)
+  Issue #72 atomic response submission integration
+    √ persists all seven F-06 types and returns typed values in the identified receipt (853 ms)
+    √ rolls back the claim and response if answer persistence fails (641 ms)
+    √ accepts one anonymous concurrent submission, stores no respondent link, and returns metadata only (681 ms)
+    √ rejects an identified duplicate without adding response, claim, or answer rows (886 ms)
+    √ rejects a closed survey without adding response, claim, or answer rows (568 ms)
+    √ rejects an ineligible respondent without adding response, claim, or answer rows (572 ms)
+    √ rejects malformed answers without adding response, claim, or answer rows (618 ms)
+    √ denies survey owners without writing response, claim, or answer rows (710 ms)
+    √ uses the exact server-time deadline boundary (before) (774 ms)
+    √ uses the exact server-time deadline boundary (at) (674 ms)
+    √ uses the exact server-time deadline boundary (after) (580 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       11 passed, 11 total
+Snapshots:   0 total
+Time:        15.615 s
+Ran all test suites within paths "tests/response-submission-sprint2.integration.test.ts".

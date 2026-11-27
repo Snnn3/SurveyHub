@@ -1,78 +1,19 @@
-import { Prisma, QuestionType, SurveyStatus } from '@prisma/client';
+import { Prisma, SurveyMode, SurveyStatus } from '@prisma/client';
 import { HttpError, NotFoundError } from '../utils/errors';
 import { prisma } from '../utils/prisma';
-import type { ResponseInput } from '../validators/response.validator';
+import { getSubmissionIdentity } from '../policies/anonymous-response.policy';
+import { evaluateRespondentEligibility } from '../policies/respondent-eligibility.policy';
+import { isSurveyAcceptingResponses } from '../policies/scheduled-close.policy';
+import { validateResponseAnswers, type ResponseInput } from '../validators/response.validator';
 
-function invalidAnswer(field: string, message: string): never {
-  throw new HttpError(400, 'INVALID_ANSWER', 'One or more submitted answers are invalid.', [{ field, message }]);
+function throwDuplicateSubmission(): never {
+  throw new HttpError(409, 'DUPLICATE_SUBMISSION', 'You have already submitted a response to this survey.');
 }
 
-function assertSurveyAcceptingResponses(status: SurveyStatus): void {
+function assertSurveyPublished(status: SurveyStatus): void {
   if (status !== SurveyStatus.PUBLISHED) {
     throw new HttpError(400, 'SURVEY_NOT_ACCEPTING_RESPONSES', 'This survey is no longer accepting responses.');
   }
-}
-
-function normalizeAnswers(
-  questions: Array<{
-    id: string;
-    questionType: QuestionType;
-    isRequired: boolean;
-    options: Array<{ id: string }>;
-  }>,
-  answers: ResponseInput['answers']
-) {
-  const questionById = new Map(questions.map((question) => [question.id, question]));
-  const seenQuestionIds = new Set<string>();
-  const normalized: Array<{ questionId: string; textValue?: string; selectedOptionIds?: string[] }> = [];
-
-  for (const [index, answer] of answers.entries()) {
-    const answerField = `answers.${index}`;
-    if (seenQuestionIds.has(answer.questionId)) {
-      invalidAnswer(`${answerField}.questionId`, 'This question was answered more than once.');
-    }
-    seenQuestionIds.add(answer.questionId);
-
-    const question = questionById.get(answer.questionId);
-    if (!question) invalidAnswer(`${answerField}.questionId`, 'This question is no longer available.');
-
-    if (question.questionType === QuestionType.SINGLE_CHOICE) {
-      const selectedOptionIds = answer.selectedOptionIds;
-      if (answer.textValue !== undefined) {
-        invalidAnswer(`${answerField}.textValue`, 'This question accepts a choice, not text.');
-      }
-      if (!selectedOptionIds || selectedOptionIds.length !== 1 ||
-        !question.options.some((option) => option.id === selectedOptionIds[0])) {
-        invalidAnswer(`${answerField}.selectedOptionIds`, 'Select one available option.');
-      }
-      normalized.push({ questionId: answer.questionId, selectedOptionIds });
-    } else if (question.questionType === QuestionType.SHORT_TEXT) {
-      if (answer.selectedOptionIds !== undefined) {
-        invalidAnswer(`${answerField}.selectedOptionIds`, 'This question accepts text, not a choice.');
-      }
-      const textValue = answer.textValue?.trim();
-      if (textValue && textValue.length > 2000) {
-        invalidAnswer(`${answerField}.textValue`, 'Answer must be at most 2,000 characters.');
-      }
-      if (textValue) normalized.push({ questionId: answer.questionId, textValue });
-    } else {
-      invalidAnswer(answerField, 'This question type cannot be answered yet.');
-    }
-  }
-
-  const missingQuestionIds = questions
-    .filter((question) => question.isRequired && !normalized.some((answer) => answer.questionId === question.id))
-    .map((question) => question.id);
-  if (missingQuestionIds.length > 0) {
-    throw new HttpError(
-      400,
-      'MISSING_REQUIRED_QUESTIONS',
-      'Required questions must be answered.',
-      { questionIds: missingQuestionIds }
-    );
-  }
-
-  return normalized;
 }
 
 export async function listActiveSurveys(userId: string) {
@@ -129,7 +70,7 @@ export async function getSurveyForm(surveyId: string) {
   });
 
   if (!survey) throw new NotFoundError('Survey not found.');
-  assertSurveyAcceptingResponses(survey.status);
+  assertSurveyPublished(survey.status);
   return survey;
 }
 
@@ -137,52 +78,99 @@ export async function submitSurveyResponse(surveyId: string, userId: string, inp
   return prisma.$transaction(async (tx) => {
     // Match F-02 lifecycle locks so a close cannot race a response submission.
     await tx.$queryRaw`SELECT id FROM surveys WHERE id = ${surveyId} FOR UPDATE`;
+    const now = new Date();
 
     const survey = await tx.survey.findUnique({
       where: { id: surveyId },
       select: {
         id: true,
+        ownerId: true,
         status: true,
+        mode: true,
+        closesAt: true,
         questions: {
           select: {
             id: true,
             questionType: true,
             isRequired: true,
+            minSelections: true,
+            maxSelections: true,
+            numberMin: true,
+            numberMax: true,
             options: { select: { id: true } },
           },
         },
+        eligibility: { select: { userId: true } },
       },
     });
     if (!survey) throw new NotFoundError('Survey not found.');
-    assertSurveyAcceptingResponses(survey.status);
 
-    const answers = normalizeAnswers(survey.questions, input.answers);
+    if (!isSurveyAcceptingResponses({ status: survey.status, closesAt: survey.closesAt, now })) {
+      throw new HttpError(400, 'SURVEY_NOT_ACCEPTING_RESPONSES', 'This survey is no longer accepting responses.');
+    }
+
+    const respondent = await tx.user.findUnique({ where: { id: userId }, select: { role: true } });
+    if (!respondent) throw new HttpError(401, 'INVALID_TOKEN', 'Authentication token is invalid.');
+    const eligibility = evaluateRespondentEligibility({
+      respondentId: userId,
+      respondentRole: respondent.role,
+      surveyOwnerId: survey.ownerId,
+      eligibleRespondentIds: survey.eligibility.map(({ userId: eligibleId }) => eligibleId),
+    });
+    if (!eligibility.allowed) {
+      const roleDenied = eligibility.reason === 'INVALID_ROLE';
+      throw new HttpError(
+        403,
+        roleDenied ? 'FORBIDDEN_ROLE' : 'NOT_ELIGIBLE',
+        roleDenied ? 'Your role does not allow this operation.' : 'You are not eligible to submit a response to this survey.'
+      );
+    }
+
+    const validation = validateResponseAnswers(survey.questions, input.answers);
+    if (!validation.valid) {
+      const details = validation.code === 'INVALID_ANSWER'
+        ? [{ field: validation.field, message: validation.message }]
+        : { questionIds: validation.questionIds };
+      throw new HttpError(
+        400,
+        validation.code,
+        validation.code === 'INVALID_ANSWER'
+          ? 'One or more submitted answers are invalid.'
+          : 'Required questions must be answered.',
+        details
+      );
+    }
+
+    const identity = getSubmissionIdentity(survey.mode, userId);
 
     try {
-      await tx.responseClaim.create({ data: { surveyId, userId } });
+      await tx.responseClaim.create({ data: { surveyId, userId: identity.claimUserId } });
+      return await tx.surveyResponse.create({
+        data: {
+          surveyId,
+          respondentId: identity.respondentId,
+          answers: {
+            create: validation.answers.map((answer) => ({
+              questionId: answer.questionId,
+              ...(answer.textValue !== undefined ? { textValue: answer.textValue } : {}),
+              ...(answer.numberValue !== undefined ? { numberValue: answer.numberValue } : {}),
+              ...(answer.dateValue !== undefined
+                ? { dateValue: new Date(`${answer.dateValue}T00:00:00.000Z`) }
+                : {}),
+              ...(answer.selectedOptionIds !== undefined
+                ? { selectedOptions: { create: answer.selectedOptionIds.map((optionId) => ({ optionId })) } }
+                : {}),
+            })),
+          },
+        },
+        select: { id: true, surveyId: true, submittedAt: true },
+      });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new HttpError(409, 'DUPLICATE_SUBMISSION', 'You have already submitted a response to this survey.');
+        throwDuplicateSubmission();
       }
       throw error;
     }
-
-    return tx.surveyResponse.create({
-      data: {
-        surveyId,
-        respondentId: userId,
-        answers: {
-          create: answers.map((answer) => ({
-            questionId: answer.questionId,
-            ...(answer.textValue !== undefined ? { textValue: answer.textValue } : {}),
-            ...(answer.selectedOptionIds
-              ? { selectedOptions: { create: answer.selectedOptionIds.map((optionId) => ({ optionId })) } }
-              : {}),
-          })),
-        },
-      },
-      select: { id: true, surveyId: true, submittedAt: true },
-    });
   });
 }
 
@@ -198,6 +186,8 @@ export async function getSurveyReceipt(surveyId: string, responseId: string, use
         select: {
           questionId: true,
           textValue: true,
+          numberValue: true,
+          dateValue: true,
           question: { select: { prompt: true, questionType: true, orderIndex: true } },
           selectedOptions: { select: { optionId: true, option: { select: { label: true } } } },
         },
@@ -221,6 +211,8 @@ export async function getSurveyReceipt(surveyId: string, responseId: string, use
         prompt: answer.question.prompt,
         questionType: answer.question.questionType,
         textValue: answer.textValue,
+        ...(answer.numberValue !== null ? { numberValue: answer.numberValue } : {}),
+        ...(answer.dateValue !== null ? { dateValue: answer.dateValue.toISOString().slice(0, 10) } : {}),
         selectedOptionIds: answer.selectedOptions.map((option) => option.optionId),
         selectedOptions: answer.selectedOptions.map((option) => option.option.label),
       })),

@@ -123,6 +123,7 @@ describe('Issue #72 atomic response submission integration', () => {
 
   it('persists all seven F-06 types and returns typed values in the identified receipt', async () => {
     const survey = await createF06Survey(ownerId);
+    await prisma.surveyEligibility.create({ data: { surveyId: survey.id, userId: respondentId } });
     const question = (type: QuestionType) => survey.questions.find((item) => item.questionType === type)!;
     const answers = [
       { questionId: question(QuestionType.MULTI_CHOICE).id, selectedOptionIds: question(QuestionType.MULTI_CHOICE).options.map((option) => option.id) },
@@ -165,6 +166,38 @@ describe('Issue #72 atomic response submission integration', () => {
       expect.objectContaining({ questionId: question(QuestionType.INTEGER).id, numberValue: -2 }),
       expect.objectContaining({ questionId: question(QuestionType.DATE).id, dateValue: '2024-02-29' }),
     ]));
+  });
+
+  it('rolls back the claim and response if answer persistence fails', async () => {
+    const survey = await createPublishedSurvey(ownerId);
+    const before = await submissionState(survey.id);
+    await prisma.$executeRawUnsafe('DROP TRIGGER IF EXISTS issue72_fail_answer_insert ON answers');
+    await prisma.$executeRawUnsafe('DROP FUNCTION IF EXISTS issue72_fail_answer_insert()');
+    await prisma.$executeRawUnsafe(`
+      CREATE FUNCTION issue72_fail_answer_insert() RETURNS trigger AS $$
+      BEGIN
+        RAISE EXCEPTION 'issue72 forced answer insert failure';
+      END;
+      $$ LANGUAGE plpgsql
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE TRIGGER issue72_fail_answer_insert
+      BEFORE INSERT ON answers
+      FOR EACH ROW EXECUTE FUNCTION issue72_fail_answer_insert()
+    `);
+
+    try {
+      const rejected = await request(app)
+        .post(`/api/surveys/${survey.id}/responses`)
+        .set('Authorization', `Bearer ${respondentToken}`)
+        .send({ answers: [{ questionId: survey.questions[0].id, selectedOptionIds: [survey.questions[0].options[0].id] }] });
+
+      expect(rejected.status).toBe(500);
+      expect(await submissionState(survey.id)).toEqual(before);
+    } finally {
+      await prisma.$executeRawUnsafe('DROP TRIGGER IF EXISTS issue72_fail_answer_insert ON answers');
+      await prisma.$executeRawUnsafe('DROP FUNCTION IF EXISTS issue72_fail_answer_insert()');
+    }
   });
 
   it('accepts one anonymous concurrent submission, stores no respondent link, and returns metadata only', async () => {
@@ -247,19 +280,74 @@ describe('Issue #72 atomic response submission integration', () => {
     });
   });
 
-  it('rejects submissions after the stored deadline without adding response, claim, or answer rows', async () => {
-    const survey = await createPublishedSurvey(ownerId, { closesAt: new Date(Date.now() - 1_000) });
+  it('rejects malformed answers without adding response, claim, or answer rows', async () => {
+    const survey = await createPublishedSurvey(ownerId);
     const before = await submissionState(survey.id);
 
     const rejected = await request(app)
       .post(`/api/surveys/${survey.id}/responses`)
       .set('Authorization', `Bearer ${respondentToken}`)
-      .send({ answers: [{ questionId: survey.questions[0].id, selectedOptionIds: [survey.questions[0].options[0].id] }] });
+      .send({ answers: [{ questionId: survey.questions[0].id, textValue: 'wrong type' }] });
 
     expect({ status: rejected.status, code: rejected.body.error?.code, state: await submissionState(survey.id) }).toEqual({
       status: 400,
-      code: 'SURVEY_NOT_ACCEPTING_RESPONSES',
+      code: 'INVALID_ANSWER',
       state: before,
     });
+  });
+
+  it('denies survey owners without writing response, claim, or answer rows', async () => {
+    const survey = await createPublishedSurvey(ownerId);
+    const ownerToken = await loginAs('owner1@survey.local');
+    const before = await submissionState(survey.id);
+
+    const rejected = await request(app)
+      .post(`/api/surveys/${survey.id}/responses`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ answers: [{ questionId: survey.questions[0].id, selectedOptionIds: [survey.questions[0].options[0].id] }] });
+
+    expect(rejected.status).toBe(403);
+    expect(rejected.body.error.code).toBe('FORBIDDEN_ROLE');
+    expect(JSON.stringify(rejected.body)).not.toContain(survey.title);
+    expect(JSON.stringify(rejected.body)).not.toContain(survey.questions[0].prompt);
+    expect(await submissionState(survey.id)).toEqual(before);
+  });
+
+  it.each([
+    ['before', -1, 201],
+    ['at', 0, 400],
+    ['after', 1, 400],
+  ])('uses the exact server-time deadline boundary (%s)', async (_label, offset, expectedStatus) => {
+    const closesAt = new Date(Date.now() + 60_000);
+    const survey = await createPublishedSurvey(ownerId, { closesAt });
+    if (offset >= 0) {
+      await prisma.surveyEligibility.create({ data: { surveyId: survey.id, userId: otherRespondentId } });
+    }
+    const before = await submissionState(survey.id);
+    const testTime = new Date(closesAt.getTime() + offset);
+
+    jest.useFakeTimers({
+      doNotFake: [
+        'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval',
+        'setImmediate', 'clearImmediate', 'nextTick', 'queueMicrotask', 'hrtime', 'performance',
+      ],
+    });
+    jest.setSystemTime(testTime);
+    try {
+      const submitted = await request(app)
+        .post(`/api/surveys/${survey.id}/responses`)
+        .set('Authorization', `Bearer ${respondentToken}`)
+        .send({ answers: [{ questionId: survey.questions[0].id, selectedOptionIds: [survey.questions[0].options[0].id] }] });
+
+      expect(submitted.status).toBe(expectedStatus);
+      if (expectedStatus === 201) {
+        expect((await submissionState(survey.id)).responses).toHaveLength(1);
+      } else {
+        expect(submitted.body.error.code).toBe('SURVEY_NOT_ACCEPTING_RESPONSES');
+        expect(await submissionState(survey.id)).toEqual(before);
+      }
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });
