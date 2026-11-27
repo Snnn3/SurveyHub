@@ -70,6 +70,8 @@ test('STS-F06-17/18: all question types round-trip and respondent input survives
   const savedDraft = (await persisted.json()).data;
   expect(savedDraft.questions[2]).toMatchObject({ minSelections: 1, maxSelections: 2 });
   expect(savedDraft.questions[7].questionType).toBe('DATE');
+  const savedQuestionId = (questionType: string) =>
+    (savedDraft.questions as Array<{ id: string; questionType: string }>).find((question) => question.questionType === questionType)!.id;
 
   await page.route(`**/api/surveys/${surveyId}`, async (route) => {
     if (route.request().method() === 'PUT') {
@@ -132,9 +134,9 @@ test('STS-F06-17/18: all question types round-trip and respondent input survives
         totalResponses: 1,
         createdAt: '2026-11-27T00:00:00.000Z',
         questions: [
-          { questionId: byType('RATING').id, prompt: 'Question 7', questionType: 'RATING', answeredCount: 1, numberStats: { count: 1, average: 5, min: 5, max: 5 }, ratingDistribution: [{ rating: 5, count: 1 }] },
-          { questionId: byType('INTEGER').id, prompt: 'Question 8', questionType: 'INTEGER', answeredCount: 0, numberStats: { count: 0, average: null, min: null, max: null } },
-          { questionId: byType('DATE').id, prompt: 'Question 9', questionType: 'DATE', answeredCount: 0, dateCounts: [] },
+          { questionId: savedQuestionId('RATING'), prompt: 'Question 7', questionType: 'RATING', answeredCount: 1, numberStats: { count: 1, average: 5, min: 5, max: 5 }, ratingDistribution: [{ rating: 5, count: 1 }] },
+          { questionId: savedQuestionId('INTEGER'), prompt: 'Question 8', questionType: 'INTEGER', answeredCount: 0, numberStats: { count: 0, average: null, min: null, max: null } },
+          { questionId: savedQuestionId('DATE'), prompt: 'Question 9', questionType: 'DATE', answeredCount: 0, dateCounts: [] },
         ],
       },
     }),
@@ -219,7 +221,7 @@ test('STS-F06-17/18: all question types round-trip and respondent input survives
       { status: 400, code: 'SURVEY_NOT_ACCEPTING_RESPONSES', message: 'This survey is no longer accepting responses.' },
       { status: 500, code: 'INTERNAL_ERROR', message: 'Unable to submit response.' },
     ];
-    if (attempts === 5) {
+    if (attempts === 6) {
       resolveNetworkRequest();
       await networkFailureGate;
       return route.abort('failed');
