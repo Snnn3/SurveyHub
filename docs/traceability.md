@@ -3,8 +3,8 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)\
 **Course:** CPE 334 Software Engineering, Semester 1/2026\
 **Deliverable:** Project Deliverable 1 — Part B (10 points across `features.md` and this document)\
-**Document status:** Baseline v5 with proposed F-05 amendment v6 and F-07 amendment v7, drafted on 27 November 2026\
-**Related documents:** [SRS](srs.md), [feature inventory](features.md), [system design](system-sds.md), [Sprint 1 contracts](sprints/sprint-1/README.md), [F-05 contract](sprints/sprint-2/f-05.md), [F-06 contract](sprints/sprint-2/f-06.md), [F-07 eligibility contract](sprints/sprint-2/f-07-eligibility.md), [F-07 scheduled-close contract](sprints/sprint-2/f-07-scheduled-close.md), [verification plan](verification.md)
+**Document status:** Baseline v5 with proposed F-05 amendment v6, F-07 amendment v7 and F-08 amendment v8, drafted 27–28 November 2026\
+**Related documents:** [SRS](srs.md), [feature inventory](features.md), [system design](system-sds.md), [Sprint 1 contracts](sprints/sprint-1/README.md), [F-05 contract](sprints/sprint-2/f-05.md), [F-06 contract](sprints/sprint-2/f-06.md), [F-07 eligibility contract](sprints/sprint-2/f-07-eligibility.md), [F-07 scheduled-close contract](sprints/sprint-2/f-07-scheduled-close.md), [F-08 contract](sprints/sprint-3/f-08.md), [verification plan](verification.md)
 
 > Status note: every row is a **plan** until actual test evidence for the assessed commit is recorded in Part F. No requirement is marked verified in advance.
 
@@ -26,13 +26,13 @@ Status values: **PLANNED** (designed, not implemented), **IMPLEMENTED** (code ex
 | **FR-07** | Browse published surveys and load a survey form | F-03 | 1 | AC-F03-01, AC-F03-02 | STS-F03-01, STS-F03-02 | PLANNED |
 | **FR-08** | Take and submit survey | F-03 | 1 | AC-F03-03..07, AC-F03-09 | STS-F03-03..07, STS-F03-09 | PLANNED |
 | **FR-09** | Persisted identified receipt and anonymous confirmation | F-03, F-05, [Issue #60](https://github.com/Snnn3/SurveyHub/issues/60) | 1, 2 | AC-F03-03, AC-F03-10, AC-F05-06..07 | STS-F03-03, STS-F03-10, STS-F05-06, STS-F05-09 | PLANNED |
-| **FR-10** | Aggregate summary (Sprint 1 formats) | F-04 | 1 | AC-F04-01..04 | STS-F04-01..04 | PLANNED |
+| **FR-10** | Aggregate summary, F-06 formats, and F-08 chart presentation | F-04, F-06, F-08, [Issue #63](https://github.com/Snnn3/SurveyHub/issues/63) | 1, 2, 3 | AC-F04-01..04, AC-F06-09, AC-S3-08 | STS-F04-01..04, STS-F06-09..11, STS-S3-09 ([F-08 contract](sprints/sprint-3/f-08.md)) | PLANNED |
 | **FR-11** | Anonymous responses | F-05, [Issue #60](https://github.com/Snnn3/SurveyHub/issues/60) | 2 | AC-F05-01..10 | STS-F05-01..10 | PLANNED |
 | **FR-12** | Expanded question types and type-aware summary | F-06, [Issue #9](https://github.com/Snnn3/SurveyHub/issues/9) | 2 | AC-F06-01..12 | STS-F06-01..20 ([F-06 contract](sprints/sprint-2/f-06.md)) | PLANNED |
-| **FR-13** | CSV/JSON export | F-08 | 3 | AC-S3-01 | STS-S3-01 | DEFERRED |
+| **FR-13** | CSV/JSON export | F-08, [Issue #63](https://github.com/Snnn3/SurveyHub/issues/63) | 3 | AC-S3-01..05, AC-S3-09..11 | STS-S3-01..06, STS-S3-08, STS-S3-10..12 ([F-08 contract](sprints/sprint-3/f-08.md)) | DEFERRED |
 | **FR-14** | Eligibility allowlist | F-07, [Issue #61](https://github.com/Snnn3/SurveyHub/issues/61) | 2 | AC-S2-03-01..07 | STS-S2-03-01..07 ([F-07 eligibility contract](sprints/sprint-2/f-07-eligibility.md)) | PLANNED |
 | **FR-15** | Scheduled close | F-07, [Issue #61](https://github.com/Snnn3/SurveyHub/issues/61) | 2 | AC-S2-04-01..07 | STS-S2-04-01..06 ([F-07 scheduled-close contract](sprints/sprint-2/f-07-scheduled-close.md)) | PLANNED |
-| **FR-16** | Browse individual responses | F-08 | 3 | AC-S3-02 | STS-S3-02 | DEFERRED |
+| **FR-16** | Browse individual responses | F-08, [Issue #63](https://github.com/Snnn3/SurveyHub/issues/63) | 3 | AC-S3-06..07 | STS-S3-06..08, STS-S3-11 ([F-08 contract](sprints/sprint-3/f-08.md)) | DEFERRED |
 
 ### 2.2 Business rules
 
@@ -48,7 +48,7 @@ Status values: **PLANNED** (designed, not implemented), **IMPLEMENTED** (code ex
 | **BR-08** | Role and eligibility guard for submission | F-03, F-07, #72 | 1, 2 | AC-F03-09, AC-S2-03-03..07 | STS-F03-09, STS-S2-03-03..07 | PLANNED |
 | **BR-09** | CLOSED is terminal; invalid transitions rejected | F-02 | 1 | AC-F02-11 | STS-F02-11 | PLANNED |
 | **BR-10** | Anonymous identity/answer separation | F-05, [Issue #60](https://github.com/Snnn3/SurveyHub/issues/60) | 2 | AC-F05-04..10 | STS-F05-04..10 | PLANNED |
-| **BR-11** | No respondent identity in aggregates or exports | F-04, F-08 | 1, 3 | AC-F04-01, AC-S3-02 | STS-F04-01, STS-S3-02 | PLANNED |
+| **BR-11** | No identity in aggregates or anonymous exports; identified raw access is owner-only | F-04, F-08, [Issue #63](https://github.com/Snnn3/SurveyHub/issues/63) | 1, 3 | AC-F04-01, AC-S3-03, AC-S3-05..07 | STS-F04-01, STS-S3-03, STS-S3-05..08 ([F-08 contract](sprints/sprint-3/f-08.md)) | PLANNED |
 
 ### 2.3 Non-functional requirements
 
