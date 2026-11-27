@@ -131,7 +131,15 @@ async function addResponse(
 
 async function snapshot(surveyId: string) {
   const [survey, responses, claims] = await Promise.all([
-    prisma.survey.findUnique({ where: { id: surveyId }, select: { id: true, title: true, mode: true } }),
+    prisma.survey.findUnique({
+      where: { id: surveyId },
+      include: {
+        questions: {
+          orderBy: [{ orderIndex: 'asc' }, { id: 'asc' }],
+          include: { options: { orderBy: [{ orderIndex: 'asc' }, { id: 'asc' }] } },
+        },
+      },
+    }),
     prisma.surveyResponse.findMany({
       where: { surveyId },
       orderBy: [{ submittedAt: 'asc' }, { id: 'asc' }],
