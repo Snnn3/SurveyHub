@@ -5,11 +5,13 @@ const surveyId = '00000000-0000-4000-a000-000000000091';
 const eligibilityUrl = `**/api/surveys/${surveyId}/eligibility`;
 const scheduleUrl = `**/api/surveys/${surveyId}/schedule`;
 
+test.use({ timezoneId: 'America/New_York' });
+
 test('STS-S2-03-06 / STS-S2-04-05: owner manages and reloads eligibility and schedule settings', async ({ page }) => {
   await signIn(page, 'owner1@survey.local', '/owner/surveys');
 
   let eligibleRespondents = [{ userId: 'respondent-1', email: 'resp1@survey.local', fullName: 'Student Respondent One' }];
-  let closesAt: string | null = '2030-01-02T03:04:05.678Z';
+  let closesAt: string | null = '2030-11-03T06:30:00.123Z';
   let eligibilityAttempts = 0;
   let scheduleAttempts = 0;
   let submittedSchedule: { closesAt: string | null } | undefined;
@@ -79,13 +81,11 @@ test('STS-S2-03-06 / STS-S2-04-05: owner manages and reloads eligibility and sch
   await expect(page.getByRole('status')).toContainText('Loading survey policies');
   releaseLoad();
   await expect(page.getByRole('heading', { name: 'Eligible respondents' })).toBeVisible();
-  await expect(page.getByText(/^Time zone:/)).toBeVisible();
-  const expectedInitialLocalTime = await page.evaluate(() => {
-    const date = new Date('2030-01-02T03:04:05.678Z');
-    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-    return date.toISOString().slice(0, 23);
-  });
-  await expect(page.locator('#closes-at')).toHaveValue(expectedInitialLocalTime);
+  await expect(page.getByText('Time zone: America/New_York')).toBeVisible();
+  await expect(page.locator('#closes-at')).toHaveValue('2030-11-03T01:30:00.123');
+  await page.getByRole('button', { name: 'Save schedule' }).click();
+  await expect(page.getByRole('alert')).toContainText('Server error');
+  expect(submittedSchedule).toEqual({ closesAt: '2030-11-03T06:30:00.123Z' });
 
   await page.getByLabel('Respondent emails').fill('not-an-email');
   await page.getByRole('button', { name: 'Save eligibility list' }).click();
@@ -114,8 +114,6 @@ test('STS-S2-03-06 / STS-S2-04-05: owner manages and reloads eligibility and sch
   });
   await closeInput.fill(futureLocalTime);
   const expectedInstant = await closeInput.evaluate((input: HTMLInputElement) => new Date(input.value).toISOString());
-  await page.getByRole('button', { name: 'Save schedule' }).click();
-  await expect(page.getByRole('alert')).toContainText('Server error');
   await page.getByRole('button', { name: 'Save schedule' }).click();
   await expect(page.getByRole('status')).toContainText('Schedule saved.');
   expect(submittedSchedule).toEqual({ closesAt: expectedInstant });

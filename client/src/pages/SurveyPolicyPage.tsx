@@ -101,8 +101,12 @@ export function SurveyPolicyPage() {
     setError(null);
     setSuccess(null);
     try {
+      const existingClosesAt = policy?.schedule.closesAt ?? null;
+      const unchangedLocalValue = existingClosesAt !== null && closesAt === toLocalDateTime(existingClosesAt);
       const response = await api.patch<{ data: SurveySchedule }>(`/surveys/${id}/schedule`, {
-        closesAt: closesAt ? new Date(closesAt).toISOString() : null,
+        closesAt: closesAt
+          ? unchangedLocalValue ? existingClosesAt : new Date(closesAt).toISOString()
+          : null,
       });
       const next = response.data.data;
       setPolicy((current) => current ? { ...current, schedule: next } : current);
