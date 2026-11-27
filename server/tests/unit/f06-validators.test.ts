@@ -51,6 +51,19 @@ describe('F-06 validators', () => {
     });
   });
 
+  it('accepts the exact Sprint 1 and F-06 text length limits', () => {
+    const shortText = validateResponseAnswers(
+      [{ id: ids.short, questionType: QuestionType.SHORT_TEXT, isRequired: true, options: [] }],
+      [{ questionId: ids.short, textValue: 'x'.repeat(2000) }]
+    );
+    const longText = validateResponseAnswers(
+      [{ id: ids.long, questionType: QuestionType.LONG_TEXT, isRequired: true, options: [] }],
+      [{ questionId: ids.long, textValue: 'x'.repeat(10000) }]
+    );
+    expect(shortText.valid).toBe(true);
+    expect(longText.valid).toBe(true);
+  });
+
   it.each([
     ['too many multi selections', { questionId: ids.multi, selectedOptionIds: [ids.multiA, ids.multiB, ids.multiC] }],
     ['duplicate selections', { questionId: ids.multi, selectedOptionIds: [ids.multiA, ids.multiA] }],
@@ -80,6 +93,23 @@ describe('F-06 validators', () => {
 
     const optionalText = [{ ...f06Questions[2], isRequired: false }];
     expect(validateResponseAnswers(optionalText, [{ questionId: ids.short, textValue: '  ' }])).toEqual({ valid: true, answers: [] });
+  });
+
+  it('supports unbounded, min-only, max-only, and inclusive integer bounds', () => {
+    const integerQuestion = { id: ids.integer, questionType: QuestionType.INTEGER, isRequired: true, options: [] };
+    const validate = (question: typeof integerQuestion & { numberMin?: number; numberMax?: number }, value: number) =>
+      validateResponseAnswers([question], [{ questionId: ids.integer, numberValue: value }]).valid;
+
+    expect(validate(integerQuestion, -2_147_483_648)).toBe(true);
+    expect(validate(integerQuestion, 2_147_483_647)).toBe(true);
+    expect(validate({ ...integerQuestion, numberMin: 5 }, 5)).toBe(true);
+    expect(validate({ ...integerQuestion, numberMin: 5 }, 4)).toBe(false);
+    expect(validate({ ...integerQuestion, numberMax: 10 }, 10)).toBe(true);
+    expect(validate({ ...integerQuestion, numberMax: 10 }, 11)).toBe(false);
+    expect(validate({ ...integerQuestion, numberMin: -2, numberMax: 10 }, -2)).toBe(true);
+    expect(validate({ ...integerQuestion, numberMin: -2, numberMax: 10 }, 10)).toBe(true);
+    expect(validate({ ...integerQuestion, numberMin: -2, numberMax: 10 }, -3)).toBe(false);
+    expect(validate({ ...integerQuestion, numberMin: -2, numberMax: 10 }, 11)).toBe(false);
   });
 
   it('accepts valid F-06 configuration and rejects invalid selection/numeric bounds', () => {
