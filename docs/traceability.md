@@ -3,8 +3,8 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)\
 **Course:** CPE 334 Software Engineering, Semester 1/2026\
 **Deliverable:** Project Deliverable 1 — Part B (10 points across `features.md` and this document)\
-**Document status:** Baseline v5 with proposed F-05 amendment v6, drafted on 26 November 2026\
-**Related documents:** [SRS](srs.md), [feature inventory](features.md), [system design](system-sds.md), [Sprint 1 contracts](sprints/sprint-1/README.md), [verification plan](verification.md)
+**Document status:** Baseline v5 with proposed F-05 amendment v6 and F-07 amendment v7, drafted on 27 November 2026\
+**Related documents:** [SRS](srs.md), [feature inventory](features.md), [system design](system-sds.md), [Sprint 1 contracts](sprints/sprint-1/README.md), [F-05 contract](sprints/sprint-2/f-05.md), [F-06 contract](sprints/sprint-2/f-06.md), [F-07 eligibility contract](sprints/sprint-2/f-07-eligibility.md), [F-07 scheduled-close contract](sprints/sprint-2/f-07-scheduled-close.md), [verification plan](verification.md)
 
 > Status note: every row is a **plan** until actual test evidence for the assessed commit is recorded in Part F. No requirement is marked verified in advance.
 
@@ -30,8 +30,8 @@ Status values: **PLANNED** (designed, not implemented), **IMPLEMENTED** (code ex
 | **FR-11** | Anonymous responses | F-05, [Issue #60](https://github.com/Snnn3/SurveyHub/issues/60) | 2 | AC-F05-01..10 | STS-F05-01..10 | PLANNED |
 | **FR-12** | Expanded question types and type-aware summary | F-06, [Issue #9](https://github.com/Snnn3/SurveyHub/issues/9) | 2 | AC-F06-01..12 | STS-F06-01..20 ([F-06 contract](sprints/sprint-2/f-06.md)) | PLANNED |
 | **FR-13** | CSV/JSON export | F-08 | 3 | AC-S3-01 | STS-S3-01 | DEFERRED |
-| **FR-14** | Eligibility allowlist | F-07, [Issue #61](https://github.com/Snnn3/SurveyHub/issues/61) | 2 | AC-S2-03-01..07 | STS-S2-03-01..07 ([F-07 eligibility contract](sprints/sprint-2/f-07-eligibility.md)) | DEFERRED |
-| **FR-15** | Scheduled close | F-07, [Issue #61](https://github.com/Snnn3/SurveyHub/issues/61) | 2 | AC-S2-04-01..07 | STS-S2-04-01..06 ([F-07 scheduled-close contract](sprints/sprint-2/f-07-scheduled-close.md)) | DEFERRED |
+| **FR-14** | Eligibility allowlist | F-07, [Issue #61](https://github.com/Snnn3/SurveyHub/issues/61) | 2 | AC-S2-03-01..07 | STS-S2-03-01..07 ([F-07 eligibility contract](sprints/sprint-2/f-07-eligibility.md)) | PLANNED |
+| **FR-15** | Scheduled close | F-07, [Issue #61](https://github.com/Snnn3/SurveyHub/issues/61) | 2 | AC-S2-04-01..07 | STS-S2-04-01..06 ([F-07 scheduled-close contract](sprints/sprint-2/f-07-scheduled-close.md)) | PLANNED |
 | **FR-16** | Browse individual responses | F-08 | 3 | AC-S3-02 | STS-S3-02 | DEFERRED |
 
 ### 2.2 Business rules
@@ -62,13 +62,16 @@ Status values: **PLANNED** (designed, not implemented), **IMPLEMENTED** (code ex
 | **NFR-DATA-01** | Foreign keys and unique constraints exist; data survives API and database restart | F-02, F-03 | 1 | AC-DATA-01 | Migration inspection, STS-F03-03, documented restart check | PLANNED |
 | **NFR-PRIV-01** | Anonymous responses have no identity link and no identity fields in output | F-05, [Issue #60](https://github.com/Snnn3/SurveyHub/issues/60) | 2 | AC-F05-04..10 | STS-F05-05..06, STS-F05-08..10 database audit and response-shape assertions | PLANNED |
 
-Deferred rows use `AC-S2-*`, `STS-S2-*`, `AC-S3-*` and `STS-S3-*` as scheduling placeholders. They are
-defined in the Sprint 2 and Sprint 3 contracts; they are not claimed as existing Sprint 1 IDs.
+Sprint 2 and Sprint 3 rows use `AC-S2-*`, `STS-S2-*`, `AC-S3-*` and `STS-S3-*` contract IDs. These
+requirements are not claimed as existing Sprint 1 IDs. FR-14 and FR-15 are planned for Sprint 2;
+their contracts define the acceptance and verification cases but do not claim implementation or
+verification.
 
 ### 2.4 Cross-cutting test suites
 
-These supplemental suites cover criteria across more than one feature. Sprint 2 criteria remain
-deferred until their contracts and tests are defined.
+These supplemental suites cover criteria across more than one feature. Sprint 2 feature-specific
+acceptance and test IDs are maintained in their linked contracts; cross-cutting suites will be
+added alongside implementation where they add coverage across features.
 
 | Test ID | Scope | Linked acceptance criteria | Status |
 |---|---|---|---|
@@ -94,11 +97,11 @@ deferred until their contracts and tests are defined.
 | **Total** | **34** | **34** | **26** | **8** |
 
 - No baseline requirement is unmapped.
-- FR-11..FR-16, BR-10 and NFR-PRIV-01 have no Sprint 1 verification and are marked DEFERRED, not
-  missing.
-- BR-02 (scheduled close), BR-08 (allowlist) and BR-11 (raw export) have a Sprint 1 portion that is
-  verified now and an extension that is deferred to a later sprint. Their Sprint 1 portions are
-  included in the 26.
+- FR-11, FR-12, FR-14, FR-15, BR-10 and NFR-PRIV-01 have Sprint 2 plans and remain PLANNED;
+  FR-13 and FR-16 remain DEFERRED to Sprint 3. None is missing from the traceability matrix.
+- BR-02 (scheduled close) and BR-08 (allowlist) have a Sprint 1 portion that is verified and a
+  Sprint 2 extension planned under F-07. BR-11 (raw export) has a Sprint 1 portion that is verified;
+  its export extension remains deferred to Sprint 3. The Sprint 1 portions are included in the 26.
 - Sprint 1 has executable verification planned for every one of its 26 requirements.
 - The previous draft's uncovered items were FR-04 (no edit endpoint), BR-07 (no way to modify a
   survey), and the eligibility behaviour required by the theme's Sprint 1 example. All three are now

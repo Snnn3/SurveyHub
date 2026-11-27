@@ -591,7 +591,10 @@ Database check failure `503`:
   only when the survey is `DRAFT`.
 - `PUT /api/surveys/:id/eligibility` resolves and validates the entire email list before replacing
   `SurveyEligibility` rows atomically. Empty means all authenticated respondents; selected account
-  details are returned only to the survey owner.
+  details are returned only to the survey owner. Malformed addresses and duplicate normalized
+  addresses return `400 VALIDATION_ERROR` before account resolution. Unknown and wrong-role accounts
+  return the same generic `400 INVALID_ELIGIBILITY`; syntax errors take precedence when both kinds
+  occur, and every rejected request leaves the saved list unchanged.
 - Schedule input is an ISO date-time with an explicit offset or `null`; it is persisted as an
   absolute UTC instant. Acceptance uses `status = PUBLISHED` and `now < closesAt` (or no deadline).
   Deadline changes do not alter `closedAt`; the manual `CLOSED` transition remains terminal.
@@ -631,8 +634,8 @@ Database check failure `503`:
 | Get/update own eligibility or schedule | 401 | 403 | 403 | Allowed | 403 |
 | Publish/close own survey | 401 | 403 | 403 | Allowed | 403 |
 | View own summary | 401 | 403 | 403 | Allowed | 403 |
-| Browse active surveys | 401 | Allowed | 403 | 403 | Allowed |
-| Get published form | 401 | Allowed | 403 | 403 | Allowed |
+| Browse active surveys | 401 | Published surveys allowed by the empty-or-matching allowlist only | 403 | 403 | Published surveys allowed by the empty-or-matching allowlist only |
+| Get published form | 401 | Allowed only when published, accepting, and eligible; unavailable → 400, ineligible → 403 | 403 | 403 | Allowed only when published, accepting, and eligible; unavailable → 400, ineligible → 403 |
 | Submit response | 401 | Allowed, if eligible and not already submitted | 403 | 403 | Allowed |
 | Get receipt | 401 | Allowed by mode rule | 403 | 403 | 403 for identified; anonymous metadata only |
 
@@ -643,6 +646,11 @@ Roles are exclusive.
 
 - Role guard first: wrong role → `403 FORBIDDEN_ROLE`.
 - Ownership check second: wrong owner → `403 FORBIDDEN_OWNERSHIP`.
+- For a respondent form request, after role authorization and survey lookup, check that the survey is
+  `PUBLISHED` and before `closesAt`; otherwise return `400 SURVEY_NOT_ACCEPTING_RESPONSES`. Check
+  eligibility only for an accepting published survey; a respondent outside a populated allowlist
+  receives `403 NOT_ELIGIBLE`. Availability takes precedence if both rules deny access. Neither
+  response includes form or question data.
 - For receipt access: if the response belongs to another user → `403 FORBIDDEN_CROSS_RESPONSE_ACCESS`.
 - Anonymous receipts are the exception: a valid response UUID permits authenticated respondents to read only response id, survey id, timestamp, and `mode: ANONYMOUS`; no answers or identity are returned.
 - For unknown ids → `404 NOT_FOUND`.
