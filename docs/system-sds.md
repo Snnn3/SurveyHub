@@ -636,7 +636,7 @@ Database check failure `503`:
 | View own summary | 401 | 403 | 403 | Allowed | 403 |
 | Browse active surveys | 401 | Published surveys allowed by the empty-or-matching allowlist only | 403 | 403 | Published surveys allowed by the empty-or-matching allowlist only |
 | Get published form | 401 | Allowed only when published, accepting, and eligible; unavailable → 400, ineligible → 403 | 403 | 403 | Allowed only when published, accepting, and eligible; unavailable → 400, ineligible → 403 |
-| Submit response | 401 | Allowed, if eligible and not already submitted | 403 | 403 | Allowed |
+| Submit response | 401 | Allowed only when the survey is `PUBLISHED` and accepting, the respondent is eligible, and no response exists; otherwise non-accepting → `400 SURVEY_NOT_ACCEPTING_RESPONSES` (including at/after `closesAt`), ineligible → `403 NOT_ELIGIBLE`, duplicate → `409 DUPLICATE_SUBMISSION` | 403 | 403 | Allowed |
 | Get receipt | 401 | Allowed by mode rule | 403 | 403 | 403 for identified; anonymous metadata only |
 
 Key correction from the previous draft: owners are **not** allowed to open or submit survey forms.

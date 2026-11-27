@@ -49,7 +49,7 @@ Owner survey list/detail responses also include `closesAt` and computed `accepti
 
 ### Owner settings UI
 
-The dedicated owner policy settings page shows the current deadline, the detected timezone, and accessible loading/success/validation/error/denial states. It supports setting, changing, and clearing the deadline. On `403`, it shows generic “Access denied” without displaying schedule or survey data. The respondent active list disables “Start survey” and states that the survey is closed when `acceptingResponses` is false.
+The dedicated owner policy settings page shows the current deadline, the detected timezone, and accessible loading/success/validation/error/denial states. It supports setting, changing, and clearing the deadline. On `403`, it shows generic “Access denied” without displaying schedule or survey data. The respondent active list disables “Start survey” and displays “This survey is no longer accepting responses” when `acceptingResponses` is false; an expired survey remains `PUBLISHED` and can be reopened by changing or clearing its deadline.
 
 ## 4. Deadline policy helper
 
@@ -93,3 +93,4 @@ These are planned checks, not claimed results. Database/API tests use the dedica
 | v1 | 27 Nov 2026 | Define UTC deadline/lifecycle rules, schedule API, read-side acceptance status, deterministic helper, AC and verification cases for Issue #61. | Draft for teammate review; no implementation or test results claimed |
 | v2 | 27 Nov 2026 | Clarify that an owner can reopen a still-published survey by extending or clearing an expired deadline; manual close remains terminal. | Draft for teammate review; no implementation or test results claimed |
 | v3 | 27 Nov 2026 | Specify that form availability takes precedence over eligibility and test both eligible and ineligible respondents against expired surveys. | Draft for teammate review; no implementation or test results claimed |
+| v4 | 27 Nov 2026 | Clarify the scheduled-close UI message and add published/acceptance/deadline/error conditions to the SDS submission matrix. | Draft for teammate review; no implementation or test results claimed |
