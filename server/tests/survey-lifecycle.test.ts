@@ -622,22 +622,92 @@ describe('F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11)', () =>
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
   });
 
-  it('rejects Sprint 2 question types with 400 VALIDATION_ERROR in Sprint 1', async () => {
+  it('creates, persists, orders, and publishes all F-06 question configurations', async () => {
     const res = await request(app)
       .post('/api/surveys')
       .set('Authorization', `Bearer ${ownerAToken}`)
       .send({
-        title: 'Sprint 2 Question Type',
+        title: 'All Question Types',
+        questions: [
+          { prompt: 'Choose one', questionType: 'SINGLE_CHOICE', options: [{ label: 'A' }, { label: 'B' }] },
+          { prompt: 'Choose up to two', questionType: 'MULTI_CHOICE', options: [{ label: 'A' }, { label: 'B' }, { label: 'C' }], minSelections: 1, maxSelections: 2 },
+          { prompt: 'Short feedback', questionType: 'SHORT_TEXT' },
+          { prompt: 'Long feedback', questionType: 'LONG_TEXT' },
+          { prompt: 'Yes or no', questionType: 'YES_NO' },
+          { prompt: 'Agreement', questionType: 'LIKERT' },
+          { prompt: 'Rate it', questionType: 'RATING' },
+          { prompt: 'Whole number', questionType: 'INTEGER', numberMin: -2, numberMax: 10 },
+          { prompt: 'Date', questionType: 'DATE' },
+        ],
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.questions.map((question: { questionType: string }) => question.questionType)).toEqual([
+      'SINGLE_CHOICE', 'MULTI_CHOICE', 'SHORT_TEXT', 'LONG_TEXT', 'YES_NO', 'LIKERT', 'RATING', 'INTEGER', 'DATE',
+    ]);
+    expect(res.body.data.questions[1]).toMatchObject({ minSelections: 1, maxSelections: 2 });
+    expect(res.body.data.questions[3].options).toEqual([]);
+    expect(res.body.data.questions[4].options.map((option: { label: string }) => option.label)).toEqual(['Yes', 'No']);
+    expect(res.body.data.questions[5].options.map((option: { label: string }) => option.label)).toEqual([
+      'Strongly disagree', 'Disagree', 'Neither agree nor disagree', 'Agree', 'Strongly agree',
+    ]);
+    expect(res.body.data.questions[7]).toMatchObject({ numberMin: -2, numberMax: 10 });
+
+    const detail = await request(app)
+      .get(`/api/surveys/${res.body.data.id}`)
+      .set('Authorization', `Bearer ${ownerAToken}`);
+    expect(detail.status).toBe(200);
+    expect(detail.body.data.questions.map((question: { orderIndex: number }) => question.orderIndex)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]);
+
+    const publish = await request(app)
+      .patch(`/api/surveys/${res.body.data.id}/publish`)
+      .set('Authorization', `Bearer ${ownerAToken}`);
+    expect(publish.status).toBe(200);
+  });
+
+  it('rejects invalid F-06 bounds as VALIDATION_ERROR without saving a draft', async () => {
+    const res = await request(app)
+      .post('/api/surveys')
+      .set('Authorization', `Bearer ${ownerAToken}`)
+      .send({
+        title: 'Invalid Multi Choice',
         questions: [
           {
-            prompt: 'Rate 1 to 5',
-            questionType: 'RATING',
+            prompt: 'Choose',
+            questionType: 'MULTI_CHOICE',
+            options: [{ label: 'A' }, { label: 'B' }],
+            minSelections: 2,
+            maxSelections: 1,
           },
         ],
       });
 
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
+
+    const surveys = await request(app)
+      .get('/api/surveys')
+      .set('Authorization', `Bearer ${ownerAToken}`);
+    expect(surveys.body.data).toHaveLength(0);
+  });
+
+  it('includes F-06 bounds in the respondent form DTO', async () => {
+    const survey = await prisma.survey.create({
+      data: {
+        title: 'Question Bounds', ownerId: ownerAId, status: SurveyStatus.PUBLISHED, publishedAt: new Date(),
+        questions: { create: [
+          { prompt: 'Select', questionType: QuestionType.MULTI_CHOICE, minSelections: 1, maxSelections: 2,
+            options: { create: [{ label: 'A', orderIndex: 0 }, { label: 'B', orderIndex: 1 }] } },
+          { prompt: 'Integer', questionType: QuestionType.INTEGER, numberMin: -4, numberMax: 12, orderIndex: 1 },
+        ] },
+      },
+    });
+    const res = await request(app)
+      .get(`/api/surveys/${survey.id}/form`)
+      .set('Authorization', `Bearer ${respToken}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.questions[0]).toMatchObject({ minSelections: 1, maxSelections: 2 });
+    expect(res.body.data.questions[1]).toMatchObject({ numberMin: -4, numberMax: 12 });
   });
 
   it('rejects SHORT_TEXT questions with options with 400 VALIDATION_ERROR', async () => {

@@ -104,6 +104,9 @@ npm test
 # Run a specific test suite
 npm test --prefix server -- tests/health.test.ts
 
+# Run the focused question-input component tests (no database required)
+npm run test:components --prefix client
+
 # Run the production-build E2E journeys (resets and seeds only surveyhub_test)
 npm run test:e2e
 

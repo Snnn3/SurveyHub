@@ -4,7 +4,14 @@ import api, { getApiErrorMessage, getApiErrorStatus, parseApiError, type ApiErro
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import type { SurveyMode } from '../types/survey';
 
-export type QuestionType = 'SINGLE_CHOICE' | 'SHORT_TEXT';
+export type QuestionType =
+  | 'SINGLE_CHOICE' | 'MULTI_CHOICE' | 'SHORT_TEXT' | 'LONG_TEXT'
+  | 'YES_NO' | 'LIKERT' | 'RATING' | 'INTEGER' | 'DATE';
+
+const fixedOptions: Partial<Record<QuestionType, string[]>> = {
+  YES_NO: ['Yes', 'No'],
+  LIKERT: ['Strongly disagree', 'Disagree', 'Neither agree nor disagree', 'Agree', 'Strongly agree'],
+};
 
 export interface FormOption {
   label: string;
@@ -15,6 +22,28 @@ export interface FormQuestion {
   questionType: QuestionType;
   isRequired: boolean;
   options: FormOption[];
+  minSelections?: number;
+  maxSelections?: number;
+  numberMin?: number;
+  numberMax?: number;
+}
+
+interface SurveyEditorDetail {
+  id: string;
+  title: string;
+  description: string | null;
+  mode: SurveyMode;
+  status: string;
+  questions: Array<{
+    prompt: string;
+    questionType: QuestionType;
+    isRequired: boolean;
+    options: Array<{ label: string }>;
+    minSelections?: number | null;
+    maxSelections?: number | null;
+    numberMin?: number | null;
+    numberMax?: number | null;
+  }>;
 }
 
 export const fieldKey = {
@@ -22,6 +51,7 @@ export const fieldKey = {
   description: 'survey-desc',
   prompt: (qIndex: number) => `prompt-${qIndex}`,
   options: (qIndex: number) => `options-${qIndex}`,
+  bounds: (qIndex: number) => `bounds-${qIndex}`,
   option: (qIndex: number, optIndex: number) => `option-${qIndex}-${optIndex}`,
   addQuestionBtn: 'add-question-btn',
 };
@@ -72,6 +102,8 @@ function applyServerValidationErrors(
             } else {
               domField = fieldKey.options(qIdx);
             }
+          } else if (['minSelections', 'maxSelections', 'numberMin', 'numberMax'].includes(parts[2])) {
+            domField = fieldKey.bounds(qIdx);
           }
         }
       }
@@ -108,6 +140,24 @@ export function SurveyEditorPage() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [questionIndexToDelete, setQuestionIndexToDelete] = useState<number | null>(null);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  const [showReloadConfirm, setShowReloadConfirm] = useState(false);
+  const [reloading, setReloading] = useState(false);
+
+  function applySurveyDetail(survey: SurveyEditorDetail) {
+    setTitle(survey.title);
+    setDescription(survey.description || '');
+    setMode(survey.mode);
+    setQuestions(survey.questions.map((question) => ({
+      prompt: question.prompt,
+      questionType: question.questionType,
+      isRequired: question.isRequired,
+      options: question.options.map((option) => ({ label: option.label })),
+      minSelections: question.minSelections ?? undefined,
+      maxSelections: question.maxSelections ?? undefined,
+      numberMin: question.numberMin ?? undefined,
+      numberMax: question.numberMax ?? undefined,
+    })));
+  }
 
   function clearFieldError(fieldId: string) {
     setFieldErrors((prev) => {
@@ -118,27 +168,22 @@ export function SurveyEditorPage() {
     });
   }
 
+  function showAccessDenied() {
+    setTitle('');
+    setDescription('');
+    setQuestions([]);
+    setError(null);
+    setShowReloadConfirm(false);
+    setLoadErrorCode(403);
+  }
+
   useEffect(() => {
     if (!id) return;
 
     let active = true;
     async function loadSurvey() {
       try {
-        const res = await api.get<{
-          success: boolean;
-          data: {
-            title: string;
-            description: string | null;
-            mode: SurveyMode;
-            status: string;
-            questions: Array<{
-              prompt: string;
-              questionType: QuestionType;
-              isRequired: boolean;
-              options: Array<{ label: string }>;
-            }>;
-          };
-        }>(`/surveys/${id}`);
+        const res = await api.get<{ data: SurveyEditorDetail }>(`/surveys/${id}`);
 
         if (!active) return;
         const survey = res.data.data;
@@ -148,17 +193,7 @@ export function SurveyEditorPage() {
           return;
         }
 
-        setTitle(survey.title);
-        setDescription(survey.description || '');
-        setMode(survey.mode);
-        setQuestions(
-          survey.questions.map((q) => ({
-            prompt: q.prompt,
-            questionType: q.questionType,
-            isRequired: q.isRequired,
-            options: (q.options || []).map((o) => ({ label: o.label })),
-          }))
-        );
+        applySurveyDetail(survey);
       } catch (err: unknown) {
         if (!active) return;
         const status = getApiErrorStatus(err);
@@ -213,14 +248,14 @@ export function SurveyEditorPage() {
         fields[promptKey] = 'Prompt must be at most 500 characters.';
       }
 
-      if (question.questionType === 'SINGLE_CHOICE') {
+      if (question.questionType === 'SINGLE_CHOICE' || question.questionType === 'MULTI_CHOICE') {
         const optionsKey = fieldKey.options(qIndex);
         if (question.options.length < 2) {
-          errors.push(`Question ${qNum}: Single-choice questions must have at least 2 options.`);
-          fields[optionsKey] = 'Single-choice questions must have at least 2 options.';
+          errors.push(`Question ${qNum}: Choice questions must have at least 2 options.`);
+          fields[optionsKey] = 'Choice questions must have at least 2 options.';
         } else if (question.options.length > 20) {
-          errors.push(`Question ${qNum}: Single-choice questions cannot exceed 20 options.`);
-          fields[optionsKey] = 'Single-choice questions cannot exceed 20 options.';
+          errors.push(`Question ${qNum}: Choice questions cannot exceed 20 options.`);
+          fields[optionsKey] = 'Choice questions cannot exceed 20 options.';
         }
 
         const labels: string[] = [];
@@ -243,6 +278,19 @@ export function SurveyEditorPage() {
           errors.push(`Question ${qNum}: Option labels must be unique.`);
           fields[optionsKey] = 'Option labels must be unique within each question.';
         }
+
+        if (question.questionType === 'MULTI_CHOICE' &&
+          (!Number.isInteger(question.minSelections) || !Number.isInteger(question.maxSelections) ||
+           (question.minSelections ?? 0) < 1 || (question.maxSelections ?? 0) < (question.minSelections ?? 0) ||
+           (question.maxSelections ?? 0) > question.options.length)) {
+          errors.push(`Question ${qNum}: Choose a valid minimum and maximum selection count.`);
+          fields[fieldKey.bounds(qIndex)] = 'Use whole numbers where 1 ≤ minimum ≤ maximum ≤ option count.';
+        }
+      }
+
+      if (question.questionType === 'INTEGER' && question.numberMin !== undefined && question.numberMax !== undefined && question.numberMin > question.numberMax) {
+        errors.push(`Question ${qNum}: Minimum must not exceed maximum.`);
+        fields[fieldKey.bounds(qIndex)] = 'Minimum must be less than or equal to maximum.';
       }
     });
 
@@ -256,7 +304,8 @@ export function SurveyEditorPage() {
         prompt: '',
         questionType: type,
         isRequired: true,
-        options: type === 'SINGLE_CHOICE' ? [{ label: '' }, { label: '' }] : [],
+        options: type === 'SINGLE_CHOICE' || type === 'MULTI_CHOICE' ? [{ label: '' }, { label: '' }] : [],
+        ...(type === 'MULTI_CHOICE' ? { minSelections: 1, maxSelections: 2 } : {}),
       },
     ]);
   }
@@ -347,28 +396,62 @@ export function SurveyEditorPage() {
         prompt: q.prompt.trim(),
         questionType: q.questionType,
         isRequired: q.isRequired,
-        options: q.questionType === 'SINGLE_CHOICE' ? q.options.map((opt) => ({ label: opt.label.trim() })) : [],
+        options: q.questionType === 'SINGLE_CHOICE' || q.questionType === 'MULTI_CHOICE'
+          ? q.options.map((opt) => ({ label: opt.label.trim() }))
+          : [],
+        ...(q.questionType === 'MULTI_CHOICE' ? { minSelections: q.minSelections, maxSelections: q.maxSelections } : {}),
+        ...(q.questionType === 'INTEGER' ? { numberMin: q.numberMin, numberMax: q.numberMax } : {}),
       })),
     };
 
     try {
       if (surveyId) {
-        await api.put(`/surveys/${surveyId}`, payload);
+        const response = await api.put<{ data: SurveyEditorDetail }>(`/surveys/${surveyId}`, payload);
+        applySurveyDetail(response.data.data);
         return surveyId;
       } else {
-        const res = await api.post<{ success: boolean; data: { id: string } }>('/surveys', payload);
+        const res = await api.post<{ data: SurveyEditorDetail }>('/surveys', payload);
         const newId = res.data.data.id;
+        applySurveyDetail(res.data.data);
         setSurveyId(newId);
         navigate(`/owner/surveys/${newId}/edit`, { replace: true });
         return newId;
       }
     } catch (err: unknown) {
+      if (getApiErrorStatus(err) === 403) {
+        showAccessDenied();
+        return null;
+      }
       const errInfo = parseApiError(err, 'Failed to save survey.');
       setError(errInfo.message);
       applyServerValidationErrors(errInfo.details, setFieldErrors, setValidationErrors);
       return null;
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function reloadSavedDraft() {
+    if (!surveyId) return;
+    setReloading(true);
+    setError(null);
+    try {
+      const response = await api.get<{ data: SurveyEditorDetail }>(`/surveys/${surveyId}`);
+      const saved = response.data.data;
+      if (saved.status !== 'DRAFT') throw new Error('Only draft surveys can be edited.');
+      applySurveyDetail(saved);
+      setFieldErrors({});
+      setValidationErrors([]);
+      setShowReloadConfirm(false);
+    } catch (err: unknown) {
+      if (getApiErrorStatus(err) === 403) {
+        showAccessDenied();
+      } else {
+        setError(getApiErrorMessage(err, 'Failed to reload the saved draft.'));
+        setShowReloadConfirm(false);
+      }
+    } finally {
+      setReloading(false);
     }
   }
 
@@ -412,9 +495,13 @@ export function SurveyEditorPage() {
       await api.patch(`/surveys/${savedId}/publish`);
       navigate('/owner/surveys', { state: { successMessage: 'Survey published successfully.' } });
     } catch (err: unknown) {
-      const errInfo = parseApiError(err, 'Publishing failed.');
-      setError(errInfo.message);
-      applyServerValidationErrors(errInfo.details, setFieldErrors, setValidationErrors);
+      if (getApiErrorStatus(err) === 403) {
+        showAccessDenied();
+      } else {
+        const errInfo = parseApiError(err, 'Publishing failed.');
+        setError(errInfo.message);
+        applyServerValidationErrors(errInfo.details, setFieldErrors, setValidationErrors);
+      }
     } finally {
       setSaving(false);
     }
@@ -428,7 +515,7 @@ export function SurveyEditorPage() {
       msg = 'The survey you are looking for does not exist or has been removed.';
     } else if (loadErrorCode === 403) {
       title = 'Access Denied';
-      msg = 'You do not have permission to view or edit this survey.';
+      msg = 'Access denied';
     }
     return (
       <div className="bg-white rounded-xl border border-slate-200 p-8 shadow-sm text-center max-w-lg mx-auto space-y-4">
@@ -467,6 +554,11 @@ export function SurveyEditorPage() {
           </h2>
           <p className="text-sm text-slate-600">Configure survey metadata and questions.</p>
         </div>
+        {surveyId && <button
+          type="button"
+          onClick={() => setShowReloadConfirm(true)}
+          className="text-sm font-semibold text-indigo-600 hover:text-indigo-800"
+        >Reload saved draft</button>}
         <button
           type="button"
           onClick={() => setShowCloseConfirm(true)}
@@ -581,7 +673,7 @@ export function SurveyEditorPage() {
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-bold text-slate-900">Questions ({questions.length})</h3>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             <button
               id="add-question-btn"
               type="button"
@@ -597,6 +689,23 @@ export function SurveyEditorPage() {
             >
               + Short Text
             </button>
+            <select
+              aria-label="Additional question type"
+              value=""
+              onChange={(event) => {
+                if (event.target.value) addQuestion(event.target.value as QuestionType);
+              }}
+              className="rounded-lg border border-indigo-200 bg-white px-2 py-1.5 text-xs text-indigo-700"
+            >
+              <option value="">More types…</option>
+              <option value="MULTI_CHOICE">Multi Choice</option>
+              <option value="LONG_TEXT">Long Text</option>
+              <option value="YES_NO">Yes / No</option>
+              <option value="LIKERT">Likert</option>
+              <option value="RATING">Rating</option>
+              <option value="INTEGER">Integer</option>
+              <option value="DATE">Date</option>
+            </select>
           </div>
         </div>
 
@@ -688,15 +797,36 @@ export function SurveyEditorPage() {
                     value={question.questionType}
                     onChange={(e) => {
                       const newType = e.target.value as QuestionType;
+                      const hasOptions = newType === 'SINGLE_CHOICE' || newType === 'MULTI_CHOICE';
+                      const options = hasOptions
+                        ? (question.questionType === 'SINGLE_CHOICE' || question.questionType === 'MULTI_CHOICE')
+                          ? question.options
+                          : [{ label: '' }, { label: '' }]
+                        : [];
                       updateQuestion(qIndex, {
                         questionType: newType,
-                        options: newType === 'SINGLE_CHOICE' ? [{ label: '' }, { label: '' }] : [],
+                        options,
+                        minSelections: newType === 'MULTI_CHOICE'
+                          ? question.questionType === 'MULTI_CHOICE' ? question.minSelections : 1
+                          : undefined,
+                        maxSelections: newType === 'MULTI_CHOICE'
+                          ? question.questionType === 'MULTI_CHOICE' ? question.maxSelections : options.length
+                          : undefined,
+                        numberMin: newType === 'INTEGER' ? question.numberMin : undefined,
+                        numberMax: newType === 'INTEGER' ? question.numberMax : undefined,
                       });
                     }}
                     className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-800 outline-none focus:border-indigo-500"
                   >
                     <option value="SINGLE_CHOICE">Single Choice</option>
+                    <option value="MULTI_CHOICE">Multi Choice</option>
                     <option value="SHORT_TEXT">Short Text</option>
+                    <option value="LONG_TEXT">Long Text</option>
+                    <option value="YES_NO">Yes / No</option>
+                    <option value="LIKERT">Likert</option>
+                    <option value="RATING">Rating</option>
+                    <option value="INTEGER">Integer</option>
+                    <option value="DATE">Date</option>
                   </select>
                 </div>
 
@@ -711,8 +841,7 @@ export function SurveyEditorPage() {
                 </label>
               </div>
 
-              {/* Single Choice Options */}
-              {question.questionType === 'SINGLE_CHOICE' && (
+              {(question.questionType === 'SINGLE_CHOICE' || question.questionType === 'MULTI_CHOICE') && (
                 <div
                   id={`options-${qIndex}`}
                   tabIndex={-1}
@@ -721,7 +850,7 @@ export function SurveyEditorPage() {
                   className="space-y-2 pt-2 border-t border-slate-100 outline-none"
                 >
                   <label className="block text-xs font-semibold text-slate-700">
-                    Options (2–20 required for publish)
+                    Options (2–20)
                   </label>
                   {fieldErrors[`options-${qIndex}`] && (
                     <p id={`options-${qIndex}-error`} role="alert" className="text-xs text-red-600">
@@ -812,6 +941,52 @@ export function SurveyEditorPage() {
                   )}
                 </div>
               )}
+              {question.questionType === 'MULTI_CHOICE' && (
+                <div id={`bounds-${qIndex}`} className="grid grid-cols-2 gap-3">
+                  <label className="text-xs font-medium text-slate-700">
+                    Minimum selections
+                    <input
+                      type="number" min={1} max={question.options.length} step={1}
+                      value={question.minSelections ?? ''}
+                      onChange={(event) => updateQuestion(qIndex, { minSelections: event.target.value === '' ? undefined : Number(event.target.value) })}
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="text-xs font-medium text-slate-700">
+                    Maximum selections
+                    <input
+                      type="number" min={question.minSelections ?? 1} max={question.options.length} step={1}
+                      value={question.maxSelections ?? ''}
+                      onChange={(event) => updateQuestion(qIndex, { maxSelections: event.target.value === '' ? undefined : Number(event.target.value) })}
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    />
+                  </label>
+                  {fieldErrors[fieldKey.bounds(qIndex)] && <p role="alert" className="col-span-2 text-xs text-red-600">{fieldErrors[fieldKey.bounds(qIndex)]}</p>}
+                </div>
+              )}
+              {fixedOptions[question.questionType] && (
+                <fieldset className="space-y-2 border-t border-slate-100 pt-3">
+                  <legend className="text-xs font-semibold text-slate-700">Fixed options</legend>
+                  {fixedOptions[question.questionType]!.map((label) => <p key={label} className="text-xs text-slate-600">{label}</p>)}
+                </fieldset>
+              )}
+              {question.questionType === 'INTEGER' && (
+                <div id={`bounds-${qIndex}`} className="grid grid-cols-2 gap-3">
+                  <label className="text-xs font-medium text-slate-700">
+                    Minimum value (optional)
+                    <input type="number" step={1} value={question.numberMin ?? ''}
+                      onChange={(event) => updateQuestion(qIndex, { numberMin: event.target.value === '' ? undefined : Number(event.target.value) })}
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                  </label>
+                  <label className="text-xs font-medium text-slate-700">
+                    Maximum value (optional)
+                    <input type="number" step={1} value={question.numberMax ?? ''}
+                      onChange={(event) => updateQuestion(qIndex, { numberMax: event.target.value === '' ? undefined : Number(event.target.value) })}
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                  </label>
+                  {fieldErrors[fieldKey.bounds(qIndex)] && <p role="alert" className="col-span-2 text-xs text-red-600">{fieldErrors[fieldKey.bounds(qIndex)]}</p>}
+                </div>
+              )}
             </div>
           ))
         )}
@@ -854,6 +1029,19 @@ export function SurveyEditorPage() {
           variant="neutral"
           onCancel={() => setShowCloseConfirm(false)}
           onConfirm={() => navigate('/owner/surveys')}
+        />
+      )}
+
+      {showReloadConfirm && (
+        <ConfirmationModal
+          title="Reload saved draft"
+          message="Discard your unsaved editor changes and reload the last saved draft?"
+          cancelLabel="Keep editing"
+          confirmLabel="Discard and reload"
+          variant="warning"
+          processing={reloading}
+          onCancel={() => setShowReloadConfirm(false)}
+          onConfirm={() => { void reloadSavedDraft(); }}
         />
       )}
 

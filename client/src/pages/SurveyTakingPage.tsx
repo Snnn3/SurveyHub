@@ -2,6 +2,7 @@ import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import api, { getApiErrorMessage } from '../api';
+import { SurveyQuestionInput } from '../components/SurveyQuestionInput';
 import type { SurveyMode } from '../types/survey';
 
 interface SurveyQuestion {
@@ -10,6 +11,10 @@ interface SurveyQuestion {
   questionType: string;
   isRequired: boolean;
   orderIndex: number;
+  minSelections?: number;
+  maxSelections?: number;
+  numberMin?: number;
+  numberMax?: number;
   options: Array<{ id: string; label: string; orderIndex: number }>;
 }
 
@@ -30,6 +35,8 @@ interface SurveyReceipt {
     questionId: string;
     prompt: string;
     textValue: string | null;
+    numberValue?: number | null;
+    dateValue?: string | null;
     selectedOptions: string[];
   }>;
 }
@@ -42,19 +49,35 @@ interface ApiErrorBody {
 }
 
 function supportsQuestionType(questionType: string): boolean {
-  return questionType === 'SINGLE_CHOICE' || questionType === 'SHORT_TEXT';
+  return ['SINGLE_CHOICE', 'MULTI_CHOICE', 'SHORT_TEXT', 'LONG_TEXT', 'YES_NO', 'LIKERT', 'RATING', 'INTEGER', 'DATE'].includes(questionType);
+}
+
+function hasAnswer(value: string | string[] | undefined): boolean {
+  return Array.isArray(value) ? value.length > 0 : Boolean(value?.trim());
 }
 
 export function SurveyTakePage() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const [survey, setSurvey] = useState<SurveyForm | null>(null);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
   const [missingIds, setMissingIds] = useState<string[]>([]);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function updateAnswer(questionId: string, value: string | string[]) {
+    setError(null);
+    setAnswers((current) => ({ ...current, [questionId]: value }));
+    setMissingIds((current) => current.filter((missingId) => missingId !== questionId));
+    setFieldErrors((current) => {
+      if (!current[questionId]) return current;
+      const next = { ...current };
+      delete next[questionId];
+      return next;
+    });
+  }
 
   useEffect(() => {
     api.get<{ data: SurveyForm }>(`/surveys/${id}/form`)
@@ -69,7 +92,7 @@ export function SurveyTakePage() {
     setError(null);
     setFieldErrors({});
     const missing = survey.questions
-      .filter((question) => question.isRequired && !(answers[question.id] || '').trim())
+      .filter((question) => question.isRequired && !hasAnswer(answers[question.id]))
       .map((question) => question.id);
     setMissingIds(missing);
     if (missing.length) {
@@ -78,13 +101,43 @@ export function SurveyTakePage() {
       return;
     }
 
-    const payload: Array<{ questionId: string; selectedOptionIds?: string[]; textValue?: string }> = [];
+    const localErrors: Record<string, string> = {};
     for (const question of survey.questions) {
-      const value = (answers[question.id] || '').trim();
-      if (!value) continue;
-      payload.push(question.questionType === 'SINGLE_CHOICE'
-        ? { questionId: question.id, selectedOptionIds: [value] }
-        : { questionId: question.id, textValue: value });
+      const value = answers[question.id];
+      if (!hasAnswer(value)) continue;
+      if (question.questionType === 'MULTI_CHOICE' && Array.isArray(value) &&
+          (value.length < (question.minSelections ?? 1) || value.length > (question.maxSelections ?? question.options.length))) {
+        localErrors[question.id] = 'Select within the allowed number of options.';
+      }
+      if (question.questionType === 'INTEGER' && typeof value === 'string') {
+        const number = Number(value);
+        if (!Number.isInteger(number) || (question.numberMin != null && number < question.numberMin) || (question.numberMax != null && number > question.numberMax)) {
+          localErrors[question.id] = 'Enter a whole number within the allowed bounds.';
+        }
+      }
+    }
+    if (Object.keys(localErrors).length) {
+      setFieldErrors(localErrors);
+      setError('Please correct the highlighted answers.');
+      document.getElementById(`${Object.keys(localErrors)[0]}-input`)?.focus();
+      return;
+    }
+
+    const payload: Array<{ questionId: string; selectedOptionIds?: string[]; textValue?: string; numberValue?: number; dateValue?: string }> = [];
+    for (const question of survey.questions) {
+      const value = answers[question.id];
+      if (!hasAnswer(value)) continue;
+      if (['SINGLE_CHOICE', 'YES_NO', 'LIKERT'].includes(question.questionType) && typeof value === 'string') {
+        payload.push({ questionId: question.id, selectedOptionIds: [value] });
+      } else if (question.questionType === 'MULTI_CHOICE' && Array.isArray(value)) {
+        payload.push({ questionId: question.id, selectedOptionIds: value });
+      } else if (['SHORT_TEXT', 'LONG_TEXT'].includes(question.questionType) && typeof value === 'string') {
+        payload.push({ questionId: question.id, textValue: value.trim() });
+      } else if (['RATING', 'INTEGER'].includes(question.questionType) && typeof value === 'string') {
+        payload.push({ questionId: question.id, numberValue: Number(value) });
+      } else if (question.questionType === 'DATE' && typeof value === 'string') {
+        payload.push({ questionId: question.id, dateValue: value });
+      }
     }
 
     setPending(true);
@@ -164,48 +217,18 @@ export function SurveyTakePage() {
         {survey.questions.map((question) => {
           const missing = missingIds.includes(question.id);
           const validationError = missing ? 'This question is required.' : fieldErrors[question.id];
+          const answer = answers[question.id];
           return (
             <fieldset key={question.id} aria-describedby={validationError ? `${question.id}-error` : undefined} className={`rounded-xl border bg-white p-5 ${validationError ? 'border-red-400' : 'border-slate-200'}`}>
               <legend className="max-w-full px-1 text-sm font-semibold text-slate-900">
                 {question.prompt} {question.isRequired && <span className="text-red-600">Required</span>}
               </legend>
-              {question.questionType === 'SINGLE_CHOICE' ? (
-                <div className="mt-3 space-y-2">
-                  {question.options.map((option, index) => (
-                    <label key={option.id} className="flex items-center gap-3 text-sm text-slate-700">
-                      <input
-                        id={index === 0 ? `${question.id}-input` : undefined}
-                        type="radio"
-                        name={question.id}
-                        value={option.id}
-                        checked={answers[question.id] === option.id}
-                        required={question.isRequired}
-                        aria-invalid={Boolean(validationError)}
-                        onChange={() => setAnswers((current) => ({ ...current, [question.id]: option.id }))}
-                        className="h-4 w-4 accent-indigo-600"
-                      />
-                      {option.label}
-                    </label>
-                  ))}
-                </div>
-              ) : (
-                <div className="mt-3">
-                  <label htmlFor={`${question.id}-input`} className="mb-1 block text-sm font-medium text-slate-700">
-                    Your answer
-                  </label>
-                  <textarea
-                    id={`${question.id}-input`}
-                    value={answers[question.id] || ''}
-                    maxLength={2000}
-                    required={question.isRequired}
-                    aria-invalid={Boolean(validationError)}
-                    aria-describedby={validationError ? `${question.id}-error ${question.id}-counter` : `${question.id}-counter`}
-                    onChange={(event) => setAnswers((current) => ({ ...current, [question.id]: event.target.value }))}
-                    className="min-h-28 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-                  />
-                  <p id={`${question.id}-counter`} className="mt-1 text-right text-xs text-slate-500">{(answers[question.id] || '').length}/2,000</p>
-                </div>
-              )}
+              <SurveyQuestionInput
+                question={question}
+                answer={answer}
+                validationError={validationError}
+                onChange={(value) => updateAnswer(question.id, value)}
+              />
               {validationError && <p id={`${question.id}-error`} className="mt-2 text-sm text-red-700">{validationError}</p>}
             </fieldset>
           );
@@ -271,7 +294,7 @@ export function SurveyReceiptPage() {
             {receipt.answers.map((answer) => (
               <li key={answer.questionId} className="text-sm text-emerald-900">
                 <p className="font-medium">{answer.prompt}</p>
-                <p>{answer.textValue || answer.selectedOptions.join(', ')}</p>
+                <p>{answer.textValue ?? (answer.selectedOptions.length ? answer.selectedOptions.join(', ') : undefined) ?? answer.numberValue ?? answer.dateValue ?? ''}</p>
               </li>
             ))}
           </ul>

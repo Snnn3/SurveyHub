@@ -13,6 +13,7 @@ if (!testDatabaseUrl || new URL(testDatabaseUrl).pathname.replace(/^\//, '') !==
 }
 
 const { QuestionType, SurveyStatus } = require('@prisma/client') as typeof import('@prisma/client');
+const { FIXED_QUESTION_OPTIONS } = require('../src/validators/survey.validator') as typeof import('../src/validators/survey.validator');
 const request = require('supertest') as typeof import('supertest');
 const { prisma } = require('../src/utils/prisma') as typeof import('../src/utils/prisma');
 const app = require('../src/app').default as typeof import('../src/app').default;
@@ -35,11 +36,42 @@ async function main(): Promise<void> {
       status: SurveyStatus.PUBLISHED,
       publishedAt: new Date(),
       questions: {
-        create: {
-          prompt: 'Benchmark read question',
-          questionType: QuestionType.SINGLE_CHOICE,
-          options: { create: [{ label: 'A' }, { label: 'B' }] },
-        },
+        create: [
+          {
+            prompt: 'Benchmark multi-choice question',
+            questionType: QuestionType.MULTI_CHOICE,
+            isRequired: true,
+            orderIndex: 0,
+            minSelections: 1,
+            maxSelections: 2,
+            options: { create: [{ label: 'A', orderIndex: 0 }, { label: 'B', orderIndex: 1 }] },
+          },
+          { prompt: 'Benchmark long-text question', questionType: QuestionType.LONG_TEXT, isRequired: true, orderIndex: 1 },
+          {
+            prompt: 'Benchmark yes-no question',
+            questionType: QuestionType.YES_NO,
+            isRequired: true,
+            orderIndex: 2,
+            options: { create: FIXED_QUESTION_OPTIONS[QuestionType.YES_NO]!.map((label, orderIndex) => ({ label, orderIndex })) },
+          },
+          {
+            prompt: 'Benchmark Likert question',
+            questionType: QuestionType.LIKERT,
+            isRequired: true,
+            orderIndex: 3,
+            options: { create: FIXED_QUESTION_OPTIONS[QuestionType.LIKERT]!.map((label, orderIndex) => ({ label, orderIndex })) },
+          },
+          { prompt: 'Benchmark rating question', questionType: QuestionType.RATING, isRequired: true, orderIndex: 4 },
+          {
+            prompt: 'Benchmark integer question',
+            questionType: QuestionType.INTEGER,
+            isRequired: true,
+            orderIndex: 5,
+            numberMin: -2,
+            numberMax: 10,
+          },
+          { prompt: 'Benchmark date question', questionType: QuestionType.DATE, isRequired: true, orderIndex: 6 },
+        ],
       },
     },
   });
@@ -68,7 +100,7 @@ async function main(): Promise<void> {
       command: 'npm run bench:read --prefix server',
       route: 'GET /api/surveys/:id/form',
       requestCount: samples.length,
-      workload: '50 sequential authenticated reads of one published single-choice survey form',
+      workload: '50 sequential authenticated reads of one published form with one each of MULTI_CHOICE, LONG_TEXT, YES_NO, LIKERT, RATING, INTEGER, and DATE',
       targetP95Ms: 300,
       p50Ms: Number(percentile(0.5).toFixed(3)),
       p95Ms: Number(percentile(0.95).toFixed(3)),

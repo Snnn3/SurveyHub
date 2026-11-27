@@ -4,6 +4,7 @@ import { HttpError, NotFoundError } from '../utils/errors';
 import { parseUuid } from '../utils/uuid';
 import { assertAnonymousSubmissionReady } from '../policies/anonymous-response.policy';
 import {
+  FIXED_QUESTION_OPTIONS,
   validateSurveyStructure,
   type SurveyInput,
 } from '../validators/survey.validator';
@@ -20,21 +21,26 @@ export const surveyDetailInclude = {
 };
 
 function mapQuestionsToCreate(questions: NonNullable<SurveyInput['questions']>) {
-  return questions.map((question, questionIndex) => ({
-    prompt: question.prompt,
-    questionType: question.questionType,
-    isRequired: question.isRequired ?? true,
-    orderIndex: questionIndex,
-    options: {
-      create:
-        question.questionType === QuestionType.SINGLE_CHOICE
-          ? (question.options || []).map((option, optionIndex) => ({
-              label: option.label,
-              orderIndex: optionIndex,
-            }))
-          : [],
-    },
-  }));
+  return questions.map((question, questionIndex) => {
+    const labels = question.questionType === QuestionType.SINGLE_CHOICE || question.questionType === QuestionType.MULTI_CHOICE
+      ? question.options.map((option) => option.label)
+      : FIXED_QUESTION_OPTIONS[question.questionType] ?? [];
+    return {
+      prompt: question.prompt,
+      questionType: question.questionType,
+      isRequired: question.isRequired,
+      orderIndex: questionIndex,
+      ...(question.questionType === QuestionType.MULTI_CHOICE
+        ? { minSelections: question.minSelections, maxSelections: question.maxSelections }
+        : {}),
+      ...(question.questionType === QuestionType.INTEGER
+        ? { numberMin: question.numberMin, numberMax: question.numberMax }
+        : {}),
+      options: {
+        create: labels.map((label, optionIndex) => ({ label, orderIndex: optionIndex })),
+      },
+    };
+  });
 }
 
 export async function getAuthorizedSurvey(
@@ -146,6 +152,15 @@ export async function createSurvey(ownerId: string, input: SurveyInput) {
 
 export async function getSurveyById(surveyId: string, ownerId: string) {
   return getAuthorizedSurvey(surveyId, ownerId, true);
+}
+
+export async function getSurveyQuestionSettings(surveyId: string) {
+  const questions = await prisma.question.findMany({
+    where: { surveyId },
+    orderBy: [{ orderIndex: 'asc' }, { id: 'asc' }],
+    select: { id: true, minSelections: true, maxSelections: true, numberMin: true, numberMax: true },
+  });
+  return new Map(questions.map((question) => [question.id, question]));
 }
 
 export async function updateSurvey(surveyId: string, ownerId: string, input: SurveyInput) {
@@ -290,6 +305,8 @@ export async function getSurveySummary(surveyId: string, ownerId: string) {
           answers: {
             select: {
               textValue: true,
+              numberValue: true,
+              dateValue: true,
               selectedOptions: {
                 select: { optionId: true },
               },
@@ -349,7 +366,47 @@ export async function getSurveySummary(surveyId: string, ownerId: string) {
       };
     }
 
-    // Sprint 2 question types (RATING, INTEGER, DATE)
+    if (question.questionType === QuestionType.RATING || question.questionType === QuestionType.INTEGER) {
+      const values = question.answers
+        .map((answer) => answer.numberValue)
+        .filter((value): value is number => value !== null && Number.isInteger(value));
+      const count = values.length;
+      const numberStats = {
+        count,
+        average: count ? Number((values.reduce((sum, value) => sum + value, 0) / count).toFixed(2)) : null,
+        min: count ? values.reduce((minimum, value) => Math.min(minimum, value), values[0]) : null,
+        max: count ? values.reduce((maximum, value) => Math.max(maximum, value), values[0]) : null,
+      };
+      return {
+        questionId: question.id,
+        prompt: question.prompt,
+        questionType: question.questionType,
+        answeredCount: count,
+        numberStats,
+        ...(question.questionType === QuestionType.RATING
+          ? { ratingDistribution: [1, 2, 3, 4, 5].map((rating) => ({ rating, count: values.filter((value) => value === rating).length })) }
+          : {}),
+      };
+    }
+
+    if (question.questionType === QuestionType.DATE) {
+      const dateCounts = new Map<string, number>();
+      for (const answer of question.answers) {
+        if (!answer.dateValue) continue;
+        const date = answer.dateValue.toISOString().slice(0, 10);
+        dateCounts.set(date, (dateCounts.get(date) ?? 0) + 1);
+      }
+      const dates = [...dateCounts].sort(([left], [right]) => left.localeCompare(right));
+      return {
+        questionId: question.id,
+        prompt: question.prompt,
+        questionType: question.questionType,
+        answeredCount: dates.reduce((sum, [, count]) => sum + count, 0),
+        dateCounts: dates.map(([date, count]) => ({ date, count })),
+      };
+    }
+
+    // Unknown persisted enum values should fail safe without exposing answer data.
     return {
       questionId: question.id,
       prompt: question.prompt,

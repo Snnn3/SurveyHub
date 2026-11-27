@@ -296,4 +296,126 @@ describe('F-04 Aggregate Summary (STS-F04-01 to STS-F04-04)', () => {
       { optionId: noOpt.id, label: 'No', count: 0, percentage: 0 },
     ]);
   });
+
+  it('aggregates rating, integer, and calendar-date answers with safe empty states', async () => {
+    const survey = await prisma.survey.create({
+      data: {
+        title: 'Typed Answers', ownerId: owner1Id, status: SurveyStatus.PUBLISHED, publishedAt: new Date(),
+        questions: { create: [
+          { prompt: 'Rating', questionType: QuestionType.RATING, isRequired: false, orderIndex: 0 },
+          { prompt: 'Integer', questionType: QuestionType.INTEGER, isRequired: false, orderIndex: 1, numberMin: -2, numberMax: 10 },
+          { prompt: 'Date', questionType: QuestionType.DATE, isRequired: false, orderIndex: 2 },
+        ] },
+      },
+      include: { questions: { orderBy: { orderIndex: 'asc' } } },
+    });
+    const [rating, integer, date] = survey.questions;
+
+    const empty = await request(app)
+      .get(`/api/surveys/${survey.id}/summary`)
+      .set('Authorization', `Bearer ${owner1Token}`);
+    expect(empty.status).toBe(200);
+    expect(empty.body.data.questions[0]).toMatchObject({ answeredCount: 0, numberStats: { count: 0, average: null, min: null, max: null } });
+    expect(empty.body.data.questions[1]).toMatchObject({ answeredCount: 0, numberStats: { count: 0, average: null, min: null, max: null } });
+    expect(empty.body.data.questions[2]).toMatchObject({ answeredCount: 0, dateCounts: [] });
+
+    await prisma.surveyResponse.create({
+      data: { surveyId: survey.id, respondentId: resp1Id, answers: { create: [
+        { questionId: rating.id, numberValue: 5 },
+        { questionId: integer.id, numberValue: -2 },
+        { questionId: date.id, dateValue: new Date('2024-02-29T00:00:00.000Z') },
+      ] } },
+    });
+    await prisma.surveyResponse.create({
+      data: { surveyId: survey.id, respondentId: resp2Id, answers: { create: [
+        { questionId: rating.id, numberValue: 3 },
+        { questionId: integer.id, numberValue: 10 },
+        { questionId: date.id, dateValue: new Date('2025-01-03T00:00:00.000Z') },
+      ] } },
+    });
+
+    const res = await request(app)
+      .get(`/api/surveys/${survey.id}/summary`)
+      .set('Authorization', `Bearer ${owner1Token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.questions[0]).toMatchObject({
+      answeredCount: 2,
+      numberStats: { count: 2, average: 4, min: 3, max: 5 },
+      ratingDistribution: [{ rating: 1, count: 0 }, { rating: 2, count: 0 }, { rating: 3, count: 1 }, { rating: 4, count: 0 }, { rating: 5, count: 1 }],
+    });
+    expect(res.body.data.questions[1]).toMatchObject({
+      answeredCount: 2,
+      numberStats: { count: 2, average: 4, min: -2, max: 10 },
+    });
+    expect(res.body.data.questions[2]).toMatchObject({
+      answeredCount: 2,
+      dateCounts: [{ date: '2024-02-29', count: 1 }, { date: '2025-01-03', count: 1 }],
+    });
+    const serialized = JSON.stringify(res.body.data);
+    expect(serialized).not.toContain(resp1Id);
+    expect(serialized).not.toContain(resp2Id);
+    expect(serialized).not.toContain('responseId');
+  });
+
+  it('summarizes partial F-06 multi-choice and long-text answers without respondent links', async () => {
+    const survey = await prisma.survey.create({
+      data: {
+        title: 'Partial F-06 Summary', ownerId: owner1Id, status: SurveyStatus.PUBLISHED, publishedAt: new Date(),
+        questions: { create: [
+          {
+            prompt: 'Which topics helped?', questionType: QuestionType.MULTI_CHOICE, isRequired: true,
+            orderIndex: 0, minSelections: 1, maxSelections: 2,
+            options: { create: [
+              { label: 'Testing', orderIndex: 0 },
+              { label: 'Design', orderIndex: 1 },
+              { label: 'Teamwork', orderIndex: 2 },
+            ] },
+          },
+          { prompt: 'What could improve?', questionType: QuestionType.LONG_TEXT, isRequired: false, orderIndex: 1 },
+        ] },
+      },
+      include: { questions: { orderBy: { orderIndex: 'asc' }, include: { options: { orderBy: { orderIndex: 'asc' } } } } },
+    });
+    const [multiChoice, longText] = survey.questions;
+    const [testing, design, teamwork] = multiChoice.options;
+
+    await prisma.surveyResponse.create({
+      data: { surveyId: survey.id, respondentId: resp1Id, answers: { create: [
+        { questionId: multiChoice.id, selectedOptions: { create: [{ optionId: testing.id }, { optionId: design.id }] } },
+        { questionId: longText.id, textValue: 'Add more design practice.' },
+      ] } },
+    });
+    await prisma.surveyResponse.create({
+      data: { surveyId: survey.id, respondentId: resp2Id, answers: { create: [
+        { questionId: multiChoice.id, selectedOptions: { create: [{ optionId: design.id }, { optionId: teamwork.id }] } },
+      ] } },
+    });
+
+    const res = await request(app)
+      .get(`/api/surveys/${survey.id}/summary`)
+      .set('Authorization', `Bearer ${owner1Token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.totalResponses).toBe(2);
+    expect(res.body.data.questions[0]).toMatchObject({
+      questionType: 'MULTI_CHOICE',
+      answeredCount: 2,
+      options: [
+        { optionId: testing.id, label: 'Testing', count: 1, percentage: 50 },
+        { optionId: design.id, label: 'Design', count: 2, percentage: 100 },
+        { optionId: teamwork.id, label: 'Teamwork', count: 1, percentage: 50 },
+      ],
+    });
+    expect(res.body.data.questions[1]).toMatchObject({
+      questionType: 'LONG_TEXT',
+      answeredCount: 1,
+      textAnswers: ['Add more design practice.'],
+    });
+    const serialized = JSON.stringify(res.body.data);
+    expect(serialized).not.toContain(resp1Id);
+    expect(serialized).not.toContain(resp2Id);
+    expect(serialized).not.toContain('resp1@survey.local');
+    expect(serialized).not.toContain('resp2@survey.local');
+    expect(serialized).not.toContain('responseId');
+  });
 });
