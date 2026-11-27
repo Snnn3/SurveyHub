@@ -25,7 +25,9 @@ interface PolicyData {
 function getPolicyError(error: unknown, fallback: string): { message: string; denied: boolean } {
   if (getApiErrorStatus(error) === 403) return { message: 'Access denied.', denied: true };
   const details = parseApiError(error, fallback);
-  const prefix = details.code === 'VALIDATION_ERROR' ? 'Validation error: ' : 'Server error: ';
+  const prefix = ['VALIDATION_ERROR', 'INVALID_ELIGIBILITY'].includes(details.code ?? '')
+    ? 'Validation error: '
+    : 'Server error: ';
   return { message: `${prefix}${details.message}`, denied: false };
 }
 

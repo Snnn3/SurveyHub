@@ -31,6 +31,13 @@ test('STS-S2-03-06 / STS-S2-04-05: owner manages and reloads eligibility and sch
       });
       return;
     }
+    if (eligibilityAttempts === 2) {
+      await route.fulfill({
+        status: 400,
+        json: { success: false, error: { code: 'INVALID_ELIGIBILITY', message: 'One or more respondents are invalid.' } },
+      });
+      return;
+    }
 
     const emails = route.request().postDataJSON().respondentEmails as string[];
     eligibleRespondents = emails.map((email, index) => ({
@@ -83,6 +90,10 @@ test('STS-S2-03-06 / STS-S2-04-05: owner manages and reloads eligibility and sch
   await page.getByLabel('Respondent emails').fill('not-an-email');
   await page.getByRole('button', { name: 'Save eligibility list' }).click();
   await expect(page.getByRole('alert')).toContainText('Validation error');
+
+  await page.getByLabel('Respondent emails').fill('missing@survey.local');
+  await page.getByRole('button', { name: 'Save eligibility list' }).click();
+  await expect(page.getByRole('alert')).toContainText('Validation error: One or more respondents are invalid.');
 
   await page.getByLabel('Respondent emails').fill('resp2@survey.local');
   await page.getByRole('button', { name: 'Save eligibility list' }).click();
