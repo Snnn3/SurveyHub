@@ -1,0 +1,80 @@
+
+> surveyhub-server@0.1.0 test
+> jest --runInBand --detectOpenHandles --forceExit --runTestsByPath tests/survey-lifecycle.test.ts tests/survey-summary.test.ts tests/response-submission.test.ts
+
+PASS tests/survey-lifecycle.test.ts (19.575 s)
+  F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11)
+    ✓ STS-F02-01: AC-F02-01 GET /api/surveys returns only the authenticated owner surveys with counts (1600 ms)
+    ✓ STS-F02-02: AC-F02-02 POST /api/surveys creates a DRAFT with ordered questions and options (952 ms)
+    ✓ STS-F02-03: AC-F02-03 GET /api/surveys/:id returns the owner full survey detail with ordered items (738 ms)
+    ✓ STS-F02-04: AC-F02-04 PUT /api/surveys/:id updates a draft title, description, and replaces questions atomically (1012 ms)
+    ✓ STS-F02-05: AC-F02-05 DELETE /api/surveys/:id deletes draft and cascades questions and options (837 ms)
+    ✓ STS-F02-06: AC-F02-06 PATCH /api/surveys/:id/publish publishes a valid draft and sets publishedAt (1314 ms)
+    ✓ STS-F02-07: AC-F02-07 PATCH /api/surveys/:id/publish rejects invalid structure and leaves status DRAFT (1032 ms)
+    ✓ STS-F02-08: AC-F02-08 PATCH /api/surveys/:id/close closes a published survey and sets closedAt (1124 ms)
+    ✓ STS-F02-09: AC-F02-09 Non-owner gets 403 FORBIDDEN_OWNERSHIP for GET, PUT, DELETE, publish, close (854 ms)
+    ✓ STS-F02-10: AC-F02-10 Updating or deleting a published or closed survey returns 400 SURVEY_NOT_EDITABLE (512 ms)
+    ✓ STS-F02-11: AC-F02-11 Invalid state transitions return 400 INVALID_STATE_TRANSITION (509 ms)
+    ✓ rejects access from respondents with 403 FORBIDDEN_ROLE (446 ms)
+    ✓ returns 404 NOT_FOUND for non-existent survey ID or malformed UUID (604 ms)
+    ✓ rejects duplicate option labels with 400 VALIDATION_ERROR (815 ms)
+    ✓ rejects Sprint 2 question types with 400 VALIDATION_ERROR in Sprint 1 (482 ms)
+    ✓ rejects SHORT_TEXT questions with options with 400 VALIDATION_ERROR (593 ms)
+    ✓ rejects SINGLE_CHOICE questions with more than 20 options with 400 VALIDATION_ERROR (594 ms)
+    ✓ handles concurrent PUT and PATCH publish requests atomically (508 ms)
+
+  console.log
+    prisma:error
+    Invalid `tx.responseClaim.create()` invocation in
+    /private/tmp/lab6-issue90-green/server/src/services/response.service.ts:162:30
+
+      159 const answers = normalizeAnswers(survey.questions, input.answers);
+      160
+      161 try {
+    → 162   await tx.responseClaim.create(
+    Unique constraint failed on the fields: (`survey_id`,`user_id`)
+
+      at Object.zc (../../surveyhub-lab6-uat-exercise/node_modules/@prisma/internals/src/logger.ts:13:11)
+
+  console.log
+    prisma:error
+    Invalid `tx.responseClaim.create()` invocation in
+    /private/tmp/lab6-issue90-green/server/src/services/response.service.ts:162:30
+
+      159 const answers = normalizeAnswers(survey.questions, input.answers);
+      160
+      161 try {
+    → 162   await tx.responseClaim.create(
+    Unique constraint failed on the fields: (`survey_id`,`user_id`)
+
+      at Object.zc (../../surveyhub-lab6-uat-exercise/node_modules/@prisma/internals/src/logger.ts:13:11)
+
+PASS tests/response-submission.test.ts (10.141 s)
+  F-03 survey submission and receipts (STS-F03-01 to STS-F03-10)
+    ✓ STS-F03-01: lists published surveys and only the caller’s submission state and receipt id (940 ms)
+    ✓ STS-F03-02: returns ordered questions and options for a published survey (474 ms)
+    ✓ STS-F03-03: persists a response, answers, selected option, and claim atomically (464 ms)
+    ✓ STS-F03-04: returns one duplicate conflict sequentially and under concurrent submissions (564 ms)
+    ✓ STS-F03-05: rejects submissions to draft and closed surveys (631 ms)
+    ✓ STS-F03-06: reports missing required questions and accepts omitted optional questions (494 ms)
+    ✓ accepts a valid non-empty answer to a required short-text question (536 ms)
+    ✓ rejects malformed response bodies before entering the submission service (459 ms)
+    ✓ STS-F03-07: rejects wrong types, foreign options, duplicate questions, mixed values, and long text (635 ms)
+    ✓ STS-F03-08: denies a different respondent access to a receipt without returning answers (481 ms)
+    ✓ STS-F03-09: rejects owner access to respondent submission endpoints (442 ms)
+    ✓ STS-F03-10: retrieves the same persisted receipt and timestamp after another request (480 ms)
+
+PASS tests/survey-summary.test.ts (5.106 s)
+  F-04 Aggregate Summary (STS-F04-01 to STS-F04-04)
+    ✓ STS-F04-01: returns counts, percentages, text answers, and no identity keys (510 ms)
+    ✓ STS-F04-02: respondent receives 403 FORBIDDEN_ROLE and no summary data (582 ms)
+    ✓ STS-F04-03: non-owner owner receives 403 FORBIDDEN_OWNERSHIP and no statistics (443 ms)
+    ✓ STS-F04-04: survey with zero responses returns zero counts, empty lists and 200 (464 ms)
+    ✓ returns 404 NOT_FOUND for unknown survey UUID or malformed UUID (431 ms)
+    ✓ uses answeredCount rather than totalResponses as percentage denominator when questions are skipped (591 ms)
+
+Test Suites: 3 passed, 3 total
+Tests:       36 passed, 36 total
+Snapshots:   0 total
+Time:        34.921 s
+Ran all test suites within paths "tests/survey-lifecycle.test.ts", "tests/survey-summary.test.ts", "tests/response-submission.test.ts".
