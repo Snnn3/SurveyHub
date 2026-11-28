@@ -3,7 +3,7 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)
 **Course:** CPE 334 Software Engineering, Semester 1/2026
 **Deliverable:** Project Deliverable 1 — Part B (10 points)
-**Document status:** Baseline v4, aligned with team decisions on 5 November 2026
+**Document status:** Baseline v4 with proposed Lab 7 maintenance note for Issue #85, drafted 28 November 2026
 **Related documents:** Part A (requirements), Part C (system design), Part D (sprint plan), Part E (Sprint 1 contracts)
 
 > Status note: every row in this document is a **plan**. No row is marked VERIFIED until a real test
@@ -17,7 +17,7 @@
 | Feature | Name | Short description | Linked requirements | Depends on | Sprint |
 |---|---|---|---|---|---|
 | **F-01** | Authentication and RBAC | Login, logout with token revocation, current-user identity, JWT verification, bcrypt password storage, role guards | FR-01, FR-02; NFR-SEC-01..04 | None | **1** |
-| **F-02** | Survey lifecycle and authoring | List, create, read, update and delete draft surveys; ordered questions and options; publish and close; ownership, structure and immutability rules | FR-03..FR-06; BR-04, BR-06, BR-07, BR-09 | F-01 | **1** |
+| **F-02** | Survey lifecycle and authoring | List, create, read, update and delete draft surveys; ordered questions and options; publish and close; ownership and structure rules; proposed Lab 7 owner-only title/description correction for published surveys (Issue #85) | FR-03..FR-06; BR-04, BR-06, BR-07, BR-09 | F-01 | **1** |
 | **F-03** | Response submission and rules | Browse published surveys, load a form, submit one validated response, retrieve the receipt, reject duplicates and invalid states/answers, protect cross-response access | FR-07..FR-09; BR-01, BR-02, BR-03, BR-05, BR-08 | F-01, F-02 | **1** |
 | **F-04** | Aggregate summary | Owner-only summary with total responses, answered counts, option counts/percentages and unlinked short text. F-06 defines additional type-aware summary values in Sprint 2. | FR-10 (Sprint 1 base; Sprint 2 type extensions); BR-04, BR-05, BR-11 | F-01..F-03 | **1** |
 | **F-05** | Anonymous mode | Survey-level anonymous mode with identity/answer separation and duplicate prevention through claims | FR-11; BR-10; NFR-PRIV-01 | F-01, F-03, F-04 | **2** |
@@ -33,8 +33,9 @@
 | Sprint 2 | F-05, F-06, F-07 | Deliverable 2 — 29 November 2026; Labs 5–6 |
 | Sprint 3 | F-08 plus hardening and defect fixes | Final Delivery — 13 December 2026; Lab 7 |
 
-Every feature is allocated to exactly one sprint. Later work is not used to excuse a missing Sprint 1
-feature.
+Every feature is allocated to exactly one sprint. The proposed Lab 7 correction to F-02 is
+maintenance of an existing feature, tracked separately in Issues #85 and #86; it does not change
+the original feature allocation. Later work is not used to excuse a missing Sprint 1 feature.
 
 ### 1.2 Question type inventory
 

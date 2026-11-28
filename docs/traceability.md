@@ -3,8 +3,8 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)\
 **Course:** CPE 334 Software Engineering, Semester 1/2026\
 **Deliverable:** Project Deliverable 1 — Part B (10 points across `features.md` and this document)\
-**Document status:** Baseline v5, aligned with the reviewed traceability on 6 November 2026\
-**Related documents:** [SRS](srs.md), [feature inventory](features.md), [system design](system-sds.md), [Sprint 1 contracts](sprints/sprint-1/README.md), [verification plan](verification.md)
+**Document status:** Baseline v5 with proposed Lab 7 amendment v6 for Issue #85, drafted 28 November 2026\
+**Related documents:** [SRS](srs.md), [feature inventory](features.md), [system design](system-sds.md), [Sprint 1 contracts](sprints/sprint-1/README.md), [Lab 7 contract review](labs/lab-07/issue-85-contract-review.md), [verification plan](verification.md)
 
 > Status note: every row is a **plan** until actual test evidence for the assessed commit is recorded in Part F. No requirement is marked verified in advance.
 
@@ -20,7 +20,7 @@ Status values: **PLANNED** (designed, not implemented), **IMPLEMENTED** (code ex
 | **FR-01** | Login, logout and token revocation | F-01 | 1 | AC-F01-01..05 | STS-F01-01..05 | PLANNED |
 | **FR-02** | Current user and role, no password hash exposure | F-01 | 1 | AC-F01-03, AC-F01-06 | STS-F01-03, STS-F01-06 | PLANNED |
 | **FR-03** | Manage survey drafts | F-02 | 1 | AC-F02-01..03, AC-F02-05 | STS-F02-01..03, STS-F02-05 | PLANNED |
-| **FR-04** | Author and edit draft questions | F-02 | 1 | AC-F02-04, AC-F02-10 | STS-F02-04, STS-F02-10 | PLANNED |
+| **FR-04** | Author draft questions and correct published metadata | F-02 | 1 / Lab 7 | AC-F02-04, AC-F02-10, LAB7-AC-01..04 | STS-F02-04, STS-F02-10, STS-LAB7-01..05 | PLANNED |
 | **FR-05** | Publish survey | F-02 | 1 | AC-F02-06, AC-F02-07 | STS-F02-06, STS-F02-07 | PLANNED |
 | **FR-06** | Close survey | F-02 | 1 | AC-F02-08, AC-F02-11 | STS-F02-08, STS-F02-11 | PLANNED |
 | **FR-07** | Browse published surveys and load a survey form | F-03 | 1 | AC-F03-01, AC-F03-02 | STS-F03-01, STS-F03-02 | PLANNED |
@@ -41,10 +41,10 @@ Status values: **PLANNED** (designed, not implemented), **IMPLEMENTED** (code ex
 | **BR-01** | One response per respondent per survey, including concurrency | F-03 | 1 | AC-F03-04 | STS-F03-04 (TDD) | PLANNED |
 | **BR-02** | Only PUBLISHED (and not past `closesAt`) accepts responses | F-03, F-07 | 1, 2 | AC-F03-05, AC-S2-04 | STS-F03-05, STS-S2-04 | PLANNED |
 | **BR-03** | Required/type/option/text validation | F-03 | 1 | AC-F03-06, AC-F03-07 | STS-F03-06, STS-F03-07 | PLANNED |
-| **BR-04** | Survey ownership boundary | F-02, F-04 | 1 | AC-F02-09, AC-F04-03 | STS-F02-09, STS-F04-03 | PLANNED |
+| **BR-04** | Survey ownership boundary, including published metadata | F-02, F-04 | 1 / Lab 7 | AC-F02-09, AC-F04-03, LAB7-AC-01, LAB7-AC-04 | STS-F02-09, STS-F04-03, STS-LAB7-04 | PLANNED |
 | **BR-05** | Cross-response privacy | F-03, F-04 | 1 | AC-F03-08, AC-F04-02 | STS-F03-08, STS-F04-02 | PLANNED |
 | **BR-06** | Publish structure requirements | F-02 | 1 | AC-F02-07 | STS-F02-07 | PLANNED |
-| **BR-07** | Immutable structure after publication | F-02 | 1 | AC-F02-10 | STS-F02-10 | PLANNED |
+| **BR-07** | Immutable published structure; metadata correction only while PUBLISHED | F-02 | 1 / Lab 7 | AC-F02-10, LAB7-AC-02..04 | STS-F02-10, STS-LAB7-02..05 | PLANNED |
 | **BR-08** | Role and eligibility guard for submission | F-03, F-07 | 1, 2 | AC-F03-09, AC-S2-03 | STS-F03-09, STS-S2-03 | PLANNED |
 | **BR-09** | CLOSED is terminal; invalid transitions rejected | F-02 | 1 | AC-F02-11 | STS-F02-11 | PLANNED |
 | **BR-10** | Anonymous identity/answer separation | F-05 | 2 | AC-S2-01, AC-PRIV-01 | STS-S2-01, STS-PRIV-01 | DEFERRED |
@@ -55,7 +55,7 @@ Status values: **PLANNED** (designed, not implemented), **IMPLEMENTED** (code ex
 | NFR | Target | Responsible feature | Sprint | Acceptance criterion | Verification | Status |
 |---|---|---|---|---|---|---|
 | **NFR-SEC-01** | Every protected endpoint rejects missing/invalid tokens with 401 and no data | F-01, cross-cutting | 1 | AC-SEC-01 | STS-SEC-01 (parameterized route matrix) | PLANNED |
-| **NFR-SEC-02** | Every forbidden role/ownership operation returns 403 and leaves data unchanged | F-01..F-04 | 1 | AC-SEC-02 | STS-SEC-02 plus STS-F02-09, F03-08, F03-09, F04-02, F04-03 | PLANNED |
+| **NFR-SEC-02** | Every forbidden role/ownership operation returns 403 and leaves data unchanged | F-01..F-04 | 1 / Lab 7 | AC-SEC-02, LAB7-AC-04 | STS-SEC-02 plus STS-F02-09, F03-08, F03-09, F04-02, F04-03, STS-LAB7-04 | PLANNED |
 | **NFR-SEC-03** | bcrypt cost 10, no plaintext password, no hash in responses | F-01 | 1 | AC-F01-06 | STS-F01-06 | PLANNED |
 | **NFR-SEC-04** | Logout revokes existing tokens | F-01 | 1 | AC-F01-05 | STS-F01-05 | PLANNED |
 | **NFR-PERF-01** | p95 of `GET /api/surveys/:id/form` < 300 ms over 50 requests on the local development environment | F-03 | 1 | AC-PERF-01 | `server/scripts/benchmark-read.ts`; result JSON in Part F | PLANNED |
@@ -79,6 +79,18 @@ deferred until their contracts and tests are defined.
 | **STS-U-05** | Calculate response percentages and rounding | AC-F04-01 | PLANNED |
 | **STS-E2E-01** | Complete owner-to-respondent survey journey and inspect summary | AC-F02-02, AC-F02-06, AC-F03-03, AC-F04-01 | PLANNED |
 | **STS-E2E-02** | Reject duplicate submission and cross-response access; verify token revocation | AC-F01-05, AC-F03-04, AC-F03-08 | PLANNED |
+
+### 2.5 Proposed Lab 7 contract traceability (Issue #85)
+
+The amendment remains proposed. The tests below are specifications for Issue #86 and are not
+evidence that implementation or verification has happened.
+
+| Lab 7 criterion | Requirement / rule | Contract location | Planned verification | Status |
+|---|---|---|---|---|
+| LAB7-AC-01 — owner edits title/description; reload and respondent form show them | FR-04, BR-04 | SRS §§4–5; F-02 §§3.3, 3.5 | STS-LAB7-01 | PLANNED |
+| LAB7-AC-02 — title 1–120 trimmed; description <=2,000 and clearable | FR-04 | SRS §§4–5; F-02 §3.5 | STS-LAB7-02 | PLANNED |
+| LAB7-AC-03 — strict metadata-only update; preserve structure, answers, counts and lifecycle history | BR-07 | SRS §5; SDS §§4.4–4.5; F-02 §3.5 | STS-LAB7-03 | PLANNED |
+| LAB7-AC-04 — role, owner, state, regression and close-race protections | BR-04, BR-07, NFR-SEC-02 | SRS §§5–6; SDS §5; F-02 §3.5 | STS-LAB7-04..05 | PLANNED |
 
 ---
 

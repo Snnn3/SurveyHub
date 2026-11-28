@@ -3,7 +3,7 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)
 **Course:** CPE 334 Software Engineering, Semester 1/2026
 **Deliverable:** Project Deliverable 1 — Part C (15 points)
-**Document status:** Baseline v5, includes the health endpoint contract on 6 November 2026
+**Document status:** Baseline v5 with proposed Lab 7 amendment v6 for Issue #85, drafted 28 November 2026; teammate review pending
 **Related documents:** Part A (requirements), Part B (traceability), Part E (feature contracts)
 
 > Status note: this is a design document. It does not claim that the system is implemented or
@@ -97,10 +97,10 @@ boundaries, and no distributed-system overhead for a two-person course project.
 | BR-01 one response per respondent | Pre-check claim, catch `P2002` | `ResponseClaim(survey_id, user_id)` unique; identified `SurveyResponse(survey_id, respondent_id)` unique |
 | BR-02 state guard | Check `status = PUBLISHED` and `closesAt` | No direct constraint; status is an enum |
 | BR-03 answer validation | Validate required, exact value shape, option ownership, type-specific text length, rating and integer bounds, date validity | `Answer(response_id, question_id)` unique; FKs |
-| BR-04 ownership | Compare `survey.ownerId` with current user | FK `owner_id` |
+| BR-04 ownership | Compare `survey.ownerId` with current user; for metadata writes also require the PUBLISHED state at write time | FK `owner_id` |
 | BR-05 cross-response privacy | Compare `response.respondentId` with current user | FK `respondent_id` |
 | BR-06 publish structure | Validate question count, type-specific options, selection/integer bounds and prompts | Service-level only |
-| BR-07 immutable structure | Reject update when status is not DRAFT | Service-level only |
+| BR-07 structure and metadata boundary | PUT structure replacement is DRAFT-only; a strict metadata-only PATCH is allowed for the owner while PUBLISHED; CLOSED is locked | Service-level only; serialize metadata writes with close |
 | BR-08 eligibility | Role check; optional allowlist check | `SurveyEligibility(survey_id, user_id)` unique |
 | BR-09 terminal state | State-transition check | Enum status |
 | BR-10 anonymous separation | Write `respondentId = NULL`; create claim without response link | Nullable `respondent_id`; separate `response_claims` table |
@@ -410,6 +410,7 @@ to their question's configured bounds.
 | `/owner/surveys` | SURVEY_OWNER | Owner survey list with status badges and actions |
 | `/owner/surveys/new` | SURVEY_OWNER | Create a draft survey and questions |
 | `/owner/surveys/:id/edit` | SURVEY_OWNER | Edit a draft survey |
+| `/owner/surveys/:id/metadata` | SURVEY_OWNER | Edit title and respondent-facing description of an owned PUBLISHED survey |
 | `/owner/surveys/:id/summary` | SURVEY_OWNER | Aggregate summary |
 | `/surveys` | RESPONDENT | Published survey catalogue |
 | `/surveys/:id/take` | RESPONDENT | Survey form |
@@ -419,6 +420,10 @@ to their question's configured bounds.
 
 `ProtectedRoute` checks authentication and role on the client for navigation only. Every API request
 is independently authorized on the server.
+
+The owner survey list offers Edit details for PUBLISHED surveys. The metadata form exposes title
+and description only; it does not expose questions, options or lifecycle controls. DRAFT editing
+continues through the existing full editor, and CLOSED surveys have no edit action.
 
 ### 3.2 Shared UI states
 
@@ -514,7 +519,7 @@ Rules:
 | `MISSING_REQUIRED_QUESTIONS` | 400 | Required answers absent |
 | `INVALID_ANSWER` | 400 | Wrong value shape, foreign option, duplicate question, invalid type-specific bound or date |
 | `INVALID_QUESTION_STRUCTURE` | 400 | Publish requirements not met |
-| `SURVEY_NOT_EDITABLE` | 400 | Update/delete attempted after publication |
+| `SURVEY_NOT_EDITABLE` | 400 | Structural update/delete attempted on a published survey, any update/delete attempted on a closed survey, or metadata update attempted outside PUBLISHED |
 | `INVALID_STATE_TRANSITION` | 400 | Publish/close transition not allowed |
 | `SERVICE_UNAVAILABLE` | 503 | Database connectivity check failed at the health endpoint |
 | `INTERNAL_ERROR` | 500 | Unhandled error |
@@ -541,6 +546,7 @@ All endpoints except login and health require `Authorization: Bearer <token>`.
 | 14 | GET | `/api/surveys/:id/form` | Token | RESPONDENT | Get the form for a published survey |
 | 15 | POST | `/api/surveys/:id/responses` | Token | RESPONDENT | Submit one response |
 | 16 | GET | `/api/surveys/:id/responses/:responseId` | Token | RESPONDENT (own) | Get own submission receipt |
+| 17 | PATCH | `/api/surveys/:id/metadata` | Token | SURVEY_OWNER (owner) | Update title and description of own published survey |
 
 Route registration order: `/api/surveys/active` must be registered before `/api/surveys/:id` so the
 literal path is not captured as an id.
@@ -580,6 +586,22 @@ Database check failure `503`:
 - Validation errors return field-level details and never echo the submitted password.
 - `PUT /api/surveys/:id` replaces the full question set atomically inside a transaction. It is allowed
   only when the survey is `DRAFT`.
+- `PATCH /api/surveys/:id/metadata` accepts a strict object containing title and/or description only;
+  unknown fields and an empty body are rejected. Title is trimmed, nonblank and at most 120
+  characters. Description is trimmed and at most 2,000 characters; null or empty clears it, while
+  omission leaves the current value unchanged.
+- The metadata service rechecks owner and PUBLISHED status in the write transaction and serializes
+  against close. A close committed first makes the metadata write fail without changing either
+  field. Metadata writes never touch questions, options, answers, response counts or lifecycle
+  timestamps.
+
+#### PATCH /api/surveys/:id/metadata (proposed Lab 7 contract)
+
+Success 200 returns the updated survey detail. This endpoint is available only to the owner of a
+PUBLISHED survey. Invalid shape, blank/over-limit values, unknown keys, or a valid metadata value
+combined with a forbidden key return 400 VALIDATION_ERROR and save nothing. A DRAFT or CLOSED
+survey returns 400 SURVEY_NOT_EDITABLE. Wrong role and ownership return 403; an unknown id returns
+404. PUT remains the full DRAFT editor, and published structural update and delete remain blocked.
 
 ---
 
@@ -612,7 +634,7 @@ Database check failure `503`:
 | Login | Allowed | Allowed | Allowed | Allowed | Allowed |
 | `/auth/me`, `/auth/logout` | 401 | Allowed | Allowed | Allowed | Allowed |
 | List/create own surveys | 401 | 403 | Allowed | Allowed | 403 |
-| Get/update/delete own draft | 401 | 403 | 403 | Allowed | 403 |
+| Get/update/delete own draft; update own published metadata | 401 | 403 | 403 | Allowed, subject to state-specific rules | 403 |
 | Publish/close own survey | 401 | 403 | 403 | Allowed | 403 |
 | View own summary | 401 | 403 | 403 | Allowed | 403 |
 | Browse active surveys | 401 | Allowed | 403 | 403 | Allowed |
@@ -627,6 +649,8 @@ Roles are exclusive.
 
 - Role guard first: wrong role → `403 FORBIDDEN_ROLE`.
 - Ownership check second: wrong owner → `403 FORBIDDEN_OWNERSHIP`.
+- Metadata writes then require PUBLISHED at the write boundary; DRAFT and CLOSED never use this
+  endpoint.
 - For receipt access: if the response belongs to another user → `403 FORBIDDEN_CROSS_RESPONSE_ACCESS`.
 - For unknown ids → `404 NOT_FOUND`.
 - A forbidden response never includes record data.
@@ -765,3 +789,10 @@ limitation is disclosed rather than overclaimed.
 
 No design decision in this document is considered implemented until the corresponding code and tests
 exist on the assessed commit.
+
+## 10. Proposed amendment history
+
+| Version | Date | Change | Status |
+|---|---|---|---|
+| v5 | 6 Nov 2026 | Accepted Sprint 1 SDS baseline, including the health endpoint and published survey lock | Baseline |
+| v6 | 28 Nov 2026 | Issue #85 proposes an owner-only metadata endpoint for PUBLISHED surveys while preserving structure and response history | Proposed; teammate contract review is pending before Issue #86 implementation |
