@@ -165,24 +165,39 @@ gcloud run jobs update "${TEAM_PREFIX}-migrate" \
   --region="${GCP_REGION}" \
   --command=npm \
   --args=run,db:seed:showcase \
-  --update-env-vars="SHOWCASE_SEED_TARGET=cloud,TEAM_PREFIX=${TEAM_PREFIX},GCP_PROJECT_ID=${GCP_PROJECT_ID},GCP_REGION=${GCP_REGION}"
+  --update-env-vars="SHOWCASE_SEED_TARGET=cloud,TEAM_PREFIX=${TEAM_PREFIX}"
 gcloud run jobs execute "${TEAM_PREFIX}-migrate" \
   --project="${GCP_PROJECT_ID}" \
   --region="${GCP_REGION}" \
   --wait
 
-# Restore the migration command after the seed finishes.
+# Restore the migration command and arguments recorded before the seed.
+# If they differed from this example, substitute the recorded values.
+# This example applies when neither TEAM_PREFIX nor SHOWCASE_SEED_TARGET existed:
 gcloud run jobs update "${TEAM_PREFIX}-migrate" \
   --project="${GCP_PROJECT_ID}" \
   --region="${GCP_REGION}" \
   --command=npm \
   --args=run,db:migrate:deploy \
+  --remove-env-vars=SHOWCASE_SEED_TARGET,TEAM_PREFIX
+```
+
+Cloud mode also reads the Cloud Run metadata server and verifies the runtime project ID and region before Prisma is loaded; setting matching environment variables on a local machine is not enough. It rejects anything except the matching migration job, team database, and assigned Cloud SQL socket. Do not seed Cloud as part of a normal release.
+
+Before the run, record the migration job's original command, arguments, and whether `TEAM_PREFIX` or `SHOWCASE_SEED_TARGET` exists, including each existing value. After seeding, restore the original command and arguments. Then restore the variables in separate updates: use `--update-env-vars` with only the values that existed before, and `--remove-env-vars` with only names that were absent before. Omit either update if its list is empty. For example, when `TEAM_PREFIX` existed but `SHOWCASE_SEED_TARGET` did not:
+
+```bash
+gcloud run jobs update "${TEAM_PREFIX}-migrate" \
+  --project="${GCP_PROJECT_ID}" \
+  --region="${GCP_REGION}" \
+  --update-env-vars="TEAM_PREFIX=YOUR_RECORDED_TEAM_PREFIX"
+gcloud run jobs update "${TEAM_PREFIX}-migrate" \
+  --project="${GCP_PROJECT_ID}" \
+  --region="${GCP_REGION}" \
   --remove-env-vars=SHOWCASE_SEED_TARGET
 ```
 
-Cloud mode also reads the Cloud Run metadata server and verifies the runtime project ID and region before Prisma is loaded; setting matching environment variables on a local machine is not enough. It rejects anything except the matching migration job, team database, and assigned Cloud SQL socket. Do not seed Cloud as part of a normal release. If the job had a different command before this one-off run, restore the recorded original command and arguments instead.
-
-Restore the job environment from the values you recorded before the run as well. Remove `SHOWCASE_SEED_TARGET` and any of `TEAM_PREFIX`, `GCP_PROJECT_ID`, or `GCP_REGION` that were added only for this seed; keep any values that were already present. Pass only the temporary variable names to `--remove-env-vars`.
+If `SHOWCASE_SEED_TARGET` existed, include its recorded value in the update list; if both variables existed, include both values. If `TEAM_PREFIX` was absent, include it in the remove list. Apply the same rule when only `SHOWCASE_SEED_TARGET` existed. Keep any other job environment variables untouched.
 
 See [Lab 5 deployment and environment configuration](docs/labs/lab-05/deployment.md) for the variable matrix, Cloud Run settings, and persistent Compose verification.
 

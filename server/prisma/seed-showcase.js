@@ -4,6 +4,9 @@ const dotenv = require('dotenv');
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
+const cloudProjectId = 'cpe-se-course-2026';
+const cloudRegion = 'asia-southeast1';
+
 async function readCloudRunMetadata(metadataPath) {
   let response;
   try {
@@ -44,13 +47,11 @@ async function assertShowcaseDatabaseTarget() {
 
   if (target === 'cloud') {
     const teamPrefix = process.env.TEAM_PREFIX || '';
-    const expectedSocket = `/cloudsql/cpe-se-course-2026:asia-southeast1:${teamPrefix}-pg`;
+    const expectedSocket = `/cloudsql/${cloudProjectId}:${cloudRegion}:${teamPrefix}-pg`;
     const teamPrefixIsValid = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(teamPrefix);
     if (
       !process.env.CLOUD_RUN_JOB ||
       process.env.CLOUD_RUN_JOB !== `${teamPrefix}-migrate` ||
-      process.env.GCP_PROJECT_ID !== 'cpe-se-course-2026' ||
-      process.env.GCP_REGION !== 'asia-southeast1' ||
       !teamPrefixIsValid ||
       databaseUrl.hostname !== 'localhost' ||
       databaseName !== teamPrefix ||
@@ -63,7 +64,7 @@ async function assertShowcaseDatabaseTarget() {
       readCloudRunMetadata('project/project-id'),
       readCloudRunMetadata('instance/region'),
     ]);
-    if (projectId !== process.env.GCP_PROJECT_ID || regionPath.split('/').pop() !== process.env.GCP_REGION) {
+    if (projectId !== cloudProjectId || regionPath.split('/').pop() !== cloudRegion) {
       throw new Error('Cloud Run metadata does not match the assigned project and region; refusing Cloud showcase seed.');
     }
     return;
