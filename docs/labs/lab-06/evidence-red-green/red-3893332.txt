@@ -1,0 +1,131 @@
+
+> surveyhub-server@0.1.0 test
+> jest --runInBand --detectOpenHandles --forceExit --runTestsByPath tests/survey-lifecycle.test.ts tests/survey-summary.test.ts tests/response-submission.test.ts
+
+FAIL tests/survey-lifecycle.test.ts (18.519 s)
+  F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11)
+    ✓ STS-F02-01: AC-F02-01 GET /api/surveys returns only the authenticated owner surveys with counts (639 ms)
+    ✓ STS-F02-02: AC-F02-02 POST /api/surveys creates a DRAFT with ordered questions and options (1141 ms)
+    ✓ STS-F02-03: AC-F02-03 GET /api/surveys/:id returns the owner full survey detail with ordered items (1188 ms)
+    ✕ STS-F02-04: AC-F02-04 PUT /api/surveys/:id updates a draft title, description, and replaces questions atomically (686 ms)
+    ✓ STS-F02-05: AC-F02-05 DELETE /api/surveys/:id deletes draft and cascades questions and options (1398 ms)
+    ✓ STS-F02-06: AC-F02-06 PATCH /api/surveys/:id/publish publishes a valid draft and sets publishedAt (994 ms)
+    ✓ STS-F02-07: AC-F02-07 PATCH /api/surveys/:id/publish rejects invalid structure and leaves status DRAFT (903 ms)
+    ✓ STS-F02-08: AC-F02-08 PATCH /api/surveys/:id/close closes a published survey and sets closedAt (813 ms)
+    ✓ STS-F02-09: AC-F02-09 Non-owner gets 403 FORBIDDEN_OWNERSHIP for GET, PUT, DELETE, publish, close (1092 ms)
+    ✓ STS-F02-10: AC-F02-10 Updating or deleting a published or closed survey returns 400 SURVEY_NOT_EDITABLE (822 ms)
+    ✓ STS-F02-11: AC-F02-11 Invalid state transitions return 400 INVALID_STATE_TRANSITION (792 ms)
+    ✓ rejects access from respondents with 403 FORBIDDEN_ROLE (523 ms)
+    ✓ returns 404 NOT_FOUND for non-existent survey ID or malformed UUID (423 ms)
+    ✓ rejects duplicate option labels with 400 VALIDATION_ERROR (416 ms)
+    ✓ rejects Sprint 2 question types with 400 VALIDATION_ERROR in Sprint 1 (448 ms)
+    ✓ rejects SHORT_TEXT questions with options with 400 VALIDATION_ERROR (579 ms)
+    ✓ rejects SINGLE_CHOICE questions with more than 20 options with 400 VALIDATION_ERROR (637 ms)
+    ✓ handles concurrent PUT and PATCH publish requests atomically (559 ms)
+
+  ● F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11) › STS-F02-04: AC-F02-04 PUT /api/surveys/:id updates a draft title, description, and replaces questions atomically
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "Updated Description"
+    Received: null
+
+      233 |     expect(res.body.success).toBe(true);
+      234 |     expect(res.body.data.title).toBe('Updated Title');
+    > 235 |     expect(res.body.data.description).toBe('Updated Description');
+          |                                       ^
+      236 |     expect(res.body.data.questions).toHaveLength(1);
+      237 |     expect(res.body.data.questions[0].prompt).toBe('New Question 1');
+      238 |     expect(res.body.data.questions[0].id).not.toBe(oldQuestionId);
+
+      at Object.<anonymous> (tests/survey-lifecycle.test.ts:235:39)
+
+  console.log
+    prisma:error
+    Invalid `tx.responseClaim.create()` invocation in
+    /private/tmp/lab6-issue90-red/server/src/services/response.service.ts:162:30
+
+      159 const answers = normalizeAnswers(survey.questions, input.answers);
+      160
+      161 try {
+    → 162   await tx.responseClaim.create(
+    Unique constraint failed on the fields: (`survey_id`,`user_id`)
+
+      at Object.zc (../../surveyhub-lab6-uat-exercise/node_modules/@prisma/internals/src/logger.ts:13:11)
+
+  console.log
+    prisma:error
+    Invalid `tx.responseClaim.create()` invocation in
+    /private/tmp/lab6-issue90-red/server/src/services/response.service.ts:162:30
+
+      159 const answers = normalizeAnswers(survey.questions, input.answers);
+      160
+      161 try {
+    → 162   await tx.responseClaim.create(
+    Unique constraint failed on the fields: (`survey_id`,`user_id`)
+
+      at Object.zc (../../surveyhub-lab6-uat-exercise/node_modules/@prisma/internals/src/logger.ts:13:11)
+
+FAIL tests/response-submission.test.ts (9.13 s)
+  F-03 survey submission and receipts (STS-F03-01 to STS-F03-10)
+    ✓ STS-F03-01: lists published surveys and only the caller’s submission state and receipt id (591 ms)
+    ✓ STS-F03-02: returns ordered questions and options for a published survey (498 ms)
+    ✓ STS-F03-03: persists a response, answers, selected option, and claim atomically (763 ms)
+    ✓ STS-F03-04: returns one duplicate conflict sequentially and under concurrent submissions (600 ms)
+    ✓ STS-F03-05: rejects submissions to draft and closed surveys (545 ms)
+    ✓ STS-F03-06: reports missing required questions and accepts omitted optional questions (469 ms)
+    ✕ accepts a valid non-empty answer to a required short-text question (670 ms)
+    ✓ rejects malformed response bodies before entering the submission service (447 ms)
+    ✓ STS-F03-07: rejects wrong types, foreign options, duplicate questions, mixed values, and long text (538 ms)
+    ✓ STS-F03-08: denies a different respondent access to a receipt without returning answers (513 ms)
+    ✓ STS-F03-09: rejects owner access to respondent submission endpoints (738 ms)
+    ✓ STS-F03-10: retrieves the same persisted receipt and timestamp after another request (519 ms)
+
+  ● F-03 survey submission and receipts (STS-F03-01 to STS-F03-10) › accepts a valid non-empty answer to a required short-text question
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 201
+    Received: 400
+
+      228 |       });
+      229 |
+    > 230 |     expect(response.status).toBe(201);
+          |                             ^
+      231 |     const stored = await prisma.surveyResponse.findUnique({
+      232 |       where: { id: response.body.data.responseId },
+      233 |       include: { answers: true },
+
+      at Object.<anonymous> (tests/response-submission.test.ts:230:29)
+
+FAIL tests/survey-summary.test.ts (5.67 s)
+  F-04 Aggregate Summary (STS-F04-01 to STS-F04-04)
+    ✓ STS-F04-01: returns counts, percentages, text answers, and no identity keys (702 ms)
+    ✓ STS-F04-02: respondent receives 403 FORBIDDEN_ROLE and no summary data (458 ms)
+    ✓ STS-F04-03: non-owner owner receives 403 FORBIDDEN_OWNERSHIP and no statistics (575 ms)
+    ✕ STS-F04-04: survey with zero responses returns zero counts, empty lists and 200 (440 ms)
+    ✓ returns 404 NOT_FOUND for unknown survey UUID or malformed UUID (896 ms)
+    ✓ uses answeredCount rather than totalResponses as percentage denominator when questions are skipped (473 ms)
+
+  ● F-04 Aggregate Summary (STS-F04-01 to STS-F04-04) › STS-F04-04: survey with zero responses returns zero counts, empty lists and 200
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      194 |
+      195 |     const { data } = res.body;
+    > 196 |     expect(data.totalResponses).toBe(0);
+          |                                 ^
+      197 |     expect(data.questions[0].answeredCount).toBe(0);
+      198 |     expect(data.questions[0].options).toEqual([
+      199 |       { optionId: optionA.id, label: 'Option A', count: 0, percentage: 0 },
+
+      at Object.<anonymous> (tests/survey-summary.test.ts:196:33)
+
+Test Suites: 3 failed, 3 total
+Tests:       3 failed, 33 passed, 36 total
+Snapshots:   0 total
+Time:        33.425 s
+Ran all test suites within paths "tests/survey-lifecycle.test.ts", "tests/survey-summary.test.ts", "tests/response-submission.test.ts".
