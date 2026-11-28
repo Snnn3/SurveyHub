@@ -1,0 +1,35 @@
+
+> surveyhub-server@0.1.0 test
+> jest --runInBand --detectOpenHandles --forceExit --runTestsByPath tests/survey-lifecycle.test.ts -t STS-LAB7-
+
+PASS tests/survey-lifecycle.test.ts (10.061 s)
+  F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11)
+    ✓ STS-LAB7-01: owner edits PUBLISHED metadata at the title limit without changing saved responses (1248 ms)
+    ✓ STS-LAB7-02: validates metadata boundaries, preserves padded descriptions, and supports partial updates (1112 ms)
+    ✓ STS-LAB7-03: rejects structural and lifecycle fields atomically (1806 ms)
+    ✓ STS-LAB7-04: enforces owner role and PUBLISHED state for metadata edits (905 ms)
+    ✓ STS-LAB7-05: serializes a published metadata update with a concurrent close (821 ms)
+    ○ skipped STS-F02-01: AC-F02-01 GET /api/surveys returns only the authenticated owner surveys with counts
+    ○ skipped STS-F02-02: AC-F02-02 POST /api/surveys creates a DRAFT with ordered questions and options
+    ○ skipped STS-F02-03: AC-F02-03 GET /api/surveys/:id returns the owner full survey detail with ordered items
+    ○ skipped STS-F02-04: AC-F02-04 PUT /api/surveys/:id updates a draft title, description, and replaces questions atomically
+    ○ skipped STS-F02-05: AC-F02-05 DELETE /api/surveys/:id deletes draft and cascades questions and options
+    ○ skipped STS-F02-06: AC-F02-06 PATCH /api/surveys/:id/publish publishes a valid draft and sets publishedAt
+    ○ skipped STS-F02-07: AC-F02-07 PATCH /api/surveys/:id/publish rejects invalid structure and leaves status DRAFT
+    ○ skipped STS-F02-08: AC-F02-08 PATCH /api/surveys/:id/close closes a published survey and sets closedAt
+    ○ skipped STS-F02-09: AC-F02-09 Non-owner gets 403 FORBIDDEN_OWNERSHIP for GET, PUT, DELETE, publish, close
+    ○ skipped STS-F02-10: AC-F02-10 Updating or deleting a published or closed survey returns 400 SURVEY_NOT_EDITABLE
+    ○ skipped STS-F02-11: AC-F02-11 Invalid state transitions return 400 INVALID_STATE_TRANSITION
+    ○ skipped rejects access from respondents with 403 FORBIDDEN_ROLE
+    ○ skipped returns 404 NOT_FOUND for non-existent survey ID or malformed UUID
+    ○ skipped rejects duplicate option labels with 400 VALIDATION_ERROR
+    ○ skipped rejects Sprint 2 question types with 400 VALIDATION_ERROR in Sprint 1
+    ○ skipped rejects SHORT_TEXT questions with options with 400 VALIDATION_ERROR
+    ○ skipped rejects SINGLE_CHOICE questions with more than 20 options with 400 VALIDATION_ERROR
+    ○ skipped handles concurrent PUT and PATCH publish requests atomically
+
+Test Suites: 1 passed, 1 total
+Tests:       18 skipped, 5 passed, 23 total
+Snapshots:   0 total
+Time:        10.124 s, estimated 16 s
+Ran all test suites within paths "tests/survey-lifecycle.test.ts".
