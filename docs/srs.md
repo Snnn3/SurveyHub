@@ -3,13 +3,14 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)
 **Course:** CPE 334 Software Engineering, Semester 1/2026
 **Deliverable:** Project Deliverable 1 — Part A (10 points)
-**Document status:** Baseline v5 with Lab 7 amendment v6 approved and merged by PR #89 on 28 November 2026; behavior and test evidence remain open under Issue #86
+**Document status:** Baseline v5 with Lab 7 amendment v6 approved and merged by PR #89 on 28 November 2026; all four Lab 7 criteria were implemented and verified on lab-7-staging under PR #91; main release, deployed checks, and report remain pending under Issue #87
 **Team:** Worawut Sereethai (67070501040), Chanon Lhumsa-ard (67070501059)
 **Repository:** <https://github.com/Snnn3/SurveyHub>
 
-> Status note: this document defines requirements and design intent. It does not claim that any
-> requirement has been implemented or tested. Implementation status is recorded only in Part F and
-> only from real execution output.
+> Status note: this document defines requirements and design intent. The Lab 7 F-02 metadata
+> amendment was implemented and tested on lab-7-staging; its execution evidence is recorded under
+> Issue #86. This SRS does not claim main-release or deployed verification, which remains pending
+> under Issue #87. Other verification is commit-specific and recorded in Part F.
 
 ---
 
@@ -352,9 +353,9 @@ The course handouts disagree: the group specification and Final Delivery section
 - No requirement in this SRS is marked complete until the corresponding test has run against the
   submitted commit and the result is recorded in Part F.
 
-## 10. Proposed amendment history
+## 10. Amendment history
 
 | Version | Date | Change | Status |
 |---|---|---|---|
 | v5 | 6 Nov 2026 | Accepted SRS baseline for the Sprint 1 lifecycle, including the original rule that published metadata could not be edited | Baseline |
-| v6 | 28 Nov 2026 | Issue #85 proposes owner-only title and description edits for a published survey while keeping its question structure and response history unchanged | Proposed; first review feedback addressed, reviewer re-review and acceptance must precede Issue #86 implementation |
+| v6 | 28 Nov 2026 | Issue #85 defines owner-only title and description edits for a published survey while keeping its question structure and response history unchanged | Accepted by Snnn3 and merged by PR #89 before Issue #86 implementation; implemented and tested on lab-7-staging. Main-release and deployed checks remain pending under Issue #87. |

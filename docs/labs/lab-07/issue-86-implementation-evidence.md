@@ -4,8 +4,8 @@
 **Contract:** [Issue #85 reviewed contract](issue-85-contract-review.md)
 **Target branch:** `lab-7-staging`
 **Feature branch:** `feature/86-published-survey-metadata`
-**Pull request:** [#91 — Allow owners to edit published survey metadata](https://github.com/Snnn3/SurveyHub/pull/91) (open; review requested from Snnn3; no CI statuses reported when opened)
-**Status:** PR review fixes are implemented and locally verified; replies and re-review are pending.
+**Pull request:** [#91 — Allow owners to edit published survey metadata](https://github.com/Snnn3/SurveyHub/pull/91) (approved by Snnn3 at 10:33:23 UTC and merged into lab-7-staging at 10:33:56 UTC; merge commit 0ed6ae82cf5cbe14cf3f96067c4dce67d20df631)
+**Status:** Complete. All four acceptance criteria and follow-up review fixes passed verification on the final staging tree. Main release, deployment, post-deployment checks, and report submission remain under Issue #87.
 
 ## Baseline and contract follow-up
 
@@ -17,16 +17,16 @@
 - Before behavior changes, the Issue #85 P3 normalization note was resolved: metadata descriptions
   are preserved as submitted, measured against the 2,000-character limit without trimming, and
   cleared by `null` or an empty string. A padded-description test is part of STS-LAB7-02.
-- No database migration is planned; `surveys.title` and `surveys.description` already exist.
+- No database migration was required; `surveys.title` and `surveys.description` already exist.
 
-## Implementation and verification plan
+## Implementation and verification summary
 
-| Acceptance criterion | Planned implementation | Verification |
+| Acceptance criterion | Implemented behavior | Verification result |
 |---|---|---|
-| LAB7-AC-01 | Add owner-only `PATCH /api/surveys/:id/metadata` and an owner-facing Edit details page for PUBLISHED surveys. | STS-LAB7-01 checks API persistence, respondent form visibility and response preservation; STS-LAB7-06 checks UI edit, reload and respondent visibility. |
-| LAB7-AC-02 | Strict metadata-only schema; trim title, preserve description, support clearing and one-field updates. | STS-LAB7-02 checks 120/121 title, 2,000/2,001 description, blank/padded title, padded description, clear and omitted-field cases. |
-| LAB7-AC-03 | Lock the survey row, recheck owner and PUBLISHED state inside the write transaction, and update only supplied metadata fields. | STS-LAB7-01/03 compare questions/options, answer rows, response count and lifecycle snapshot around successful and rejected requests. |
-| LAB7-AC-04 | Keep role and ownership guards, reject DRAFT/CLOSED metadata edits, and preserve full draft editing and published/closed structural locks. | STS-LAB7-04/05 check roles, lifecycle regressions and concurrent close/metadata writes; existing Sprint 1 lifecycle tests remain in scope. |
+| LAB7-AC-01 | Implemented owner-only `PATCH /api/surveys/:id/metadata` and an owner-facing Edit details page for PUBLISHED surveys. | **PASS:** STS-LAB7-01 checks API persistence, respondent form visibility and response preservation; STS-LAB7-06 checks UI edit, reload and respondent visibility. |
+| LAB7-AC-02 | Implemented strict metadata-only schema; trim title, preserve description, support clearing and one-field updates. | **PASS:** STS-LAB7-02 checks 120/121 title, 2,000/2,001 description, blank/padded title, padded description, clear and omitted-field cases. |
+| LAB7-AC-03 | The service locks the survey row, rechecks ownership and PUBLISHED status inside the write transaction, and updates only supplied metadata fields. | **PASS:** STS-LAB7-01/03 compare questions/options, answer rows, response count and lifecycle snapshot around successful and rejected requests. |
+| LAB7-AC-04 | Existing role and ownership guards reject DRAFT/CLOSED metadata edits; draft editing and published/closed structural locks remain. | **PASS:** STS-LAB7-04/05 check roles, lifecycle regressions and concurrent close/metadata writes; existing Sprint 1 lifecycle tests pass. |
 
 ## Test and build evidence
 
@@ -65,4 +65,4 @@ Based on reviewer feedback on PR head `c336ba2413bc24e1a608e4c6c5082f22a92b5ea7`
 | `npx playwright test` | **PASS**: all 3 browser flows, including the pending-save assertion in STS-LAB7-06. | [issue-86-review-e2e.txt](evidence/issue-86-review-e2e.txt) |
 
 All follow-up checks also ran against the disposable local PostgreSQL `surveyhub_test` database.
-The PR remains open and unmerged pending reviewer re-review.
+Snnn3 approved PR #91 at 10:33:23 UTC and it merged into lab-7-staging at 10:33:56 UTC. Issue #86 is complete. Issue #87 retains the main release, deployed behavior checks, and submission evidence; none of those post-merge outcomes are claimed by this implementation record.

@@ -3,11 +3,12 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)
 **Course:** CPE 334 Software Engineering, Semester 1/2026
 **Deliverable:** Project Deliverable 1 — Part C (15 points)
-**Document status:** Baseline v5 with Lab 7 amendment v6 approved and merged by PR #89 on 28 November 2026; behavior and test evidence remain open under Issue #86
+**Document status:** Baseline v5 with Lab 7 amendment v6 approved and merged by PR #89 on 28 November 2026; all four Lab 7 criteria were implemented and verified on lab-7-staging under PR #91; main release, deployed checks, and report remain pending under Issue #87
 **Related documents:** Part A (requirements), Part B (traceability), Part E (feature contracts)
 
-> Status note: this is a design document. It does not claim that the system is implemented or
-> deployed. Implementation and execution evidence belong to Part F.
+> Status note: this is a design document. The Lab 7 F-02 metadata amendment was implemented and
+> tested on lab-7-staging; its execution evidence is recorded under Issue #86. This document does
+> not claim main-release or deployed verification, which remains pending under Issue #87.
 
 ---
 
@@ -595,7 +596,7 @@ Database check failure `503`:
   field. Metadata writes never touch questions, options, answers, response counts or lifecycle
   timestamps.
 
-#### PATCH /api/surveys/:id/metadata (approved Lab 7 contract; implementation in #86)
+#### PATCH /api/surveys/:id/metadata (approved Lab 7 contract; implementation and tests in #86)
 
 Success 200 returns the updated survey detail. This endpoint is available only to the owner of a
 PUBLISHED survey. Invalid shape, blank/over-limit values, unknown keys, or a valid metadata value
@@ -790,9 +791,9 @@ limitation is disclosed rather than overclaimed.
 No design decision in this document is considered implemented until the corresponding code and tests
 exist on the assessed commit.
 
-## 10. Proposed amendment history
+## 10. Amendment history
 
 | Version | Date | Change | Status |
 |---|---|---|---|
 | v5 | 6 Nov 2026 | Accepted Sprint 1 SDS baseline, including the health endpoint and published survey lock | Baseline |
-| v6 | 28 Nov 2026 | Issue #85 proposes an owner-only metadata endpoint for PUBLISHED surveys while preserving structure and response history | Proposed; first review feedback addressed, reviewer re-review and acceptance must precede Issue #86 implementation |
+| v6 | 28 Nov 2026 | Issue #85 defines an owner-only metadata endpoint for PUBLISHED surveys while preserving structure and response history | Accepted by Snnn3 and merged by PR #89 before Issue #86 implementation; implemented and tested on lab-7-staging. Main-release and deployed checks remain pending under Issue #87. |

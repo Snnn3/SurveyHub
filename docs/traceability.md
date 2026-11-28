@@ -3,10 +3,13 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)\
 **Course:** CPE 334 Software Engineering, Semester 1/2026\
 **Deliverable:** Project Deliverable 1 — Part B (10 points across `features.md` and this document)\
-**Document status:** Baseline v5 with Lab 7 amendment v6 approved and merged by PR #89 on 28 November 2026; behavior and test evidence remain open under Issue #86\
+**Document status:** Baseline v5 with Lab 7 amendment v6 accepted by PR #89; the #86 behavior and tests passed on `lab-7-staging` and were merged by PR #91. Main release, deployment checks, and report remain pending under Issue #87.\
 **Related documents:** [SRS](srs.md), [feature inventory](features.md), [system design](system-sds.md), [Sprint 1 contracts](sprints/sprint-1/README.md), [Lab 7 contract review](labs/lab-07/issue-85-contract-review.md), [verification plan](verification.md)
 
-> Status note: every row is a **plan** until actual test evidence for the assessed commit is recorded in Part F. No requirement is marked verified in advance.
+> Status note: baseline requirement rows retain the status for the Deliverable 1 assessed commit.
+> Lab 7 acceptance criteria were implemented and verified on `lab-7-staging` under Issue #86 / PR
+> #91; see the evidence record linked above. Main-release and deployed verification remain pending
+> under Issue #87.
 
 ## 2. Traceability Matrix
 
@@ -82,11 +85,13 @@ deferred until their contracts and tests are defined.
 
 ### 2.5 Accepted Lab 7 contract traceability (Issue #85)
 
-The approved contract defines the implementation paths and planned tests for Issue #86. Paths are
-repo-root-relative. This traceability record does not claim application behavior is implemented or
-verified.
+The approved contract defines the implementation paths and test coverage for Issue #86. Paths are
+repo-root-relative. All four criteria were implemented and verified on the final `lab-7-staging`
+tree merged by PR #91 (`0ed6ae82`); the corresponding RED/GREEN, regression, race and browser
+results are recorded in `docs/labs/lab-07/issue-86-implementation-evidence.md`. PR #94 release, deployment, and
+post-deployment checks remain pending under Issue #87.
 
-| Lab 7 criterion | Requirement / contract | Planned code paths | Test setup | Expected outcomes | Planned verification |
+| Lab 7 criterion | Requirement / contract | Implemented code paths | Test setup | Expected outcomes | Verification evidence |
 |---|---|---|---|---|---|
 | LAB7-AC-01 — owner updates title/description in UI and API; values persist and respondents see them | FR-04, BR-04; SRS §§4–5; F-02 §§3.3, 3.5 | API: server/src/routes/survey.routes.ts, server/src/controllers/survey.controller.ts, server/src/services/survey.service.ts. UI: client/src/App.tsx, client/src/pages/OwnerSurveysPage.tsx, new client/src/pages/SurveyMetadataPage.tsx. Respondent display: client/src/pages/SurveyTakingPage.tsx. | Integration: reset DB and seed owner1, owner2, resp1; create owner1 PUBLISHED survey with two ordered questions/options and one response. E2E: create/publish in browser, submit once as resp1, then return as owner1. | API PATCH returns 200 and owner detail/respondent form show new values. In E2E owner chooses Edit details, saves with both fields disabled during the pending request, reloads/reopens metadata page, then respondent opens form and sees saved title/description; prior response remains readable. | STS-LAB7-01 (API, server/tests/survey-lifecycle.test.ts); STS-LAB7-06 (UI, e2e/sprint1-survey-flow.spec.ts) |
 | LAB7-AC-02 — title trim/nonblank/<=120; description preserved/clearable/<=2,000 | FR-04; SRS §§4–5; F-02 §3.5 | server/src/validators/survey.validator.ts, server/src/controllers/survey.controller.ts, server/src/services/survey.service.ts | Reset a PUBLISHED owner1 fixture before each integration case; use owner1 token. Submit exact/over limits, blank title, padded title and description, null/empty description, title-only and description-only bodies. | Exact limits pass; 121/2,001 and blank title return 400 VALIDATION_ERROR; title is saved trimmed; padded description is preserved; null/empty clears description; one-field PATCH preserves the omitted field. | STS-LAB7-02, server/tests/survey-lifecycle.test.ts |
