@@ -1,0 +1,134 @@
+
+> surveyhub-server@0.1.0 test
+> jest --runInBand --detectOpenHandles --forceExit
+
+  console.log
+    prisma:error
+    Invalid `tx.responseClaim.create()` invocation in
+    /private/tmp/surveyhub-issue86/server/src/services/response.service.ts:162:30
+
+      159 const answers = normalizeAnswers(survey.questions, input.answers);
+      160
+      161 try {
+    → 162   await tx.responseClaim.create(
+    Unique constraint failed on the fields: (`survey_id`,`user_id`)
+
+      at Object.zc (../node_modules/@prisma/internals/src/logger.ts:13:11)
+
+  console.log
+    prisma:error
+    Invalid `tx.responseClaim.create()` invocation in
+    /private/tmp/surveyhub-issue86/server/src/services/response.service.ts:162:30
+
+      159 const answers = normalizeAnswers(survey.questions, input.answers);
+      160
+      161 try {
+    → 162   await tx.responseClaim.create(
+    Unique constraint failed on the fields: (`survey_id`,`user_id`)
+
+      at Object.zc (../node_modules/@prisma/internals/src/logger.ts:13:11)
+
+PASS tests/response-submission.test.ts (9.098 s)
+  F-03 survey submission and receipts (STS-F03-01 to STS-F03-10)
+    ✓ STS-F03-01: lists published surveys and only the caller’s submission state and receipt id (749 ms)
+    ✓ STS-F03-02: returns ordered questions and options for a published survey (496 ms)
+    ✓ STS-F03-03: persists a response, answers, selected option, and claim atomically (502 ms)
+    ✓ STS-F03-04: returns one duplicate conflict sequentially and under concurrent submissions (810 ms)
+    ✓ STS-F03-05: rejects submissions to draft and closed surveys (535 ms)
+    ✓ STS-F03-06: reports missing required questions and accepts omitted optional questions (592 ms)
+    ✓ accepts a valid non-empty answer to a required short-text question (510 ms)
+    ✓ rejects malformed response bodies before entering the submission service (613 ms)
+    ✓ STS-F03-07: rejects wrong types, foreign options, duplicate questions, mixed values, and long text (619 ms)
+    ✓ STS-F03-08: denies a different respondent access to a receipt without returning answers (491 ms)
+    ✓ STS-F03-09: rejects owner access to respondent submission endpoints (454 ms)
+    ✓ STS-F03-10: retrieves the same persisted receipt and timestamp after another request (468 ms)
+
+PASS tests/survey-lifecycle.test.ts (15.513 s)
+  F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11)
+    ✓ STS-F02-01: AC-F02-01 GET /api/surveys returns only the authenticated owner surveys with counts (480 ms)
+    ✓ STS-F02-02: AC-F02-02 POST /api/surveys creates a DRAFT with ordered questions and options (544 ms)
+    ✓ STS-F02-03: AC-F02-03 GET /api/surveys/:id returns the owner full survey detail with ordered items (534 ms)
+    ✓ STS-F02-04: AC-F02-04 PUT /api/surveys/:id updates a draft title, description, and replaces questions atomically (490 ms)
+    ✓ STS-F02-05: AC-F02-05 DELETE /api/surveys/:id deletes draft and cascades questions and options (469 ms)
+    ✓ STS-F02-06: AC-F02-06 PATCH /api/surveys/:id/publish publishes a valid draft and sets publishedAt (433 ms)
+    ✓ STS-F02-07: AC-F02-07 PATCH /api/surveys/:id/publish rejects invalid structure and leaves status DRAFT (674 ms)
+    ✓ STS-F02-08: AC-F02-08 PATCH /api/surveys/:id/close closes a published survey and sets closedAt (779 ms)
+    ✓ STS-F02-09: AC-F02-09 Non-owner gets 403 FORBIDDEN_OWNERSHIP for GET, PUT, DELETE, publish, close (844 ms)
+    ✓ STS-F02-10: AC-F02-10 Updating or deleting a published or closed survey returns 400 SURVEY_NOT_EDITABLE (835 ms)
+    ✓ STS-F02-11: AC-F02-11 Invalid state transitions return 400 INVALID_STATE_TRANSITION (1142 ms)
+    ✓ rejects access from respondents with 403 FORBIDDEN_ROLE (467 ms)
+    ✓ returns 404 NOT_FOUND for non-existent survey ID or malformed UUID (447 ms)
+    ✓ rejects duplicate option labels with 400 VALIDATION_ERROR (658 ms)
+    ✓ rejects Sprint 2 question types with 400 VALIDATION_ERROR in Sprint 1 (486 ms)
+    ✓ rejects SHORT_TEXT questions with options with 400 VALIDATION_ERROR (474 ms)
+    ✓ rejects SINGLE_CHOICE questions with more than 20 options with 400 VALIDATION_ERROR (448 ms)
+    ✓ handles concurrent PUT and PATCH publish requests atomically (641 ms)
+    ✓ STS-LAB7-01: owner edits PUBLISHED metadata at the title limit without changing saved responses (579 ms)
+    ✓ STS-LAB7-02: validates metadata boundaries, preserves padded descriptions, and supports partial updates (607 ms)
+    ✓ STS-LAB7-03: rejects structural and lifecycle fields atomically (573 ms)
+    ✓ STS-LAB7-04: enforces owner role and PUBLISHED state for metadata edits (704 ms)
+    ✓ STS-LAB7-05: serializes a published metadata update with a concurrent close (557 ms)
+
+PASS tests/auth.test.ts (10.427 s)
+  F-01 authentication and roles
+    ✓ logs in with a normalized email and returns a signed token without the password hash (773 ms)
+    ✓ returns the same credentials error for an unknown email and a wrong password (875 ms)
+    ✓ rejects malformed login input (1073 ms)
+    ✓ requires a token for current-user and logout requests (536 ms)
+    ✓ returns the current database user and role for a valid token (967 ms)
+    ✓ rejects malformed tokens (613 ms)
+    ✓ revokes an existing token on logout (368 ms)
+    ✓ enforces roles on server-protected routes (505 ms)
+    ✓ seeds every account with bcrypt cost 10 and the required 2b prefix (325 ms)
+
+PASS tests/survey-summary.test.ts (5.744 s)
+  F-04 Aggregate Summary (STS-F04-01 to STS-F04-04)
+    ✓ STS-F04-01: returns counts, percentages, text answers, and no identity keys (539 ms)
+    ✓ STS-F04-02: respondent receives 403 FORBIDDEN_ROLE and no summary data (857 ms)
+    ✓ STS-F04-03: non-owner owner receives 403 FORBIDDEN_OWNERSHIP and no statistics (503 ms)
+    ✓ STS-F04-04: survey with zero responses returns zero counts, empty lists and 200 (517 ms)
+    ✓ returns 404 NOT_FOUND for unknown survey UUID or malformed UUID (471 ms)
+    ✓ uses answeredCount rather than totalResponses as percentage denominator when questions are skipped (771 ms)
+
+PASS tests/configuration.test.ts
+  production configuration
+    ✓ rejects missing or default JWT secrets (12 ms)
+    ✓ rejects missing and default database URLs without exposing credentials (5 ms)
+    ✓ uses the configured Cloud Run port and accepts non-default production settings (3 ms)
+    ✓ accepts and trims a Cloud SQL Unix socket URL (6 ms)
+    ✓ rejects hostless Cloud SQL socket URLs (1 ms)
+  seed password configuration
+    ✓ requires an operator supplied password and rejects the example placeholder (1 ms)
+    ✓ rejects the fixed test password and weak values for production seeds (2 ms)
+    ✓ accepts explicit synthetic test credentials outside production (1 ms)
+
+PASS tests/security-matrix.test.ts (5.175 s)
+  Sprint 1 security matrix (STS-SEC-01/02)
+    ✓ keeps only login and health public (725 ms)
+    ✓ rejects missing, malformed, and expired tokens on every protected route without returning data (986 ms)
+    ✓ rejects each wrong role on every survey route without changing the database (864 ms)
+    ✓ denies non-owner survey operations and cross-respondent receipts without data or database changes (696 ms)
+
+PASS tests/unit/rules.test.ts
+  Sprint 1 Supporting Unit Tests - Rules (STS-U-01, STS-U-02)
+    ✓ STS-U-01: rejects a draft with zero questions with code NO_QUESTIONS (2 ms)
+    ✓ STS-U-02: rejects a single-choice question with fewer than two options with code TOO_FEW_OPTIONS (1 ms)
+    ✓ rejects single-choice options with empty or over 200 character labels with code INVALID_OPTION_LABEL
+    ✓ rejects an empty question prompt with code EMPTY_PROMPT (1 ms)
+    ✓ rejects a question prompt exceeding 500 characters with code PROMPT_TOO_LONG
+    ✓ rejects a single-choice question with more than 20 options with code TOO_MANY_OPTIONS (1 ms)
+    ✓ rejects single-choice duplicate option labels with code DUPLICATE_OPTIONS
+    ✓ accepts a valid draft structure with single-choice and short-text questions (1 ms)
+
+PASS tests/health.test.ts
+  GET /api/health (Scaffold Health & Database Connectivity)
+    ✓ should return 200 and report status ok with database up (13 ms)
+    ✓ should return 404 with standard error envelope for undefined API routes (both /api and /api/*) (272 ms)
+    ✓ should return 400 VALIDATION_ERROR when request contains malformed JSON (29 ms)
+    ✓ should return 503 SERVICE_UNAVAILABLE when database connectivity check fails (11 ms)
+
+Test Suites: 8 passed, 8 total
+Tests:       74 passed, 74 total
+Snapshots:   0 total
+Time:        51.163 s
+Ran all test suites.

@@ -3,7 +3,7 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)
 **Course:** CPE 334 Software Engineering, Semester 1/2026
 **Deliverable:** Project Deliverable 1 — Part C (15 points)
-**Document status:** Baseline v5 with proposed Lab 7 amendment v6 for Issue #85; first review feedback addressed 28 November 2026, reviewer re-review pending
+**Document status:** Baseline v5 with Lab 7 amendment v6 approved and merged by PR #89 on 28 November 2026; behavior and test evidence remain open under Issue #86
 **Related documents:** Part A (requirements), Part B (traceability), Part E (feature contracts)
 
 > Status note: this is a design document. It does not claim that the system is implemented or
@@ -588,14 +588,14 @@ Database check failure `503`:
   only when the survey is `DRAFT`.
 - `PATCH /api/surveys/:id/metadata` accepts a strict object containing title and/or description only;
   unknown fields and an empty body are rejected. Title is trimmed, nonblank and at most 120
-  characters. Description is trimmed and at most 2,000 characters; null or empty clears it, while
-  omission leaves the current value unchanged.
+  characters. Description is preserved as submitted and is at most 2,000 characters without
+  trimming; null or empty clears it, while omission leaves the current value unchanged.
 - The metadata service rechecks owner and PUBLISHED status in the write transaction and serializes
   against close. A close committed first makes the metadata write fail without changing either
   field. Metadata writes never touch questions, options, answers, response counts or lifecycle
   timestamps.
 
-#### PATCH /api/surveys/:id/metadata (proposed Lab 7 contract)
+#### PATCH /api/surveys/:id/metadata (approved Lab 7 contract; implementation in #86)
 
 Success 200 returns the updated survey detail. This endpoint is available only to the owner of a
 PUBLISHED survey. Invalid shape, blank/over-limit values, unknown keys, or a valid metadata value

@@ -1,6 +1,6 @@
 # Lab 7 Issue #85 — Published Survey Metadata Contract Review
 
-**Status:** Proposed contract; first review feedback addressed; reviewer re-review pending before Issue #86
+**Status:** Approved contract; merged into `lab-7-staging` by PR #89; behavioral implementation is tracked by Issue #86
 **Issue:** [#85 — Define the published survey metadata rule and review the contract](https://github.com/Snnn3/SurveyHub/issues/85)
 **Implementation:** Issue [#86](https://github.com/Snnn3/SurveyHub/issues/86), after contract review
 **Release and report:** Issue [#87](https://github.com/Snnn3/SurveyHub/issues/87)
@@ -14,9 +14,9 @@ questions or options and does not change responses or lifecycle state. A CLOSED 
 locked.
 
 The maintenance brief says instructor/TA approval is no longer required for this change under the
-updated Lab 7 announcement. Teammate Snnn3 provided substantive review on 28 November 2026. The
-first-round findings are recorded in §7 and addressed in this revision; Issue #86 remains gated on
-the reviewer's re-review and acceptance.
+updated Lab 7 announcement. Teammate Snnn3 provided substantive review and approved the revised
+contract on 28 November 2026. PR #89 merged the accepted contract into `lab-7-staging`; Issue #86
+owns the remaining behavior and test evidence.
 
 ## 2. Baseline, source and deployed state
 
@@ -49,7 +49,7 @@ The existing row-level lock used by update, publish and close provides the concu
 for the proposed metadata operation. Issue #86 should use that same survey-row serialization
 boundary, then recheck ownership and PUBLISHED status before writing.
 
-## 4. Proposed contract
+## 4. Approved contract
 
 ### Endpoint and UI
 
@@ -66,8 +66,9 @@ boundary, then recheck ownership and PUBLISHED status before writing.
   including questions, options, mode, status, owner and lifecycle timestamps. Reject the whole
   request if valid metadata is combined with a forbidden field.
 - Trim title; require 1–120 characters after trimming.
-- Trim an optional description; allow up to 2,000 characters. Empty string or null clears it;
-  omission leaves it unchanged.
+- Preserve an optional description exactly as submitted and allow up to 2,000 characters before
+  normalization (there is no description trimming). Empty string or null clears it; omission leaves
+  it unchanged. Tests cover a padded description so the boundary rule is explicit.
 - Return 200 and updated survey detail on success. Invalid body/values return 400
   VALIDATION_ERROR. Wrong role or owner returns 403. Unknown id returns 404. DRAFT or CLOSED
   returns 400 SURVEY_NOT_EDITABLE.
@@ -96,15 +97,16 @@ test run or passing result is claimed by this review record.
 
 ## 6. Cross-document amendment plan
 
-| Document | Accepted baseline | Proposed amendment in this branch |
+| Document | Accepted baseline | Amendment in the reviewed contract |
 |---|---|---|
 | SRS | v5 | v6 updates FR-04, BR-04, BR-07 and Q3 |
 | F-02 | v4 | v5 adds the state matrix, UI/API contract and LAB7-AC-01..04 / STS-LAB7-01..06 |
 | System SDS | v5 | v6 adds the endpoint, validation, authorization and transaction boundary |
 | Traceability | v5 | v6 maps the Lab 7 criteria to FR-04, BR-04, BR-07, NFR-SEC-02 and planned tests |
 
-Each document labels the amendment proposed and awaiting reviewer re-review. These edits do not
-claim that the new requirement is implemented or verified.
+Each document records the accepted Lab 7 contract amendment. The behavior remains unverified until
+Issue #86 is implemented and tested; acceptance of the contract does not claim that the new
+requirement is implemented.
 
 ## 7. Teammate review record
 
@@ -116,7 +118,7 @@ claim that the new requirement is implemented or verified.
 | Result | CHANGES_REQUESTED; Standards: no findings; Spec: request changes |
 | Before revision | Commit a164c9b66a6c7d62348e885e3b0457d76c7b2602, 28 November 2026, 14:53:08 Asia/Bangkok |
 | Response revision | 28 November 2026; documentation and test-plan updates recorded on the current PR branch |
-| Disposition | All six findings accepted and addressed below. Request reviewer re-review; do not start Issue #86 until the contract is accepted. |
+| Disposition | All six first-round findings were addressed. Snnn3's re-review approved the contract on 28 November 2026 at 09:07:21 UTC; PR #89 merged it into `lab-7-staging` at 09:08:26 UTC (merge commit `f1e6e7ce15d36ce944e5edae9e2ffe161750e68c`). Before Issue #86 behavior work, the non-blocking P3 description note was resolved by removing description trimming and adding a padded-description boundary check. |
 
 ### Review text and before/after excerpts
 
@@ -154,10 +156,10 @@ claim that the new requirement is implemented or verified.
    - Before excerpt: `Review is pending. Before Issue #86 implementation, a teammate should check:`
    - After excerpt: `Reviewer: Snnn3 | Review submitted: 28 November 2026 | Result: CHANGES_REQUESTED | Disposition: All six findings accepted and addressed; request reviewer re-review.`
    - After: this section records reviewer Snnn3, review time, review link/result, before/after commit dates, all six findings and their dispositions.
-   - Disposition: first-round findings addressed; final contract acceptance remains pending reviewer re-review. Issue #86 remains gated.
+   - Disposition: first-round findings addressed; Snnn3's re-review approved the contract and PR #89 merged it into `lab-7-staging`. The non-blocking description-normalization note was resolved before Issue #86 behavior work.
 
-The first-round feedback is recorded here and linked to its original review and inline threads. No
-application code or test results are included in this PR.
+The first-round feedback and final approval are recorded here and linked to the review and inline
+threads. PR #89 changed documentation only; implementation and execution evidence belong to #86.
 
 ### Original reviewer text
 

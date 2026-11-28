@@ -113,3 +113,65 @@ test('STS-E2E-02: duplicate, cross-receipt access, and a logged-out token are re
   expect(reusedToken.status()).toBe(401);
   expect((await reusedToken.json()).error.code).toBe('TOKEN_REVOKED');
 });
+
+test('STS-LAB7-06: owner edits published details and respondents see them after reload', async ({ page }) => {
+  const title = `Lab 7 metadata ${Date.now()}`;
+  const updatedTitle = `${title} updated`;
+  const updatedDescription = 'Please use the updated respondent instructions.';
+  let surveyId = '';
+
+  page.on('response', async (response) => {
+    if (response.url().endsWith('/api/surveys') && response.request().method() === 'POST' && response.status() === 201) {
+      surveyId = (await response.json()).data.id;
+    }
+  });
+
+  await signIn(page, 'owner1@survey.local', '/owner/surveys');
+  await page.getByRole('link', { name: /New Survey/ }).click();
+  await page.getByLabel('Survey Title').fill(title);
+  await page.locator('#survey-desc').fill('Original instructions.');
+  await page.getByRole('button', { name: '+ Single Choice' }).click();
+  await page.getByPlaceholder('e.g. How satisfied are you with the course?').fill('Was this survey useful?');
+  await page.getByRole('textbox', { name: 'Question 1 Option 1' }).fill('Yes');
+  await page.getByRole('textbox', { name: 'Question 1 Option 2' }).fill('No');
+  await page.getByRole('button', { name: 'Publish Survey' }).click();
+  await expect(page.getByText(title)).toBeVisible();
+  expect(surveyId).toMatch(/^[0-9a-f-]{36}$/i);
+
+  await signOut(page);
+  await signIn(page, 'resp1@survey.local', '/surveys');
+  const surveyCard = page.locator('li').filter({ hasText: title });
+  await surveyCard.getByRole('link', { name: 'Start survey' }).click();
+  await page.getByLabel('Yes', { exact: true }).check();
+  await page.getByRole('button', { name: 'Submit response' }).click();
+  await expect(page.getByRole('heading', { name: 'Your response is recorded' })).toBeVisible();
+  const responseId = new URL(page.url()).pathname.split('/').at(-1)!;
+
+  await signOut(page);
+  await signIn(page, 'owner1@survey.local', '/owner/surveys');
+  await page.locator(`a[href="/owner/surveys/${surveyId}/metadata"]`).click();
+  await expect(page.getByRole('heading', { name: 'Edit published survey details' })).toBeVisible();
+  await page.locator('#metadata-title').fill(updatedTitle);
+  await page.locator('#metadata-description').fill(updatedDescription);
+  await page.route('**/api/surveys/*/metadata', async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    await route.continue();
+  });
+  await page.getByRole('button', { name: 'Save details' }).click();
+  await expect(page.locator('#metadata-title')).toBeDisabled();
+  await expect(page.locator('#metadata-description')).toBeDisabled();
+  await expect(page.getByText('Survey details saved.')).toBeVisible();
+
+  await page.reload();
+  await expect(page.locator('#metadata-title')).toHaveValue(updatedTitle);
+  await expect(page.locator('#metadata-description')).toHaveValue(updatedDescription);
+
+  await signOut(page);
+  await signIn(page, 'resp1@survey.local', '/surveys');
+  await page.goto(`/surveys/${surveyId}/take`);
+  await expect(page.getByRole('heading', { name: updatedTitle })).toBeVisible();
+  await expect(page.getByText(updatedDescription)).toBeVisible();
+  await page.goto(`/surveys/${surveyId}/confirmation/${responseId}`);
+  await expect(page.getByRole('heading', { name: 'Your response is recorded' })).toBeVisible();
+  await expect(page.getByText('Yes', { exact: true })).toBeVisible();
+});
