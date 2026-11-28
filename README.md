@@ -151,6 +151,7 @@ docker compose run --rm app npm run db:seed:showcase
 ```
 
 The showcase seed creates no responses, so submit a few surveys in the local app to populate their summaries. The regular `db:seed` and automatic deploy workflow remain unchanged.
+With an existing Compose volume, keep the ignored `.env` database password aligned with the password used when that volume was initialized; do not remove the volume to fix an authentication mismatch.
 
 For a deliberate Cloud Run seed, deploy an image that contains this command, then use the team's existing migration job. First inspect and record the job's current command, arguments, and environment. In Git Bash, set the assigned values and update the job without replacing its other environment:
 
@@ -179,7 +180,7 @@ gcloud run jobs update "${TEAM_PREFIX}-migrate" \
   --remove-env-vars=SHOWCASE_SEED_TARGET
 ```
 
-Cloud mode rejects anything except the matching migration job, team database, and assigned Cloud SQL socket. Do not seed Cloud as part of a normal release. If the job had a different command before this one-off run, restore the recorded original command and arguments instead.
+Cloud mode also reads the Cloud Run metadata server and verifies the runtime project ID and region before Prisma is loaded; setting matching environment variables on a local machine is not enough. It rejects anything except the matching migration job, team database, and assigned Cloud SQL socket. Do not seed Cloud as part of a normal release. If the job had a different command before this one-off run, restore the recorded original command and arguments instead.
 
 Restore the job environment from the values you recorded before the run as well. Remove `SHOWCASE_SEED_TARGET` and any of `TEAM_PREFIX`, `GCP_PROJECT_ID`, or `GCP_REGION` that were added only for this seed; keep any values that were already present. Pass only the temporary variable names to `--remove-env-vars`.
 

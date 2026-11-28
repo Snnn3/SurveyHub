@@ -4,7 +4,26 @@ const dotenv = require('dotenv');
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-function assertShowcaseDatabaseTarget() {
+async function readCloudRunMetadata(metadataPath) {
+  let response;
+  try {
+    response = await fetch(`http://metadata.google.internal/computeMetadata/v1/${metadataPath}`, {
+      headers: { 'Metadata-Flavor': 'Google' },
+      redirect: 'error',
+      signal: AbortSignal.timeout(1500),
+    });
+  } catch {
+    throw new Error('Cloud Run metadata could not be verified; refusing Cloud showcase seed.');
+  }
+
+  if (!response.ok || response.headers.get('Metadata-Flavor') !== 'Google') {
+    throw new Error('Cloud Run metadata could not be verified; refusing Cloud showcase seed.');
+  }
+
+  return (await response.text()).trim();
+}
+
+async function assertShowcaseDatabaseTarget() {
   let databaseUrl;
   try {
     databaseUrl = new URL(process.env.DATABASE_URL || '');
@@ -38,6 +57,14 @@ function assertShowcaseDatabaseTarget() {
       databaseUrl.searchParams.get('host') !== expectedSocket
     ) {
       throw new Error('Cloud showcase seed requires the matching team migration job, database, and attached SQL instance.');
+    }
+
+    const [projectId, regionPath] = await Promise.all([
+      readCloudRunMetadata('project/project-id'),
+      readCloudRunMetadata('instance/region'),
+    ]);
+    if (projectId !== process.env.GCP_PROJECT_ID || regionPath.split('/').pop() !== process.env.GCP_REGION) {
+      throw new Error('Cloud Run metadata does not match the assigned project and region; refusing Cloud showcase seed.');
     }
     return;
   }
@@ -215,7 +242,7 @@ const surveys = [
 ];
 
 async function main() {
-  assertShowcaseDatabaseTarget();
+  await assertShowcaseDatabaseTarget();
   const { PrismaClient, Role } = require('@prisma/client');
   const prisma = new PrismaClient();
   const publishedAt = new Date('2026-11-28T00:00:00.000Z');
