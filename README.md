@@ -181,6 +181,8 @@ gcloud run jobs update "${TEAM_PREFIX}-migrate" \
 
 Cloud mode rejects anything except the matching migration job, team database, and assigned Cloud SQL socket. Do not seed Cloud as part of a normal release. If the job had a different command before this one-off run, restore the recorded original command and arguments instead.
 
+Restore the job environment from the values you recorded before the run as well. Remove `SHOWCASE_SEED_TARGET` and any of `TEAM_PREFIX`, `GCP_PROJECT_ID`, or `GCP_REGION` that were added only for this seed; keep any values that were already present. Pass only the temporary variable names to `--remove-env-vars`.
+
 See [Lab 5 deployment and environment configuration](docs/labs/lab-05/deployment.md) for the variable matrix, Cloud Run settings, and persistent Compose verification.
 
 ---
