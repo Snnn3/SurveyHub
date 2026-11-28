@@ -3,7 +3,7 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)
 **Course:** CPE 334 Software Engineering, Semester 1/2026
 **Deliverable:** Project Deliverable 1 — Part C (15 points)
-**Document status:** Baseline v5 with proposed Lab 7 amendment v6 for Issue #85, drafted 28 November 2026; teammate review pending
+**Document status:** Baseline v5 with proposed Lab 7 amendment v6 for Issue #85; first review feedback addressed 28 November 2026, reviewer re-review pending
 **Related documents:** Part A (requirements), Part B (traceability), Part E (feature contracts)
 
 > Status note: this is a design document. It does not claim that the system is implemented or
@@ -795,4 +795,4 @@ exist on the assessed commit.
 | Version | Date | Change | Status |
 |---|---|---|---|
 | v5 | 6 Nov 2026 | Accepted Sprint 1 SDS baseline, including the health endpoint and published survey lock | Baseline |
-| v6 | 28 Nov 2026 | Issue #85 proposes an owner-only metadata endpoint for PUBLISHED surveys while preserving structure and response history | Proposed; teammate contract review is pending before Issue #86 implementation |
+| v6 | 28 Nov 2026 | Issue #85 proposes an owner-only metadata endpoint for PUBLISHED surveys while preserving structure and response history | Proposed; first review feedback addressed, reviewer re-review and acceptance must precede Issue #86 implementation |

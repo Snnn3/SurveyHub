@@ -3,7 +3,7 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)
 **Course:** CPE 334 Software Engineering, Semester 1/2026
 **Deliverable:** Project Deliverable 1 — Part B (10 points)
-**Document status:** Baseline v4 with proposed Lab 7 maintenance note for Issue #85, drafted 28 November 2026
+**Document status:** Baseline v4 with proposed Lab 7 maintenance note for Issue #85; first review feedback addressed 28 November 2026, reviewer re-review pending
 **Related documents:** Part A (requirements), Part C (system design), Part D (sprint plan), Part E (Sprint 1 contracts)
 
 > Status note: every row in this document is a **plan**. No row is marked VERIFIED until a real test

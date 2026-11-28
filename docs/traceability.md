@@ -3,7 +3,7 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)\
 **Course:** CPE 334 Software Engineering, Semester 1/2026\
 **Deliverable:** Project Deliverable 1 — Part B (10 points across `features.md` and this document)\
-**Document status:** Baseline v5 with proposed Lab 7 amendment v6 for Issue #85, drafted 28 November 2026\
+**Document status:** Baseline v5 with proposed Lab 7 amendment v6 for Issue #85; first review feedback addressed 28 November 2026, reviewer re-review pending\
 **Related documents:** [SRS](srs.md), [feature inventory](features.md), [system design](system-sds.md), [Sprint 1 contracts](sprints/sprint-1/README.md), [Lab 7 contract review](labs/lab-07/issue-85-contract-review.md), [verification plan](verification.md)
 
 > Status note: every row is a **plan** until actual test evidence for the assessed commit is recorded in Part F. No requirement is marked verified in advance.
@@ -20,7 +20,7 @@ Status values: **PLANNED** (designed, not implemented), **IMPLEMENTED** (code ex
 | **FR-01** | Login, logout and token revocation | F-01 | 1 | AC-F01-01..05 | STS-F01-01..05 | PLANNED |
 | **FR-02** | Current user and role, no password hash exposure | F-01 | 1 | AC-F01-03, AC-F01-06 | STS-F01-03, STS-F01-06 | PLANNED |
 | **FR-03** | Manage survey drafts | F-02 | 1 | AC-F02-01..03, AC-F02-05 | STS-F02-01..03, STS-F02-05 | PLANNED |
-| **FR-04** | Author draft questions and correct published metadata | F-02 | 1 / Lab 7 | AC-F02-04, AC-F02-10, LAB7-AC-01..04 | STS-F02-04, STS-F02-10, STS-LAB7-01..05 | PLANNED |
+| **FR-04** | Author draft questions and correct published metadata | F-02 | 1 / Lab 7 | AC-F02-04, AC-F02-10, LAB7-AC-01..04 | STS-F02-04, STS-F02-10, STS-LAB7-01..06 | PLANNED |
 | **FR-05** | Publish survey | F-02 | 1 | AC-F02-06, AC-F02-07 | STS-F02-06, STS-F02-07 | PLANNED |
 | **FR-06** | Close survey | F-02 | 1 | AC-F02-08, AC-F02-11 | STS-F02-08, STS-F02-11 | PLANNED |
 | **FR-07** | Browse published surveys and load a survey form | F-03 | 1 | AC-F03-01, AC-F03-02 | STS-F03-01, STS-F03-02 | PLANNED |
@@ -41,10 +41,10 @@ Status values: **PLANNED** (designed, not implemented), **IMPLEMENTED** (code ex
 | **BR-01** | One response per respondent per survey, including concurrency | F-03 | 1 | AC-F03-04 | STS-F03-04 (TDD) | PLANNED |
 | **BR-02** | Only PUBLISHED (and not past `closesAt`) accepts responses | F-03, F-07 | 1, 2 | AC-F03-05, AC-S2-04 | STS-F03-05, STS-S2-04 | PLANNED |
 | **BR-03** | Required/type/option/text validation | F-03 | 1 | AC-F03-06, AC-F03-07 | STS-F03-06, STS-F03-07 | PLANNED |
-| **BR-04** | Survey ownership boundary, including published metadata | F-02, F-04 | 1 / Lab 7 | AC-F02-09, AC-F04-03, LAB7-AC-01, LAB7-AC-04 | STS-F02-09, STS-F04-03, STS-LAB7-04 | PLANNED |
+| **BR-04** | Survey ownership boundary, including published metadata | F-02, F-04 | 1 / Lab 7 | AC-F02-09, AC-F04-03, LAB7-AC-01, LAB7-AC-04 | STS-F02-09, STS-F04-03, STS-LAB7-01, STS-LAB7-04, STS-LAB7-06 | PLANNED |
 | **BR-05** | Cross-response privacy | F-03, F-04 | 1 | AC-F03-08, AC-F04-02 | STS-F03-08, STS-F04-02 | PLANNED |
 | **BR-06** | Publish structure requirements | F-02 | 1 | AC-F02-07 | STS-F02-07 | PLANNED |
-| **BR-07** | Immutable published structure; metadata correction only while PUBLISHED | F-02 | 1 / Lab 7 | AC-F02-10, LAB7-AC-02..04 | STS-F02-10, STS-LAB7-02..05 | PLANNED |
+| **BR-07** | Immutable published structure; metadata correction only while PUBLISHED | F-02 | 1 / Lab 7 | AC-F02-10, LAB7-AC-02..04 | STS-F02-10, STS-LAB7-01..05 | PLANNED |
 | **BR-08** | Role and eligibility guard for submission | F-03, F-07 | 1, 2 | AC-F03-09, AC-S2-03 | STS-F03-09, STS-S2-03 | PLANNED |
 | **BR-09** | CLOSED is terminal; invalid transitions rejected | F-02 | 1 | AC-F02-11 | STS-F02-11 | PLANNED |
 | **BR-10** | Anonymous identity/answer separation | F-05 | 2 | AC-S2-01, AC-PRIV-01 | STS-S2-01, STS-PRIV-01 | DEFERRED |
@@ -82,15 +82,17 @@ deferred until their contracts and tests are defined.
 
 ### 2.5 Proposed Lab 7 contract traceability (Issue #85)
 
-The amendment remains proposed. The tests below are specifications for Issue #86 and are not
-evidence that implementation or verification has happened.
+The amendment remains proposed. These are planned implementation paths and test specifications for
+Issue #86; no application code or verification result is claimed in this PR.
+Paths are repo-root-relative. client/src/pages/SurveyMetadataPage.tsx is a planned new page; none of
+the implementation files below are changed by this documentation PR.
 
-| Lab 7 criterion | Requirement / rule | Contract location | Planned verification | Status |
-|---|---|---|---|---|
-| LAB7-AC-01 — owner edits title/description; reload and respondent form show them | FR-04, BR-04 | SRS §§4–5; F-02 §§3.3, 3.5 | STS-LAB7-01 | PLANNED |
-| LAB7-AC-02 — title 1–120 trimmed; description <=2,000 and clearable | FR-04 | SRS §§4–5; F-02 §3.5 | STS-LAB7-02 | PLANNED |
-| LAB7-AC-03 — strict metadata-only update; preserve structure, answers, counts and lifecycle history | BR-07 | SRS §5; SDS §§4.4–4.5; F-02 §3.5 | STS-LAB7-03 | PLANNED |
-| LAB7-AC-04 — role, owner, state, regression and close-race protections | BR-04, BR-07, NFR-SEC-02 | SRS §§5–6; SDS §5; F-02 §3.5 | STS-LAB7-04..05 | PLANNED |
+| Lab 7 criterion | Requirement / contract | Planned code paths | Test setup | Expected outcomes | Planned verification |
+|---|---|---|---|---|---|
+| LAB7-AC-01 — owner updates title/description in UI and API; values persist and respondents see them | FR-04, BR-04; SRS §§4–5; F-02 §§3.3, 3.5 | API: server/src/routes/survey.routes.ts, server/src/controllers/survey.controller.ts, server/src/services/survey.service.ts. UI: client/src/App.tsx, client/src/pages/OwnerSurveysPage.tsx, new client/src/pages/SurveyMetadataPage.tsx. Respondent display: client/src/pages/SurveyTakingPage.tsx. | Integration: reset DB and seed owner1, owner2, resp1; create owner1 PUBLISHED survey with two ordered questions/options and one response. E2E: create/publish in browser, submit once as resp1, then return as owner1. | API PATCH returns 200 and owner detail/respondent form show new values. In E2E owner chooses Edit details, saves, reloads/reopens metadata page, then respondent opens form and sees saved title/description; prior response remains readable. | STS-LAB7-01 (API, server/tests/survey-lifecycle.test.ts); STS-LAB7-06 (UI, e2e/sprint1-survey-flow.spec.ts) |
+| LAB7-AC-02 — title trim/nonblank/<=120; description optional/clearable/<=2,000 | FR-04; SRS §§4–5; F-02 §3.5 | server/src/validators/survey.validator.ts, server/src/controllers/survey.controller.ts, server/src/services/survey.service.ts | Reset a PUBLISHED owner1 fixture before each integration case; use owner1 token. Submit exact/over limits, blank title, padded nonblank title, null/empty description, title-only and description-only bodies. | Exact limits pass; 121/2,001 and blank title return 400 VALIDATION_ERROR; padded title is saved trimmed; null/empty clears description; a one-field PATCH preserves the omitted field. | STS-LAB7-02, server/tests/survey-lifecycle.test.ts |
+| LAB7-AC-03 — reject structural/lifecycle fields atomically and preserve history | BR-07; SRS §5; SDS §§4.4–4.5; F-02 §3.5 | server/src/routes/survey.routes.ts, server/src/controllers/survey.controller.ts, server/src/validators/survey.validator.ts, server/src/services/survey.service.ts | Record IDs/order, answer rows, response count, status and publishedAt/closesAt/closedAt on an owner1 PUBLISHED fixture. Send forbidden questions, options, mode, id, ownerId, status, createdAt, updatedAt, publishedAt, closesAt and closedAt fields individually and with valid metadata; compare snapshot around a successful metadata update too. | Invalid/mixed request returns 400 VALIDATION_ERROR and changes nothing; successful metadata update changes only title/description/updatedAt; all captured structure, answers, counts and lifecycle state remain the same. | STS-LAB7-01 and STS-LAB7-03, server/tests/survey-lifecycle.test.ts |
+| LAB7-AC-04 — role, state, regression and close-race protections | BR-04, BR-07, NFR-SEC-02; SRS §§5–6; SDS §5; F-02 §3.5 | server/src/routes/survey.routes.ts, server/src/middleware/auth.middleware.ts, server/src/services/survey.service.ts; client/src/pages/OwnerSurveysPage.tsx, client/src/pages/SurveyEditorPage.tsx | Seed owner1, owner2 and resp1. Exercise owner2/respondent against owner1 PUBLISHED, then metadata PATCH on DRAFT/CLOSED and existing PUT/delete operations on each lifecycle state. Interleave PATCH metadata and close. | Wrong role/owner gets 403; DRAFT/CLOSED metadata and PUBLISHED/CLOSED structural update/delete get 400 SURVEY_NOT_EDITABLE; draft editor/delete still work; row lock serializes close and metadata writes so no write follows a committed close. | STS-LAB7-04..05, server/tests/survey-lifecycle.test.ts |
 
 ---
 

@@ -3,7 +3,7 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)
 **Course:** CPE 334 Software Engineering, Semester 1/2026
 **Deliverable:** Project Deliverable 1 — Part A (10 points)
-**Document status:** Baseline v5 with proposed Lab 7 amendment v6 for Issue #85, drafted 28 November 2026
+**Document status:** Baseline v5 with proposed Lab 7 amendment v6 for Issue #85; first review feedback addressed 28 November 2026, reviewer re-review pending
 **Team:** Worawut Sereethai (67070501040), Chanon Lhumsa-ard (67070501059)
 **Repository:** <https://github.com/Snnn3/SurveyHub>
 
@@ -357,4 +357,4 @@ The course handouts disagree: the group specification and Final Delivery section
 | Version | Date | Change | Status |
 |---|---|---|---|
 | v5 | 6 Nov 2026 | Accepted SRS baseline for the Sprint 1 lifecycle, including the original rule that published metadata could not be edited | Baseline |
-| v6 | 28 Nov 2026 | Issue #85 proposes owner-only title and description edits for a published survey while keeping its question structure and response history unchanged | Proposed; teammate contract review is pending and must precede Issue #86 implementation |
+| v6 | 28 Nov 2026 | Issue #85 proposes owner-only title and description edits for a published survey while keeping its question structure and response history unchanged | Proposed; first review feedback addressed, reviewer re-review and acceptance must precede Issue #86 implementation |
