@@ -135,6 +135,7 @@ export function SurveyMetadataPage() {
               type="text"
               required
               maxLength={120}
+              disabled={saving}
               value={title}
               aria-invalid={Boolean(fieldErrors.title)}
               aria-describedby={fieldErrors.title ? 'metadata-title-error metadata-title-count' : 'metadata-title-count'}
@@ -159,6 +160,7 @@ export function SurveyMetadataPage() {
               name="description"
               rows={6}
               maxLength={2000}
+              disabled={saving}
               value={description}
               aria-invalid={Boolean(fieldErrors.description)}
               aria-describedby={fieldErrors.description ? 'metadata-description-error metadata-description-count metadata-description-help' : 'metadata-description-count metadata-description-help'}

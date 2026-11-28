@@ -5,7 +5,7 @@
 **Target branch:** `lab-7-staging`
 **Feature branch:** `feature/86-published-survey-metadata`
 **Pull request:** [#91 — Allow owners to edit published survey metadata](https://github.com/Snnn3/SurveyHub/pull/91) (open; review requested from Snnn3; no CI statuses reported when opened)
-**Status:** Implementation and local verification complete on the feature branch; PR review and CI are pending.
+**Status:** PR review fixes are implemented and locally verified; replies and re-review are pending.
 
 ## Baseline and contract follow-up
 
@@ -38,5 +38,31 @@
 | UI E2E | `2cdd841bd31642f97d61ed56bf8bd37ff9be84dd` | `npx playwright test --grep 'STS-LAB7-06'`; `npx playwright test` | **PASS**: focused STS-LAB7-06 1/1; full browser file 3/3 including STS-E2E-01/02. Raw outputs: [focused](evidence/issue-86-e2e.txt), [full regression](evidence/issue-86-e2e-regression.txt). |
 | Client/server build and type checks | `2cdd841bd31642f97d61ed56bf8bd37ff9be84dd` | `npm run typecheck`; `npm run build` | **PASS**: both type checks and the client/server production build completed. Outputs: [typecheck](evidence/issue-86-typecheck.txt), [build](evidence/issue-86-build.txt). |
 
-All listed commands ran against a disposable local PostgreSQL `surveyhub_test` database. No
-deployment or production data was used. PR review and CI results will be added after those gates run.
+The implementation-stage commands above ran against a disposable local PostgreSQL `surveyhub_test`
+database. No deployment or production data was used. Review-fix checks are recorded below.
+
+## PR #91 review follow-up
+
+Based on reviewer feedback on PR head `c336ba2413bc24e1a608e4c6c5082f22a92b5ea7`:
+
+- The title and description controls are disabled during a pending save, so the response handler
+  cannot overwrite edits made after submission. STS-LAB7-06 now delays the metadata request and
+  asserts both controls are disabled while it is pending.
+- STS-LAB7-05a/b now hold the survey row lock and queue the requests in a known order. The close-first
+  case asserts metadata returns `400 SURVEY_NOT_EDITABLE` and preserves metadata, structure and
+  response data. The metadata-first case confirms the edit completes before close.
+- Corrected the STS-LAB7-04 mapping: its tests cover metadata role/state behavior, while existing
+  STS-F02-04/05/09/10 remain the adjacent regression coverage for structural edits and deletes.
+- Corrected the matching LAB7-AC-04 row in `docs/traceability.md` to distinguish new tests from
+  adjacent regressions.
+
+| Review follow-up check | Result | Captured output |
+|---|---|---|
+| Focused STS-LAB7-05 lock-order tests | **PASS**: 2 passed, 22 skipped; both lock orders are deterministic. | [issue-86-review-race.txt](evidence/issue-86-review-race.txt) |
+| Full server regression | **PASS**: 8 suites, 75 tests passed. | [issue-86-review-server-regression.txt](evidence/issue-86-review-server-regression.txt) |
+| `npm run typecheck` | **PASS**: server and client. | [issue-86-review-typecheck.txt](evidence/issue-86-review-typecheck.txt) |
+| `npm run build` | **PASS**: client and server production builds. | [issue-86-review-build.txt](evidence/issue-86-review-build.txt) |
+| `npx playwright test` | **PASS**: all 3 browser flows, including the pending-save assertion in STS-LAB7-06. | [issue-86-review-e2e.txt](evidence/issue-86-review-e2e.txt) |
+
+All follow-up checks also ran against the disposable local PostgreSQL `surveyhub_test` database.
+The PR remains open and unmerged pending reviewer re-review.

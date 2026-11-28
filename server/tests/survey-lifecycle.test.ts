@@ -117,6 +117,62 @@ async function captureSurveySnapshot(surveyId: string) {
   });
 }
 
+async function waitForLockWaiters(expectedCount: number) {
+  const deadline = Date.now() + 5000;
+
+  while (Date.now() < deadline) {
+    const [result] = await prisma.$queryRaw<Array<{ waiters: number }>>`
+      SELECT COUNT(*)::int AS waiters
+      FROM pg_stat_activity
+      WHERE datname = current_database()
+        AND pid <> pg_backend_pid()
+        AND wait_event_type = 'Lock'
+        AND state = 'active'
+    `;
+    if ((result?.waiters ?? 0) >= expectedCount) return;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+
+  throw new Error(`Timed out waiting for ${expectedCount} PostgreSQL lock waiter(s).`);
+}
+
+async function runRequestsInSurveyLockOrder<TFirst, TSecond>(
+  surveyId: string,
+  startFirst: () => PromiseLike<TFirst>,
+  startSecond: () => PromiseLike<TSecond>
+): Promise<[TFirst, TSecond]> {
+  let releaseLock!: () => void;
+  let signalLocked!: () => void;
+  const lockReleased = new Promise<void>((resolve) => { releaseLock = resolve; });
+  const rowLocked = new Promise<void>((resolve) => { signalLocked = resolve; });
+  const lockHolder = prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM surveys WHERE id = ${surveyId} FOR UPDATE`;
+    signalLocked();
+    await lockReleased;
+  }, { maxWait: 5000, timeout: 15000 });
+  const pendingRequests: Promise<unknown>[] = [];
+
+  try {
+    await rowLocked;
+    const first = Promise.resolve(startFirst());
+    pendingRequests.push(first);
+    await waitForLockWaiters(1);
+
+    const second = Promise.resolve(startSecond());
+    pendingRequests.push(second);
+    await waitForLockWaiters(2);
+
+    releaseLock();
+    await lockHolder;
+    return await Promise.all([first, second]);
+  } catch (error) {
+    releaseLock();
+    await lockHolder;
+    await Promise.allSettled(pendingRequests);
+    throw error;
+  }
+}
+
 describe('F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11)', () => {
   let ownerAToken: string;
   let ownerBToken: string;
@@ -1103,29 +1159,58 @@ describe('F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11)', () =>
     expect(await captureSurveySnapshot(published.id)).toEqual(closedBefore);
   });
 
-  it('STS-LAB7-05: serializes a published metadata update with a concurrent close', async () => {
+  it('STS-LAB7-05a: a close that acquires the row lock first prevents metadata changes', async () => {
     const survey = await createPublishedMetadataSurvey(ownerAId);
-    const [metadataRes, closeRes] = await Promise.all([
-      request(app)
+    const before = await captureSurveySnapshot(survey.id);
+    const [closeRes, metadataRes] = await runRequestsInSurveyLockOrder(
+      survey.id,
+      () => request(app)
+        .patch(`/api/surveys/${survey.id}/close`)
+        .set('Authorization', `Bearer ${ownerAToken}`),
+      () => request(app)
+        .patch(`/api/surveys/${survey.id}/metadata`)
+        .set('Authorization', `Bearer ${ownerAToken}`)
+        .send({ title: 'Must not save after close' })
+    );
+
+    expect(closeRes.status).toBe(200);
+    expect(metadataRes.status).toBe(400);
+    expect(metadataRes.body.error.code).toBe('SURVEY_NOT_EDITABLE');
+
+    const after = await captureSurveySnapshot(survey.id);
+    expect(after?.status).toBe(SurveyStatus.CLOSED);
+    expect(after?.closedAt).not.toBeNull();
+    expect(after?.title).toBe(before?.title);
+    expect(after?.description).toBe(before?.description);
+    expect(after?.questions).toEqual(before?.questions);
+    expect(after?.responses).toEqual(before?.responses);
+    expect(after?._count).toEqual(before?._count);
+  }, 15000);
+
+  it('STS-LAB7-05b: a metadata update that acquires the row lock first completes before close', async () => {
+    const survey = await createPublishedMetadataSurvey(ownerAId);
+    const before = await captureSurveySnapshot(survey.id);
+    const [metadataRes, closeRes] = await runRequestsInSurveyLockOrder(
+      survey.id,
+      () => request(app)
         .patch(`/api/surveys/${survey.id}/metadata`)
         .set('Authorization', `Bearer ${ownerAToken}`)
         .send({ title: 'Updated before close' }),
-      request(app)
+      () => request(app)
         .patch(`/api/surveys/${survey.id}/close`)
-        .set('Authorization', `Bearer ${ownerAToken}`),
-    ]);
+        .set('Authorization', `Bearer ${ownerAToken}`)
+    );
 
+    expect(metadataRes.status).toBe(200);
+    expect(metadataRes.body.data.title).toBe('Updated before close');
     expect(closeRes.status).toBe(200);
-    expect([200, 400]).toContain(metadataRes.status);
-    const finalSurvey = await prisma.survey.findUnique({ where: { id: survey.id } });
-    expect(finalSurvey?.status).toBe(SurveyStatus.CLOSED);
-    expect(finalSurvey?.closedAt).not.toBeNull();
-    if (metadataRes.status === 400) {
-      expect(metadataRes.body.error.code).toBe('SURVEY_NOT_EDITABLE');
-      expect(finalSurvey?.title).toBe(survey.title);
-    } else {
-      expect(metadataRes.body.data.title).toBe('Updated before close');
-      expect(finalSurvey?.title).toBe('Updated before close');
-    }
-  });
+    const after = await captureSurveySnapshot(survey.id);
+    expect(after?.status).toBe(SurveyStatus.CLOSED);
+    expect(after?.closedAt).not.toBeNull();
+    expect(after?.title).toBe('Updated before close');
+    expect(after?.description).toBe(before?.description);
+    expect(after?.questions).toEqual(before?.questions);
+    expect(after?.responses).toEqual(before?.responses);
+    expect(after?._count).toEqual(before?._count);
+  }, 15000);
 });

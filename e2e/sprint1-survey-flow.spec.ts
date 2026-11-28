@@ -153,7 +153,13 @@ test('STS-LAB7-06: owner edits published details and respondents see them after 
   await expect(page.getByRole('heading', { name: 'Edit published survey details' })).toBeVisible();
   await page.locator('#metadata-title').fill(updatedTitle);
   await page.locator('#metadata-description').fill(updatedDescription);
+  await page.route('**/api/surveys/*/metadata', async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    await route.continue();
+  });
   await page.getByRole('button', { name: 'Save details' }).click();
+  await expect(page.locator('#metadata-title')).toBeDisabled();
+  await expect(page.locator('#metadata-description')).toBeDisabled();
   await expect(page.getByText('Survey details saved.')).toBeVisible();
 
   await page.reload();
