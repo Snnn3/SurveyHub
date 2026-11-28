@@ -1,9 +1,9 @@
 # Issue #67 showcase seed verification
 
-**Run date:** 2026-11-28 (Asia/Bangkok)  
-**Target:** local Docker Compose `surveyhub` database only  
-**Environment:** Docker Engine 29.8.0, PostgreSQL 16.15, app image built from `node:20-alpine`  
-**Cloud:** not seeded
+- **Run date:** 2026-11-28 (Asia/Bangkok)
+- **Target:** local Docker Compose `surveyhub` database only
+- **Environment:** Docker Engine 29.8.0, PostgreSQL 16.15, app image built from `node:20-alpine`
+- **Cloud:** not seeded
 
 ## Build and seed results
 
