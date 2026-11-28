@@ -4,6 +4,7 @@
 **Contract:** [Issue #85 reviewed contract](issue-85-contract-review.md)
 **Target branch:** `lab-7-staging`
 **Feature branch:** `feature/86-published-survey-metadata`
+**Pull request:** [#91 — Allow owners to edit published survey metadata](https://github.com/Snnn3/SurveyHub/pull/91) (open; review requested from Snnn3; no CI statuses reported when opened)
 **Status:** Implementation and local verification complete on the feature branch; PR review and CI are pending.
 
 ## Baseline and contract follow-up
