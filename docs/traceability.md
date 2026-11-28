@@ -3,7 +3,7 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)\
 **Course:** CPE 334 Software Engineering, Semester 1/2026\
 **Deliverable:** Project Deliverable 1 — Part B (10 points across `features.md` and this document)\
-**Document status:** Baseline v5 with proposed Lab 7 amendment v6 for Issue #85; first review feedback addressed 28 November 2026, reviewer re-review pending\
+**Document status:** Baseline v5 with Lab 7 amendment v6 approved and merged by PR #89 on 28 November 2026; behavior and test evidence remain open under Issue #86\
 **Related documents:** [SRS](srs.md), [feature inventory](features.md), [system design](system-sds.md), [Sprint 1 contracts](sprints/sprint-1/README.md), [Lab 7 contract review](labs/lab-07/issue-85-contract-review.md), [verification plan](verification.md)
 
 > Status note: every row is a **plan** until actual test evidence for the assessed commit is recorded in Part F. No requirement is marked verified in advance.
@@ -80,17 +80,16 @@ deferred until their contracts and tests are defined.
 | **STS-E2E-01** | Complete owner-to-respondent survey journey and inspect summary | AC-F02-02, AC-F02-06, AC-F03-03, AC-F04-01 | PLANNED |
 | **STS-E2E-02** | Reject duplicate submission and cross-response access; verify token revocation | AC-F01-05, AC-F03-04, AC-F03-08 | PLANNED |
 
-### 2.5 Proposed Lab 7 contract traceability (Issue #85)
+### 2.5 Accepted Lab 7 contract traceability (Issue #85)
 
-The amendment remains proposed. These are planned implementation paths and test specifications for
-Issue #86; no application code or verification result is claimed in this PR.
-Paths are repo-root-relative. client/src/pages/SurveyMetadataPage.tsx is a planned new page; none of
-the implementation files below are changed by this documentation PR.
+The approved contract defines the implementation paths and planned tests for Issue #86. Paths are
+repo-root-relative. This traceability record does not claim application behavior is implemented or
+verified.
 
 | Lab 7 criterion | Requirement / contract | Planned code paths | Test setup | Expected outcomes | Planned verification |
 |---|---|---|---|---|---|
 | LAB7-AC-01 — owner updates title/description in UI and API; values persist and respondents see them | FR-04, BR-04; SRS §§4–5; F-02 §§3.3, 3.5 | API: server/src/routes/survey.routes.ts, server/src/controllers/survey.controller.ts, server/src/services/survey.service.ts. UI: client/src/App.tsx, client/src/pages/OwnerSurveysPage.tsx, new client/src/pages/SurveyMetadataPage.tsx. Respondent display: client/src/pages/SurveyTakingPage.tsx. | Integration: reset DB and seed owner1, owner2, resp1; create owner1 PUBLISHED survey with two ordered questions/options and one response. E2E: create/publish in browser, submit once as resp1, then return as owner1. | API PATCH returns 200 and owner detail/respondent form show new values. In E2E owner chooses Edit details, saves, reloads/reopens metadata page, then respondent opens form and sees saved title/description; prior response remains readable. | STS-LAB7-01 (API, server/tests/survey-lifecycle.test.ts); STS-LAB7-06 (UI, e2e/sprint1-survey-flow.spec.ts) |
-| LAB7-AC-02 — title trim/nonblank/<=120; description optional/clearable/<=2,000 | FR-04; SRS §§4–5; F-02 §3.5 | server/src/validators/survey.validator.ts, server/src/controllers/survey.controller.ts, server/src/services/survey.service.ts | Reset a PUBLISHED owner1 fixture before each integration case; use owner1 token. Submit exact/over limits, blank title, padded nonblank title, null/empty description, title-only and description-only bodies. | Exact limits pass; 121/2,001 and blank title return 400 VALIDATION_ERROR; padded title is saved trimmed; null/empty clears description; a one-field PATCH preserves the omitted field. | STS-LAB7-02, server/tests/survey-lifecycle.test.ts |
+| LAB7-AC-02 — title trim/nonblank/<=120; description preserved/clearable/<=2,000 | FR-04; SRS §§4–5; F-02 §3.5 | server/src/validators/survey.validator.ts, server/src/controllers/survey.controller.ts, server/src/services/survey.service.ts | Reset a PUBLISHED owner1 fixture before each integration case; use owner1 token. Submit exact/over limits, blank title, padded title and description, null/empty description, title-only and description-only bodies. | Exact limits pass; 121/2,001 and blank title return 400 VALIDATION_ERROR; title is saved trimmed; padded description is preserved; null/empty clears description; one-field PATCH preserves the omitted field. | STS-LAB7-02, server/tests/survey-lifecycle.test.ts |
 | LAB7-AC-03 — reject structural/lifecycle fields atomically and preserve history | BR-07; SRS §5; SDS §§4.4–4.5; F-02 §3.5 | server/src/routes/survey.routes.ts, server/src/controllers/survey.controller.ts, server/src/validators/survey.validator.ts, server/src/services/survey.service.ts | Record IDs/order, answer rows, response count, status and publishedAt/closesAt/closedAt on an owner1 PUBLISHED fixture. Send forbidden questions, options, mode, id, ownerId, status, createdAt, updatedAt, publishedAt, closesAt and closedAt fields individually and with valid metadata; compare snapshot around a successful metadata update too. | Invalid/mixed request returns 400 VALIDATION_ERROR and changes nothing; successful metadata update changes only title/description/updatedAt; all captured structure, answers, counts and lifecycle state remain the same. | STS-LAB7-01 and STS-LAB7-03, server/tests/survey-lifecycle.test.ts |
 | LAB7-AC-04 — role, state, regression and close-race protections | BR-04, BR-07, NFR-SEC-02; SRS §§5–6; SDS §5; F-02 §3.5 | server/src/routes/survey.routes.ts, server/src/middleware/auth.middleware.ts, server/src/services/survey.service.ts; client/src/pages/OwnerSurveysPage.tsx, client/src/pages/SurveyEditorPage.tsx | Seed owner1, owner2 and resp1. Exercise owner2/respondent against owner1 PUBLISHED, then metadata PATCH on DRAFT/CLOSED and existing PUT/delete operations on each lifecycle state. Interleave PATCH metadata and close. | Wrong role/owner gets 403; DRAFT/CLOSED metadata and PUBLISHED/CLOSED structural update/delete get 400 SURVEY_NOT_EDITABLE; draft editor/delete still work; row lock serializes close and metadata writes so no write follows a committed close. | STS-LAB7-04..05, server/tests/survey-lifecycle.test.ts |
 
