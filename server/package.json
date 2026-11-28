@@ -13,6 +13,7 @@
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "node prisma/run-seed.js",
+    "db:seed:showcase": "node prisma/seed-showcase.js",
     "db:reset": "prisma migrate reset --force",
     "prisma:generate": "prisma generate"
   },

@@ -141,6 +141,46 @@ The seed creates the same four synthetic accounts with the operator supplied `DE
 | `RESPONDENT` | `resp1@survey.local` | `DEMO_USER_PASSWORD` | Primary respondent; takes surveys, tests duplicate submission guard |
 | `RESPONDENT` | `resp2@survey.local` | `DEMO_USER_PASSWORD` | Secondary respondent; tests cross-response privacy restrictions |
 
+### Local F-06 showcase surveys
+
+After migrations and the regular seed, add four synthetic surveys with 17 questions covering all seven Sprint 2 question types. The command leaves existing surveys and answers untouched. By default it accepts only the local Compose `surveyhub` database and refuses `surveyhub_test` and other local database connections.
+
+```bash
+docker compose build app
+docker compose run --rm app npm run db:seed:showcase
+```
+
+The showcase seed creates no responses, so submit a few surveys in the local app to populate their summaries. The regular `db:seed` and automatic deploy workflow remain unchanged.
+
+For a deliberate Cloud Run seed, deploy an image that contains this command, then use the team's existing migration job. First inspect and record the job's current command, arguments, and environment. In Git Bash, set the assigned values and update the job without replacing its other environment:
+
+```bash
+export TEAM_PREFIX=YOUR_TEAM_PREFIX
+export GCP_PROJECT_ID=cpe-se-course-2026
+export GCP_REGION=asia-southeast1
+
+gcloud run jobs update "${TEAM_PREFIX}-migrate" \
+  --project="${GCP_PROJECT_ID}" \
+  --region="${GCP_REGION}" \
+  --command=npm \
+  --args=run,db:seed:showcase \
+  --update-env-vars="SHOWCASE_SEED_TARGET=cloud,TEAM_PREFIX=${TEAM_PREFIX},GCP_PROJECT_ID=${GCP_PROJECT_ID},GCP_REGION=${GCP_REGION}"
+gcloud run jobs execute "${TEAM_PREFIX}-migrate" \
+  --project="${GCP_PROJECT_ID}" \
+  --region="${GCP_REGION}" \
+  --wait
+
+# Restore the migration command after the seed finishes.
+gcloud run jobs update "${TEAM_PREFIX}-migrate" \
+  --project="${GCP_PROJECT_ID}" \
+  --region="${GCP_REGION}" \
+  --command=npm \
+  --args=run,db:migrate:deploy \
+  --remove-env-vars=SHOWCASE_SEED_TARGET
+```
+
+Cloud mode rejects anything except the matching migration job, team database, and assigned Cloud SQL socket. Do not seed Cloud as part of a normal release. If the job had a different command before this one-off run, restore the recorded original command and arguments instead.
+
 See [Lab 5 deployment and environment configuration](docs/labs/lab-05/deployment.md) for the variable matrix, Cloud Run settings, and persistent Compose verification.
 
 ---

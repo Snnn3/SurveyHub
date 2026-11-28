@@ -16,6 +16,7 @@
     "db:migrate": "node -e \"const cmd = process.env.NODE_ENV === 'production' ? 'npm run db:migrate:deploy --prefix server' : 'npm run db:migrate --prefix server'; require('child_process').execSync(cmd, { stdio: 'inherit' });\"",
     "db:migrate:deploy": "npm run db:migrate:deploy --prefix server",
     "db:seed": "npm run db:seed --prefix server",
+    "db:seed:showcase": "npm run db:seed:showcase --prefix server",
     "db:reset": "npm run db:reset --prefix server"
   },
   "devDependencies": {
