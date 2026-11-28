@@ -3,10 +3,13 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)\
 **Course:** CPE 334 Software Engineering, Semester 1/2026\
 **Deliverable:** Project Deliverable 1 — Part B (10 points across `features.md` and this document)\
-**Document status:** Baseline v5, aligned with the reviewed traceability on 6 November 2026\
-**Related documents:** [SRS](srs.md), [feature inventory](features.md), [system design](system-sds.md), [Sprint 1 contracts](sprints/sprint-1/README.md), [verification plan](verification.md)
+**Document status:** Baseline v5 with Lab 7 amendment v6 accepted by PR #89; the #86 behavior and tests passed on `lab-7-staging` and were merged by PR #91. Main release, deployment checks, and report remain pending under Issue #87.\
+**Related documents:** [SRS](srs.md), [feature inventory](features.md), [system design](system-sds.md), [Sprint 1 contracts](sprints/sprint-1/README.md), [Lab 7 contract review](labs/lab-07/issue-85-contract-review.md), [verification plan](verification.md)
 
-> Status note: every row is a **plan** until actual test evidence for the assessed commit is recorded in Part F. No requirement is marked verified in advance.
+> Status note: baseline requirement rows retain the status for the Deliverable 1 assessed commit.
+> Lab 7 acceptance criteria were implemented and verified on `lab-7-staging` under Issue #86 / PR
+> #91; see the evidence record linked above. Main-release and deployed verification remain pending
+> under Issue #87.
 
 ## 2. Traceability Matrix
 
@@ -20,7 +23,7 @@ Status values: **PLANNED** (designed, not implemented), **IMPLEMENTED** (code ex
 | **FR-01** | Login, logout and token revocation | F-01 | 1 | AC-F01-01..05 | STS-F01-01..05 | PLANNED |
 | **FR-02** | Current user and role, no password hash exposure | F-01 | 1 | AC-F01-03, AC-F01-06 | STS-F01-03, STS-F01-06 | PLANNED |
 | **FR-03** | Manage survey drafts | F-02 | 1 | AC-F02-01..03, AC-F02-05 | STS-F02-01..03, STS-F02-05 | PLANNED |
-| **FR-04** | Author and edit draft questions | F-02 | 1 | AC-F02-04, AC-F02-10 | STS-F02-04, STS-F02-10 | PLANNED |
+| **FR-04** | Author draft questions and correct published metadata | F-02 | 1 / Lab 7 | AC-F02-04, AC-F02-10, LAB7-AC-01..04 | STS-F02-04, STS-F02-10, STS-LAB7-01..06 | PLANNED |
 | **FR-05** | Publish survey | F-02 | 1 | AC-F02-06, AC-F02-07 | STS-F02-06, STS-F02-07 | PLANNED |
 | **FR-06** | Close survey | F-02 | 1 | AC-F02-08, AC-F02-11 | STS-F02-08, STS-F02-11 | PLANNED |
 | **FR-07** | Browse published surveys and load a survey form | F-03 | 1 | AC-F03-01, AC-F03-02 | STS-F03-01, STS-F03-02 | PLANNED |
@@ -41,10 +44,10 @@ Status values: **PLANNED** (designed, not implemented), **IMPLEMENTED** (code ex
 | **BR-01** | One response per respondent per survey, including concurrency | F-03 | 1 | AC-F03-04 | STS-F03-04 (TDD) | PLANNED |
 | **BR-02** | Only PUBLISHED (and not past `closesAt`) accepts responses | F-03, F-07 | 1, 2 | AC-F03-05, AC-S2-04 | STS-F03-05, STS-S2-04 | PLANNED |
 | **BR-03** | Required/type/option/text validation | F-03 | 1 | AC-F03-06, AC-F03-07 | STS-F03-06, STS-F03-07 | PLANNED |
-| **BR-04** | Survey ownership boundary | F-02, F-04 | 1 | AC-F02-09, AC-F04-03 | STS-F02-09, STS-F04-03 | PLANNED |
+| **BR-04** | Survey ownership boundary, including published metadata | F-02, F-04 | 1 / Lab 7 | AC-F02-09, AC-F04-03, LAB7-AC-01, LAB7-AC-04 | STS-F02-09, STS-F04-03, STS-LAB7-01, STS-LAB7-04, STS-LAB7-06 | PLANNED |
 | **BR-05** | Cross-response privacy | F-03, F-04 | 1 | AC-F03-08, AC-F04-02 | STS-F03-08, STS-F04-02 | PLANNED |
 | **BR-06** | Publish structure requirements | F-02 | 1 | AC-F02-07 | STS-F02-07 | PLANNED |
-| **BR-07** | Immutable structure after publication | F-02 | 1 | AC-F02-10 | STS-F02-10 | PLANNED |
+| **BR-07** | Immutable published structure; metadata correction only while PUBLISHED | F-02 | 1 / Lab 7 | AC-F02-10, LAB7-AC-02..04 | STS-F02-10, STS-LAB7-01..05 | PLANNED |
 | **BR-08** | Role and eligibility guard for submission | F-03, F-07 | 1, 2 | AC-F03-09, AC-S2-03 | STS-F03-09, STS-S2-03 | PLANNED |
 | **BR-09** | CLOSED is terminal; invalid transitions rejected | F-02 | 1 | AC-F02-11 | STS-F02-11 | PLANNED |
 | **BR-10** | Anonymous identity/answer separation | F-05 | 2 | AC-S2-01, AC-PRIV-01 | STS-S2-01, STS-PRIV-01 | DEFERRED |
@@ -55,7 +58,7 @@ Status values: **PLANNED** (designed, not implemented), **IMPLEMENTED** (code ex
 | NFR | Target | Responsible feature | Sprint | Acceptance criterion | Verification | Status |
 |---|---|---|---|---|---|---|
 | **NFR-SEC-01** | Every protected endpoint rejects missing/invalid tokens with 401 and no data | F-01, cross-cutting | 1 | AC-SEC-01 | STS-SEC-01 (parameterized route matrix) | PLANNED |
-| **NFR-SEC-02** | Every forbidden role/ownership operation returns 403 and leaves data unchanged | F-01..F-04 | 1 | AC-SEC-02 | STS-SEC-02 plus STS-F02-09, F03-08, F03-09, F04-02, F04-03 | PLANNED |
+| **NFR-SEC-02** | Every forbidden role/ownership operation returns 403 and leaves data unchanged | F-01..F-04 | 1 / Lab 7 | AC-SEC-02, LAB7-AC-04 | STS-SEC-02 plus STS-F02-09, F03-08, F03-09, F04-02, F04-03, STS-LAB7-04 | PLANNED |
 | **NFR-SEC-03** | bcrypt cost 10, no plaintext password, no hash in responses | F-01 | 1 | AC-F01-06 | STS-F01-06 | PLANNED |
 | **NFR-SEC-04** | Logout revokes existing tokens | F-01 | 1 | AC-F01-05 | STS-F01-05 | PLANNED |
 | **NFR-PERF-01** | p95 of `GET /api/surveys/:id/form` < 300 ms over 50 requests on the local development environment | F-03 | 1 | AC-PERF-01 | `server/scripts/benchmark-read.ts`; result JSON in Part F | PLANNED |
@@ -79,6 +82,21 @@ deferred until their contracts and tests are defined.
 | **STS-U-05** | Calculate response percentages and rounding | AC-F04-01 | PLANNED |
 | **STS-E2E-01** | Complete owner-to-respondent survey journey and inspect summary | AC-F02-02, AC-F02-06, AC-F03-03, AC-F04-01 | PLANNED |
 | **STS-E2E-02** | Reject duplicate submission and cross-response access; verify token revocation | AC-F01-05, AC-F03-04, AC-F03-08 | PLANNED |
+
+### 2.5 Accepted Lab 7 contract traceability (Issue #85)
+
+The approved contract defines the implementation paths and test coverage for Issue #86. Paths are
+repo-root-relative. All four criteria were implemented and verified on the final `lab-7-staging`
+tree merged by PR #91 (`0ed6ae82`); the corresponding RED/GREEN, regression, race and browser
+results are recorded in `docs/labs/lab-07/issue-86-implementation-evidence.md`. PR #94 release, deployment, and
+post-deployment checks remain pending under Issue #87.
+
+| Lab 7 criterion | Requirement / contract | Implemented code paths | Test setup | Expected outcomes | Verification evidence |
+|---|---|---|---|---|---|
+| LAB7-AC-01 — owner updates title/description in UI and API; values persist and respondents see them | FR-04, BR-04; SRS §§4–5; F-02 §§3.3, 3.5 | API: server/src/routes/survey.routes.ts, server/src/controllers/survey.controller.ts, server/src/services/survey.service.ts. UI: client/src/App.tsx, client/src/pages/OwnerSurveysPage.tsx, new client/src/pages/SurveyMetadataPage.tsx. Respondent display: client/src/pages/SurveyTakingPage.tsx. | Integration: reset DB and seed owner1, owner2, resp1; create owner1 PUBLISHED survey with two ordered questions/options and one response. E2E: create/publish in browser, submit once as resp1, then return as owner1. | API PATCH returns 200 and owner detail/respondent form show new values. In E2E owner chooses Edit details, saves with both fields disabled during the pending request, reloads/reopens metadata page, then respondent opens form and sees saved title/description; prior response remains readable. | STS-LAB7-01 (API, server/tests/survey-lifecycle.test.ts); STS-LAB7-06 (UI, e2e/sprint1-survey-flow.spec.ts) |
+| LAB7-AC-02 — title trim/nonblank/<=120; description preserved/clearable/<=2,000 | FR-04; SRS §§4–5; F-02 §3.5 | server/src/validators/survey.validator.ts, server/src/controllers/survey.controller.ts, server/src/services/survey.service.ts | Reset a PUBLISHED owner1 fixture before each integration case; use owner1 token. Submit exact/over limits, blank title, padded title and description, null/empty description, title-only and description-only bodies. | Exact limits pass; 121/2,001 and blank title return 400 VALIDATION_ERROR; title is saved trimmed; padded description is preserved; null/empty clears description; one-field PATCH preserves the omitted field. | STS-LAB7-02, server/tests/survey-lifecycle.test.ts |
+| LAB7-AC-03 — reject structural/lifecycle fields atomically and preserve history | BR-07; SRS §5; SDS §§4.4–4.5; F-02 §3.5 | server/src/routes/survey.routes.ts, server/src/controllers/survey.controller.ts, server/src/validators/survey.validator.ts, server/src/services/survey.service.ts | Record IDs/order, answer rows, response count, status and publishedAt/closesAt/closedAt on an owner1 PUBLISHED fixture. Send forbidden questions, options, mode, id, ownerId, status, createdAt, updatedAt, publishedAt, closesAt and closedAt fields individually and with valid metadata; compare snapshot around a successful metadata update too. | Invalid/mixed request returns 400 VALIDATION_ERROR and changes nothing; successful metadata update changes only title/description/updatedAt; all captured structure, answers, counts and lifecycle state remain the same. | STS-LAB7-01 and STS-LAB7-03, server/tests/survey-lifecycle.test.ts |
+| LAB7-AC-04 — role, state, regression and close-race protections | BR-04, BR-07, NFR-SEC-02; SRS §§5–6; SDS §5; F-02 §3.5 | server/src/routes/survey.routes.ts, server/src/middleware/auth.middleware.ts, server/src/services/survey.service.ts; client/src/pages/OwnerSurveysPage.tsx, client/src/pages/SurveyEditorPage.tsx | Seed owner1, owner2 and resp1. Exercise owner2/respondent against owner1 PUBLISHED, then metadata PATCH on DRAFT/CLOSED. Run existing structural PUT/delete coverage as adjacent regressions in STS-F02-04/05/09/10. Deterministically interleave PATCH metadata and close in both lock orders. | Wrong role/owner gets 403; DRAFT/CLOSED metadata and PUBLISHED/CLOSED structural update/delete get 400 SURVEY_NOT_EDITABLE; draft editor/delete still work; row lock serializes close and metadata writes so a close-first order rejects metadata without changing its fields, while metadata-first completes before close. | STS-LAB7-04..05 plus adjacent STS-F02-04/05/09/10, server/tests/survey-lifecycle.test.ts |
 
 ---
 

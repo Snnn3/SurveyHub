@@ -1,0 +1,15 @@
+[WebServer] warn The configuration property `package.json#prisma` is deprecated and will be removed in Prisma 7. Please migrate to a Prisma config file (e.g., `prisma.config.ts`).
+[WebServer] For more information, see: https://pris.ly/prisma-config
+[WebServer] 
+
+Running 3 tests using 1 worker
+
+(node:14039) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 e2e/sprint1-survey-flow.spec.ts:33:1 › STS-E2E-01: owner publishes, respondent submits, and owner sees persisted summary (2.6s)
+[WebServer] (node:13956) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  2 e2e/sprint1-survey-flow.spec.ts:73:1 › STS-E2E-02: duplicate, cross-receipt access, and a logged-out token are rejected (1.1s)
+  ✓  3 e2e/sprint1-survey-flow.spec.ts:117:1 › STS-LAB7-06: owner edits published details and respondents see them after reload (3.2s)
+
+  3 passed (12.0s)

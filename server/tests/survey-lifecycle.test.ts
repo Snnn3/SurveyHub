@@ -14,6 +14,165 @@ async function loginAs(email: string): Promise<string> {
   return res.body.data.token as string;
 }
 
+async function createPublishedMetadataSurvey(ownerId: string) {
+  return prisma.survey.create({
+    data: {
+      title: 'Published metadata fixture',
+      description: 'Initial description',
+      ownerId,
+      status: SurveyStatus.PUBLISHED,
+      publishedAt: new Date('2026-11-01T00:00:00.000Z'),
+      questions: {
+        create: [
+          {
+            prompt: 'Choose one',
+            questionType: QuestionType.SINGLE_CHOICE,
+            orderIndex: 0,
+            options: {
+              create: [
+                { label: 'Option A', orderIndex: 0 },
+                { label: 'Option B', orderIndex: 1 },
+              ],
+            },
+          },
+          {
+            prompt: 'Optional comment',
+            questionType: QuestionType.SHORT_TEXT,
+            isRequired: false,
+            orderIndex: 1,
+          },
+        ],
+      },
+    },
+    include: {
+      questions: {
+        orderBy: { orderIndex: 'asc' },
+        include: { options: { orderBy: { orderIndex: 'asc' } } },
+      },
+    },
+  });
+}
+
+async function submitFixtureResponse(
+  surveyId: string,
+  questionId: string,
+  optionId: string,
+  respondentToken: string
+) {
+  return request(app)
+    .post(`/api/surveys/${surveyId}/responses`)
+    .set('Authorization', `Bearer ${respondentToken}`)
+    .send({ answers: [{ questionId, selectedOptionIds: [optionId] }] });
+}
+
+async function captureSurveySnapshot(surveyId: string) {
+  return prisma.survey.findUnique({
+    where: { id: surveyId },
+    select: {
+      ownerId: true,
+      mode: true,
+      title: true,
+      description: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+      publishedAt: true,
+      closesAt: true,
+      closedAt: true,
+      _count: { select: { responses: true } },
+      questions: {
+        orderBy: [{ orderIndex: 'asc' }, { id: 'asc' }],
+        select: {
+          id: true,
+          prompt: true,
+          questionType: true,
+          isRequired: true,
+          orderIndex: true,
+          options: {
+            orderBy: [{ orderIndex: 'asc' }, { id: 'asc' }],
+            select: { id: true, label: true, orderIndex: true },
+          },
+        },
+      },
+      responses: {
+        orderBy: { submittedAt: 'asc' },
+        select: {
+          id: true,
+          respondentId: true,
+          submittedAt: true,
+          answers: {
+            select: {
+              id: true,
+              questionId: true,
+              textValue: true,
+              selectedOptions: {
+                orderBy: { id: 'asc' },
+                select: { id: true, optionId: true },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
+async function waitForLockWaiters(expectedCount: number) {
+  const deadline = Date.now() + 5000;
+
+  while (Date.now() < deadline) {
+    const [result] = await prisma.$queryRaw<Array<{ waiters: number }>>`
+      SELECT COUNT(*)::int AS waiters
+      FROM pg_stat_activity
+      WHERE datname = current_database()
+        AND pid <> pg_backend_pid()
+        AND wait_event_type = 'Lock'
+        AND state = 'active'
+    `;
+    if ((result?.waiters ?? 0) >= expectedCount) return;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+
+  throw new Error(`Timed out waiting for ${expectedCount} PostgreSQL lock waiter(s).`);
+}
+
+async function runRequestsInSurveyLockOrder<TFirst, TSecond>(
+  surveyId: string,
+  startFirst: () => PromiseLike<TFirst>,
+  startSecond: () => PromiseLike<TSecond>
+): Promise<[TFirst, TSecond]> {
+  let releaseLock!: () => void;
+  let signalLocked!: () => void;
+  const lockReleased = new Promise<void>((resolve) => { releaseLock = resolve; });
+  const rowLocked = new Promise<void>((resolve) => { signalLocked = resolve; });
+  const lockHolder = prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM surveys WHERE id = ${surveyId} FOR UPDATE`;
+    signalLocked();
+    await lockReleased;
+  }, { maxWait: 5000, timeout: 15000 });
+  const pendingRequests: Promise<unknown>[] = [];
+
+  try {
+    await rowLocked;
+    const first = Promise.resolve(startFirst());
+    pendingRequests.push(first);
+    await waitForLockWaiters(1);
+
+    const second = Promise.resolve(startSecond());
+    pendingRequests.push(second);
+    await waitForLockWaiters(2);
+
+    releaseLock();
+    await lockHolder;
+    return await Promise.all([first, second]);
+  } catch (error) {
+    releaseLock();
+    await lockHolder;
+    await Promise.allSettled(pendingRequests);
+    throw error;
+  }
+}
+
 describe('F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11)', () => {
   let ownerAToken: string;
   let ownerBToken: string;
@@ -742,4 +901,316 @@ describe('F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11)', () =>
       expect(dbSurvey?.questions[0].prompt).toBe('Updated Question');
     }
   });
+
+  it('STS-LAB7-01: owner edits PUBLISHED metadata at the title limit without changing saved responses', async () => {
+    const survey = await prisma.survey.create({
+      data: {
+        title: 'Initial published title',
+        description: 'Initial respondent instructions',
+        ownerId: ownerAId,
+        status: SurveyStatus.PUBLISHED,
+        publishedAt: new Date('2026-11-01T00:00:00.000Z'),
+        questions: {
+          create: [
+            {
+              prompt: 'Choose one',
+              questionType: QuestionType.SINGLE_CHOICE,
+              orderIndex: 0,
+              options: {
+                create: [
+                  { label: 'Option A', orderIndex: 0 },
+                  { label: 'Option B', orderIndex: 1 },
+                ],
+              },
+            },
+            {
+              prompt: 'Optional comment',
+              questionType: QuestionType.SHORT_TEXT,
+              isRequired: false,
+              orderIndex: 1,
+            },
+          ],
+        },
+      },
+      include: {
+        questions: {
+          orderBy: { orderIndex: 'asc' },
+          include: { options: { orderBy: { orderIndex: 'asc' } } },
+        },
+      },
+    });
+
+    const [choiceQuestion] = survey.questions;
+    const submitRes = await request(app)
+      .post(`/api/surveys/${survey.id}/responses`)
+      .set('Authorization', `Bearer ${respToken}`)
+      .send({
+        answers: [{
+          questionId: choiceQuestion.id,
+          selectedOptionIds: [choiceQuestion.options[0].id],
+        }],
+      });
+    expect(submitRes.status).toBe(201);
+
+    const readSnapshot = async () => prisma.survey.findUnique({
+      where: { id: survey.id },
+      select: {
+        ownerId: true,
+        mode: true,
+        status: true,
+        createdAt: true,
+        publishedAt: true,
+        closesAt: true,
+        closedAt: true,
+        _count: { select: { responses: true } },
+        questions: {
+          orderBy: [{ orderIndex: 'asc' }, { id: 'asc' }],
+          select: {
+            id: true,
+            prompt: true,
+            questionType: true,
+            isRequired: true,
+            orderIndex: true,
+            options: {
+              orderBy: [{ orderIndex: 'asc' }, { id: 'asc' }],
+              select: { id: true, label: true, orderIndex: true },
+            },
+          },
+        },
+        responses: {
+          orderBy: { submittedAt: 'asc' },
+          select: {
+            id: true,
+            respondentId: true,
+            submittedAt: true,
+            answers: {
+              select: {
+                id: true,
+                questionId: true,
+                textValue: true,
+                selectedOptions: {
+                  orderBy: { id: 'asc' },
+                  select: { id: true, optionId: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    const before = await readSnapshot();
+
+    const updatedTitle = 'T'.repeat(120);
+    const paddedDescription = '  Updated respondent instructions  ';
+    const updateRes = await request(app)
+      .patch(`/api/surveys/${survey.id}/metadata`)
+      .set('Authorization', `Bearer ${ownerAToken}`)
+      .send({ title: updatedTitle, description: paddedDescription });
+
+    expect(updateRes.status).toBe(200);
+    expect(updateRes.body.data.title).toBe(updatedTitle);
+    expect(updateRes.body.data.description).toBe(paddedDescription);
+    expect(await readSnapshot()).toEqual(before);
+
+    const ownerReload = await request(app)
+      .get(`/api/surveys/${survey.id}`)
+      .set('Authorization', `Bearer ${ownerAToken}`);
+    expect(ownerReload.status).toBe(200);
+    expect(ownerReload.body.data.title).toBe(updatedTitle);
+    expect(ownerReload.body.data.description).toBe(paddedDescription);
+
+    const respondentForm = await request(app)
+      .get(`/api/surveys/${survey.id}/form`)
+      .set('Authorization', `Bearer ${respToken}`);
+    expect(respondentForm.status).toBe(200);
+    expect(respondentForm.body.data.title).toBe(updatedTitle);
+    expect(respondentForm.body.data.description).toBe(paddedDescription);
+
+    const existingReceipt = await request(app)
+      .get(`/api/surveys/${survey.id}/responses/${submitRes.body.data.responseId}`)
+      .set('Authorization', `Bearer ${respToken}`);
+    expect(existingReceipt.status).toBe(200);
+  });
+
+  it('STS-LAB7-02: validates metadata boundaries, preserves padded descriptions, and supports partial updates', async () => {
+    const survey = await createPublishedMetadataSurvey(ownerAId);
+    const patch = (body: Record<string, unknown>) => request(app)
+      .patch(`/api/surveys/${survey.id}/metadata`)
+      .set('Authorization', `Bearer ${ownerAToken}`)
+      .send(body);
+
+    const titleOnly = await patch({ title: '  Title only  ' });
+    expect(titleOnly.status).toBe(200);
+    expect(titleOnly.body.data.title).toBe('Title only');
+    expect(titleOnly.body.data.description).toBe('Initial description');
+
+    const paddedDescription = '  Preserve these spaces  ';
+    const descriptionOnly = await patch({ description: paddedDescription });
+    expect(descriptionOnly.status).toBe(200);
+    expect(descriptionOnly.body.data.title).toBe('Title only');
+    expect(descriptionOnly.body.data.description).toBe(paddedDescription);
+
+    const exactLimits = await patch({ title: 'T'.repeat(120), description: 'D'.repeat(2000) });
+    expect(exactLimits.status).toBe(200);
+    expect(exactLimits.body.data.title).toHaveLength(120);
+    expect(exactLimits.body.data.description).toHaveLength(2000);
+
+    for (const invalidBody of [
+      { title: ' '.repeat(4) },
+      { title: 'T'.repeat(121) },
+      { description: 'D'.repeat(2001) },
+      {},
+    ]) {
+      const before = await captureSurveySnapshot(survey.id);
+      const invalid = await patch(invalidBody);
+      expect(invalid.status).toBe(400);
+      expect(invalid.body.error.code).toBe('VALIDATION_ERROR');
+      expect(await captureSurveySnapshot(survey.id)).toEqual(before);
+    }
+
+    for (const clearValue of [null, '']) {
+      const cleared = await patch({ description: clearValue });
+      expect(cleared.status).toBe(200);
+      expect(cleared.body.data.description).toBeNull();
+      expect(cleared.body.data.title).toHaveLength(120);
+    }
+  });
+
+  it('STS-LAB7-03: rejects structural and lifecycle fields atomically', async () => {
+    const survey = await createPublishedMetadataSurvey(ownerAId);
+    const [choiceQuestion] = survey.questions;
+    const submitRes = await submitFixtureResponse(
+      survey.id,
+      choiceQuestion.id,
+      choiceQuestion.options[0].id,
+      respToken
+    );
+    expect(submitRes.status).toBe(201);
+    const before = await captureSurveySnapshot(survey.id);
+
+    const forbiddenFields: Array<[string, unknown]> = [
+      ['questions', []],
+      ['options', []],
+      ['mode', 'ANONYMOUS'],
+      ['id', '00000000-0000-4000-a000-000000000099'],
+      ['ownerId', ownerBId],
+      ['status', 'CLOSED'],
+      ['createdAt', new Date().toISOString()],
+      ['updatedAt', new Date().toISOString()],
+      ['publishedAt', new Date().toISOString()],
+      ['closesAt', new Date().toISOString()],
+      ['closedAt', new Date().toISOString()],
+    ];
+
+    for (const [field, value] of forbiddenFields) {
+      const invalid = await request(app)
+        .patch(`/api/surveys/${survey.id}/metadata`)
+        .set('Authorization', `Bearer ${ownerAToken}`)
+        .send({ title: 'Must not save', [field]: value });
+      expect(invalid.status).toBe(400);
+      expect(invalid.body.error.code).toBe('VALIDATION_ERROR');
+      expect(await captureSurveySnapshot(survey.id)).toEqual(before);
+    }
+  });
+
+  it('STS-LAB7-04: enforces owner role and PUBLISHED state for metadata edits', async () => {
+    const published = await createPublishedMetadataSurvey(ownerAId);
+    const publishedBefore = await captureSurveySnapshot(published.id);
+
+    const otherOwner = await request(app)
+      .patch(`/api/surveys/${published.id}/metadata`)
+      .set('Authorization', `Bearer ${ownerBToken}`)
+      .send({ title: 'Other owner must not save' });
+    expect(otherOwner.status).toBe(403);
+    expect(otherOwner.body.error.code).toBe('FORBIDDEN_OWNERSHIP');
+    expect(await captureSurveySnapshot(published.id)).toEqual(publishedBefore);
+
+    const respondent = await request(app)
+      .patch(`/api/surveys/${published.id}/metadata`)
+      .set('Authorization', `Bearer ${respToken}`)
+      .send({ title: 'Respondent must not save' });
+    expect(respondent.status).toBe(403);
+    expect(respondent.body.error.code).toBe('FORBIDDEN_ROLE');
+    expect(await captureSurveySnapshot(published.id)).toEqual(publishedBefore);
+
+    const draft = await prisma.survey.create({
+      data: { title: 'Draft metadata fixture', ownerId: ownerAId, status: SurveyStatus.DRAFT },
+    });
+    const draftBefore = await captureSurveySnapshot(draft.id);
+    const draftPatch = await request(app)
+      .patch(`/api/surveys/${draft.id}/metadata`)
+      .set('Authorization', `Bearer ${ownerAToken}`)
+      .send({ title: 'Draft must stay locked for metadata endpoint' });
+    expect(draftPatch.status).toBe(400);
+    expect(draftPatch.body.error.code).toBe('SURVEY_NOT_EDITABLE');
+    expect(await captureSurveySnapshot(draft.id)).toEqual(draftBefore);
+
+    const closeRes = await request(app)
+      .patch(`/api/surveys/${published.id}/close`)
+      .set('Authorization', `Bearer ${ownerAToken}`);
+    expect(closeRes.status).toBe(200);
+    const closedBefore = await captureSurveySnapshot(published.id);
+    const closedPatch = await request(app)
+      .patch(`/api/surveys/${published.id}/metadata`)
+      .set('Authorization', `Bearer ${ownerAToken}`)
+      .send({ title: 'Closed must stay locked' });
+    expect(closedPatch.status).toBe(400);
+    expect(closedPatch.body.error.code).toBe('SURVEY_NOT_EDITABLE');
+    expect(await captureSurveySnapshot(published.id)).toEqual(closedBefore);
+  });
+
+  it('STS-LAB7-05a: a close that acquires the row lock first prevents metadata changes', async () => {
+    const survey = await createPublishedMetadataSurvey(ownerAId);
+    const before = await captureSurveySnapshot(survey.id);
+    const [closeRes, metadataRes] = await runRequestsInSurveyLockOrder(
+      survey.id,
+      () => request(app)
+        .patch(`/api/surveys/${survey.id}/close`)
+        .set('Authorization', `Bearer ${ownerAToken}`),
+      () => request(app)
+        .patch(`/api/surveys/${survey.id}/metadata`)
+        .set('Authorization', `Bearer ${ownerAToken}`)
+        .send({ title: 'Must not save after close' })
+    );
+
+    expect(closeRes.status).toBe(200);
+    expect(metadataRes.status).toBe(400);
+    expect(metadataRes.body.error.code).toBe('SURVEY_NOT_EDITABLE');
+
+    const after = await captureSurveySnapshot(survey.id);
+    expect(after?.status).toBe(SurveyStatus.CLOSED);
+    expect(after?.closedAt).not.toBeNull();
+    expect(after?.title).toBe(before?.title);
+    expect(after?.description).toBe(before?.description);
+    expect(after?.questions).toEqual(before?.questions);
+    expect(after?.responses).toEqual(before?.responses);
+    expect(after?._count).toEqual(before?._count);
+  }, 15000);
+
+  it('STS-LAB7-05b: a metadata update that acquires the row lock first completes before close', async () => {
+    const survey = await createPublishedMetadataSurvey(ownerAId);
+    const before = await captureSurveySnapshot(survey.id);
+    const [metadataRes, closeRes] = await runRequestsInSurveyLockOrder(
+      survey.id,
+      () => request(app)
+        .patch(`/api/surveys/${survey.id}/metadata`)
+        .set('Authorization', `Bearer ${ownerAToken}`)
+        .send({ title: 'Updated before close' }),
+      () => request(app)
+        .patch(`/api/surveys/${survey.id}/close`)
+        .set('Authorization', `Bearer ${ownerAToken}`)
+    );
+
+    expect(metadataRes.status).toBe(200);
+    expect(metadataRes.body.data.title).toBe('Updated before close');
+    expect(closeRes.status).toBe(200);
+    const after = await captureSurveySnapshot(survey.id);
+    expect(after?.status).toBe(SurveyStatus.CLOSED);
+    expect(after?.closedAt).not.toBeNull();
+    expect(after?.title).toBe('Updated before close');
+    expect(after?.description).toBe(before?.description);
+    expect(after?.questions).toEqual(before?.questions);
+    expect(after?.responses).toEqual(before?.responses);
+    expect(after?._count).toEqual(before?._count);
+  }, 15000);
 });

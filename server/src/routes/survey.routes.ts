@@ -12,6 +12,7 @@ import {
   createSurvey,
   getSurveyById,
   updateSurvey,
+  updateSurveyMetadata,
   deleteSurvey,
   publishSurvey,
   closeSurvey,
@@ -35,6 +36,7 @@ router.post('/', ...requireOwner, createSurvey);
 router.get('/:id/summary', ...requireOwner, getSurveySummary);
 router.get('/:id', ...requireOwner, getSurveyById);
 router.put('/:id', ...requireOwner, updateSurvey);
+router.patch('/:id/metadata', ...requireOwner, updateSurveyMetadata);
 router.delete('/:id', ...requireOwner, deleteSurvey);
 router.patch('/:id/publish', ...requireOwner, publishSurvey);
 router.patch('/:id/close', ...requireOwner, closeSurvey);

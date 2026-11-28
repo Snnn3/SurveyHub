@@ -289,14 +289,22 @@ export function OwnerSurveysPage() {
                 )}
 
                 {survey.status === 'PUBLISHED' && (
-                  <button
-                    type="button"
-                    disabled={processingId === survey.id}
-                    onClick={() => setConfirmCloseSurvey(survey)}
-                    className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 transition"
-                  >
-                    Close
-                  </button>
+                  <>
+                    <Link
+                      to={`/owner/surveys/${survey.id}/metadata`}
+                      className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-indigo-200 text-indigo-700 hover:bg-indigo-50 transition"
+                    >
+                      Edit details
+                    </Link>
+                    <button
+                      type="button"
+                      disabled={processingId === survey.id}
+                      onClick={() => setConfirmCloseSurvey(survey)}
+                      className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 transition"
+                    >
+                      Close
+                    </button>
+                  </>
                 )}
 
                 <Link

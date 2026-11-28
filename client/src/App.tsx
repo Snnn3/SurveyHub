@@ -5,6 +5,7 @@ import api, { SESSION_EXPIRED_EVENT, getApiErrorMessage } from './api';
 import { LayersIcon } from './components/Icons';
 import { OwnerSurveysPage } from './pages/OwnerSurveysPage';
 import { SurveyEditorPage } from './pages/SurveyEditorPage';
+import { SurveyMetadataPage } from './pages/SurveyMetadataPage';
 import { RespondentSurveysPage } from './pages/RespondentSurveysPage';
 import { SurveyReceiptPage, SurveyTakePage } from './pages/SurveyTakingPage';
 import { SurveySummaryPage } from './pages/SurveySummaryPage';
@@ -350,6 +351,14 @@ export default function App() {
             element={
               <ProtectedRoute user={user} loading={authLoading} allowedRole="SURVEY_OWNER">
                 <SurveyEditorPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/owner/surveys/:id/metadata"
+            element={
+              <ProtectedRoute user={user} loading={authLoading} allowedRole="SURVEY_OWNER">
+                <SurveyMetadataPage />
               </ProtectedRoute>
             }
           />

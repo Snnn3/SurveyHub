@@ -3,13 +3,14 @@
 **System:** SurveyHub — Review, Feedback, and Survey System (Theme 10)
 **Course:** CPE 334 Software Engineering, Semester 1/2026
 **Deliverable:** Project Deliverable 1 — Part A (10 points)
-**Document status:** Baseline v5, aligned with the reviewed draft-lifecycle scope on 6 November 2026
+**Document status:** Baseline v5 with Lab 7 amendment v6 approved and merged by PR #89 on 28 November 2026; all four Lab 7 criteria were implemented and verified on lab-7-staging under PR #91; main release, deployed checks, and report remain pending under Issue #87
 **Team:** Worawut Sereethai (67070501040), Chanon Lhumsa-ard (67070501059)
 **Repository:** <https://github.com/Snnn3/SurveyHub>
 
-> Status note: this document defines requirements and design intent. It does not claim that any
-> requirement has been implemented or tested. Implementation status is recorded only in Part F and
-> only from real execution output.
+> Status note: this document defines requirements and design intent. The Lab 7 F-02 metadata
+> amendment was implemented and tested on lab-7-staging; its execution evidence is recorded under
+> Issue #86. This SRS does not claim main-release or deployed verification, which remains pending
+> under Issue #87. Other verification is commit-specific and recorded in Part F.
 
 ---
 
@@ -154,7 +155,7 @@ Stable IDs are used in Parts B–F. "Sprint" is the planned delivery sprint.
 | **FR-01** | Authentication and logout | A user can log in with email and password, receives a JWT, and can log out. Logout revokes existing tokens for that account. | 1 |
 | **FR-02** | Current user and role | `GET /api/auth/me` returns the authenticated user's id, email, full name and role, and never returns the password hash. | 1 |
 | **FR-03** | Manage survey drafts | A Survey Owner can list and read their surveys, create a survey with a title, optional description and ordered questions, and delete a survey while it is `DRAFT`. A new survey is always `DRAFT`. | 1 |
-| **FR-04** | Author and edit draft questions | A Survey Owner can add, edit, reorder and remove questions and options while the survey is `DRAFT`. | 1 |
+| **FR-04** | Author draft questions and correct published metadata | A Survey Owner can add, edit, reorder and remove questions and options while the survey is DRAFT. For their own PUBLISHED survey, they can update only its title and respondent-facing description through the metadata-only endpoint; question structure remains fixed. Description text is preserved as submitted, limited to 2,000 characters and clearable. | 1 (draft authoring) / Lab 7 (published metadata) |
 | **FR-05** | Publish survey | A Survey Owner can publish their own valid draft. The status becomes `PUBLISHED` and `publishedAt` is recorded. | 1 |
 | **FR-06** | Close survey | A Survey Owner can close their own published survey. The status becomes `CLOSED` and `closedAt` is recorded. | 1 |
 | **FR-07** | Browse published surveys | A Respondent can list published surveys and see whether they have already submitted. | 1 |
@@ -177,10 +178,10 @@ Stable IDs are used in Parts B–F. "Sprint" is the planned delivery sprint.
 | **BR-01** | One response per respondent per survey | A second submission by the same respondent returns `409 DUPLICATE_SUBMISSION`. Exactly one response is stored, including under concurrent requests. Enforced by a service check, a `ResponseClaim` unique constraint and an identified-response unique constraint. | 1 |
 | **BR-02** | Survey state guard | Responses are accepted only while the survey is `PUBLISHED` and, from Sprint 2, before `closesAt`. A `DRAFT` or `CLOSED` survey returns `400 SURVEY_NOT_ACCEPTING_RESPONSES`. | 1 (state) / 2 (scheduled close) |
 | **BR-03** | Answer validation | Every required question must be answered and each answer must use exactly the value shape for its type. Selected options must belong to that question. Short text is trimmed and at most 2,000 characters; long text is trimmed and at most 10,000 characters. Yes/no has exactly one fixed `Yes` or `No` option; Likert has exactly one of five ordered labels; rating is an integer from 1 through 5; integer answers respect any configured minimum and maximum; date answers are calendar dates without a time zone. Invalid input returns `400 INVALID_ANSWER` or `400 MISSING_REQUIRED_QUESTIONS`. Sprint 1 enforces the single-choice and short-text subset. | 1 (subset) / 2 (extensions) |
-| **BR-04** | Survey ownership boundary | Only the owner may read, update, delete, publish, close or summarize a survey. A non-owner receives `403 FORBIDDEN_OWNERSHIP`; an unknown survey id receives `404 NOT_FOUND`. | 1 |
+| **BR-04** | Survey ownership boundary | Only the owner may read, update, delete, publish, close or summarize a survey. The Lab 7 metadata update is owner-only and still requires the SURVEY_OWNER role. A non-owner receives 403 FORBIDDEN_OWNERSHIP; an unknown survey id receives 404 NOT_FOUND. | 1 / Lab 7 |
 | **BR-05** | Cross-response privacy | A respondent may retrieve only their own response receipt. Requesting another respondent's receipt returns `403 FORBIDDEN_CROSS_RESPONSE_ACCESS` without returning any answer data. | 1 |
 | **BR-06** | Publish structure | A survey can be published only if it has at least one question and every prompt is non-empty. Single-choice and multi-choice questions have at least two options; multi-choice selection bounds are valid and do not exceed the option count. Yes/no has the fixed `Yes` and `No` options, Likert has five ordered labels, rating uses the fixed 1–5 scale, and configured integer bounds do not contradict each other. Otherwise `400 INVALID_QUESTION_STRUCTURE`. Sprint 1 enforces the single-choice subset. | 1 (subset) / 2 (extensions) |
-| **BR-07** | Immutable structure after publication | Questions and options cannot be added, edited, reordered or removed after publication. `PUT /api/surveys/:id` returns `400 SURVEY_NOT_EDITABLE`. Metadata edits are also blocked in Sprint 1 for simplicity. | 1 |
+| **BR-07** | Immutable structure with published metadata correction | Questions and options cannot be added, edited, reordered or removed after publication. The existing full-replacement PUT /api/surveys/:id and delete remain blocked. An owner may use PATCH /api/surveys/:id/metadata on a PUBLISHED survey to update only title and optional description. The strict request schema rejects question, option, mode, ownership and lifecycle fields as 400 VALIDATION_ERROR without saving any part of the request. DRAFT full editing remains unchanged; CLOSED surveys remain locked with 400 SURVEY_NOT_EDITABLE. | 1 (structure lock) / Lab 7 (metadata correction) |
 | **BR-08** | Response eligibility | Only authenticated users with the `RESPONDENT` role may submit. From Sprint 2, if a survey has eligibility entries, the respondent must be on the list; otherwise `403 NOT_ELIGIBLE`. In Sprint 1 an empty eligibility list means all respondents are eligible. | 1 (role) / 2 (allowlist) |
 | **BR-09** | Terminal closed state | `CLOSED` is terminal. Publishing a published or closed survey, or closing a draft or closed survey, returns `400 INVALID_STATE_TRANSITION`. | 1 |
 | **BR-10** | Anonymous identity separation | In anonymous mode, `SurveyResponse.respondentId` is `NULL`; no name, email, IP address or user agent is stored with the response; the `ResponseClaim` row records only that the user submitted, not which response is theirs. Owners see aggregates and unlinked text only. | 2 |
@@ -332,7 +333,7 @@ The course handouts disagree: the group specification and Final Delivery section
 |---|---|---|
 | Q1 | How do we prevent two simultaneous submissions from the same respondent? | Service pre-check plus `ResponseClaim` unique constraint plus identified-response unique constraint. Catch `P2002` and return `409`. Tested with concurrent requests. |
 | Q2 | Who may read raw answers? | The owner of the survey, for their own identified survey, from Sprint 3. Respondents see only their own receipt. Anonymous surveys never expose identity. Sprint 1 exposes aggregates and unlinked text only. |
-| Q3 | What happens if an owner edits questions after publication? | Rejected with `400 SURVEY_NOT_EDITABLE`. Metadata edits are also blocked in Sprint 1 to keep the published contract stable. |
+| Q3 | What happens if an owner edits a survey after publication? | Question and option changes, full replacement and deletion remain rejected with 400 SURVEY_NOT_EDITABLE. Under the approved Lab 7 amendment v6, the owner may correct only title and optional description through PATCH /api/surveys/:id/metadata while status is PUBLISHED. Description text is preserved as submitted and limited to 2,000 characters. CLOSED remains locked. |
 | Q4 | How is logout made real with stateless JWT? | `User.tokenVersion` is embedded in the token and checked on every request. Logout increments it. Old tokens return `401 TOKEN_REVOKED`. |
 | Q5 | Who is eligible in Sprint 1? | Every authenticated `RESPONDENT`. The `SurveyEligibility` table is present but empty, which means "open to all respondents". Sprint 2 adds allowlist management. |
 | Q6 | Does anonymous mode need cryptography? | No. It needs separation: the response row has no user link, the claim row has no response link, and no request metadata is stored. Residual risk: a database administrator could correlate timestamps. That risk is documented rather than overclaimed. |
@@ -351,3 +352,10 @@ The course handouts disagree: the group specification and Final Delivery section
 - The verification plan and evidence-collection procedure are in **Part F**.
 - No requirement in this SRS is marked complete until the corresponding test has run against the
   submitted commit and the result is recorded in Part F.
+
+## 10. Amendment history
+
+| Version | Date | Change | Status |
+|---|---|---|---|
+| v5 | 6 Nov 2026 | Accepted SRS baseline for the Sprint 1 lifecycle, including the original rule that published metadata could not be edited | Baseline |
+| v6 | 28 Nov 2026 | Issue #85 defines owner-only title and description edits for a published survey while keeping its question structure and response history unchanged | Accepted by Snnn3 and merged by PR #89 before Issue #86 implementation; implemented and tested on lab-7-staging. Main-release and deployed checks remain pending under Issue #87. |

@@ -1,0 +1,120 @@
+
+> surveyhub-server@0.1.0 test
+> jest --runInBand --detectOpenHandles --forceExit --runTestsByPath tests/survey-lifecycle.test.ts -t STS-LAB7-
+
+FAIL tests/survey-lifecycle.test.ts (5.693 s)
+  F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11)
+    ✕ STS-LAB7-01: owner edits PUBLISHED metadata at the title limit without changing saved responses (774 ms)
+    ✕ STS-LAB7-02: validates metadata boundaries, preserves padded descriptions, and supports partial updates (464 ms)
+    ✕ STS-LAB7-03: rejects structural and lifecycle fields atomically (512 ms)
+    ✕ STS-LAB7-04: enforces owner role and PUBLISHED state for metadata edits (430 ms)
+    ✕ STS-LAB7-05: serializes a published metadata update with a concurrent close (536 ms)
+    ○ skipped STS-F02-01: AC-F02-01 GET /api/surveys returns only the authenticated owner surveys with counts
+    ○ skipped STS-F02-02: AC-F02-02 POST /api/surveys creates a DRAFT with ordered questions and options
+    ○ skipped STS-F02-03: AC-F02-03 GET /api/surveys/:id returns the owner full survey detail with ordered items
+    ○ skipped STS-F02-04: AC-F02-04 PUT /api/surveys/:id updates a draft title, description, and replaces questions atomically
+    ○ skipped STS-F02-05: AC-F02-05 DELETE /api/surveys/:id deletes draft and cascades questions and options
+    ○ skipped STS-F02-06: AC-F02-06 PATCH /api/surveys/:id/publish publishes a valid draft and sets publishedAt
+    ○ skipped STS-F02-07: AC-F02-07 PATCH /api/surveys/:id/publish rejects invalid structure and leaves status DRAFT
+    ○ skipped STS-F02-08: AC-F02-08 PATCH /api/surveys/:id/close closes a published survey and sets closedAt
+    ○ skipped STS-F02-09: AC-F02-09 Non-owner gets 403 FORBIDDEN_OWNERSHIP for GET, PUT, DELETE, publish, close
+    ○ skipped STS-F02-10: AC-F02-10 Updating or deleting a published or closed survey returns 400 SURVEY_NOT_EDITABLE
+    ○ skipped STS-F02-11: AC-F02-11 Invalid state transitions return 400 INVALID_STATE_TRANSITION
+    ○ skipped rejects access from respondents with 403 FORBIDDEN_ROLE
+    ○ skipped returns 404 NOT_FOUND for non-existent survey ID or malformed UUID
+    ○ skipped rejects duplicate option labels with 400 VALIDATION_ERROR
+    ○ skipped rejects Sprint 2 question types with 400 VALIDATION_ERROR in Sprint 1
+    ○ skipped rejects SHORT_TEXT questions with options with 400 VALIDATION_ERROR
+    ○ skipped rejects SINGLE_CHOICE questions with more than 20 options with 400 VALIDATION_ERROR
+    ○ skipped handles concurrent PUT and PATCH publish requests atomically
+
+  ● F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11) › STS-LAB7-01: owner edits PUBLISHED metadata at the title limit without changing saved responses
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 404
+
+      939 |       .send({ title: updatedTitle, description: paddedDescription });
+      940 |
+    > 941 |     expect(updateRes.status).toBe(200);
+          |                              ^
+      942 |     expect(updateRes.body.data.title).toBe(updatedTitle);
+      943 |     expect(updateRes.body.data.description).toBe(paddedDescription);
+      944 |     expect(await readSnapshot()).toEqual(before);
+
+      at Object.<anonymous> (tests/survey-lifecycle.test.ts:941:30)
+
+  ● F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11) › STS-LAB7-02: validates metadata boundaries, preserves padded descriptions, and supports partial updates
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 404
+
+      972 |
+      973 |     const titleOnly = await patch({ title: '  Title only  ' });
+    > 974 |     expect(titleOnly.status).toBe(200);
+          |                              ^
+      975 |     expect(titleOnly.body.data.title).toBe('Title only');
+      976 |     expect(titleOnly.body.data.description).toBe('Initial description');
+      977 |
+
+      at Object.<anonymous> (tests/survey-lifecycle.test.ts:974:30)
+
+  ● F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11) › STS-LAB7-03: rejects structural and lifecycle fields atomically
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 400
+    Received: 404
+
+      1039 |         .set('Authorization', `Bearer ${ownerAToken}`)
+      1040 |         .send({ title: 'Must not save', [field]: value });
+    > 1041 |       expect(invalid.status).toBe(400);
+           |                              ^
+      1042 |       expect(invalid.body.error.code).toBe('VALIDATION_ERROR');
+      1043 |       expect(await captureSurveySnapshot(survey.id)).toEqual(before);
+      1044 |     }
+
+      at Object.<anonymous> (tests/survey-lifecycle.test.ts:1041:30)
+
+  ● F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11) › STS-LAB7-04: enforces owner role and PUBLISHED state for metadata edits
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 403
+    Received: 404
+
+      1052 |       .set('Authorization', `Bearer ${ownerBToken}`)
+      1053 |       .send({ title: 'Other owner must not save' });
+    > 1054 |     expect(otherOwner.status).toBe(403);
+           |                               ^
+      1055 |     expect(otherOwner.body.error.code).toBe('FORBIDDEN_OWNERSHIP');
+      1056 |
+      1057 |     const respondent = await request(app)
+
+      at Object.<anonymous> (tests/survey-lifecycle.test.ts:1054:31)
+
+  ● F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11) › STS-LAB7-05: serializes a published metadata update with a concurrent close
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected value: 404
+    Received array: [200, 400]
+
+      1097 |
+      1098 |     expect(closeRes.status).toBe(200);
+    > 1099 |     expect([200, 400]).toContain(metadataRes.status);
+           |                        ^
+      1100 |     const finalSurvey = await prisma.survey.findUnique({ where: { id: survey.id } });
+      1101 |     expect(finalSurvey?.status).toBe(SurveyStatus.CLOSED);
+      1102 |     expect(finalSurvey?.closedAt).not.toBeNull();
+
+      at Object.<anonymous> (tests/survey-lifecycle.test.ts:1099:24)
+
+Test Suites: 1 failed, 1 total
+Tests:       5 failed, 18 skipped, 23 total
+Snapshots:   0 total
+Time:        5.81 s, estimated 7 s
+Ran all test suites within paths "tests/survey-lifecycle.test.ts".
