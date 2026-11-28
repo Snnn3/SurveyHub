@@ -3,12 +3,12 @@
 > jest --runInBand --detectOpenHandles --forceExit
 
   console.log
-    prisma:error 
+    prisma:error
     Invalid `tx.responseClaim.create()` invocation in
     /private/tmp/surveyhub-issue86/server/src/services/response.service.ts:162:30
-    
+
       159 const answers = normalizeAnswers(survey.questions, input.answers);
-      160 
+      160
       161 try {
     → 162   await tx.responseClaim.create(
     Unique constraint failed on the fields: (`survey_id`,`user_id`)
@@ -16,12 +16,12 @@
       at Object.zc (../node_modules/@prisma/internals/src/logger.ts:13:11)
 
   console.log
-    prisma:error 
+    prisma:error
     Invalid `tx.responseClaim.create()` invocation in
     /private/tmp/surveyhub-issue86/server/src/services/response.service.ts:162:30
-    
+
       159 const answers = normalizeAnswers(survey.questions, input.answers);
-      160 
+      160
       161 try {
     → 162   await tx.responseClaim.create(
     Unique constraint failed on the fields: (`survey_id`,`user_id`)
