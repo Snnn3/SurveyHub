@@ -28,11 +28,11 @@
 
 | Stage | Source SHA | Command / test IDs | Result |
 |---|---|---|---|
-| RED on pre-change behavior | `f1e6e7ce15d36ce944e5edae9e2ffe161750e68c` | Pending execution | Pending |
+| RED on pre-change behavior | `f1e6e7ce15d36ce944e5edae9e2ffe161750e68c` (application code); tests were added after docs commit `d26326c6b0190e20641a7429939296b8eda00def` | `npm test --prefix server -- --runTestsByPath tests/survey-lifecycle.test.ts -t 'STS-LAB7-'`; STS-LAB7-01..05 | **RED**, as expected: 1 suite failed; 5 failed, 18 skipped. All five new metadata cases received 404 because the route did not exist. Raw output: [issue-86-red-all.txt](evidence/issue-86-red-all.txt). |
 | GREEN after implementation | Pending | Pending | Pending |
 | Adjacent regression | Pending | Pending | Pending |
 | UI E2E | Pending | Pending | Pending |
 | Client/server build and type checks | Pending | Pending | Pending |
 
-Raw test output, actual pass/fail/skip counts, and implementation/test SHAs will be added after
-execution. No result is claimed by this plan.
+GREEN, regression, E2E, and build results will be added after execution. No result is claimed before
+its command has run.
