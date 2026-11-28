@@ -69,9 +69,13 @@ async function captureSurveySnapshot(surveyId: string) {
   return prisma.survey.findUnique({
     where: { id: surveyId },
     select: {
+      ownerId: true,
+      mode: true,
       title: true,
       description: true,
       status: true,
+      createdAt: true,
+      updatedAt: true,
       publishedAt: true,
       closesAt: true,
       closedAt: true,
@@ -101,7 +105,10 @@ async function captureSurveySnapshot(surveyId: string) {
               id: true,
               questionId: true,
               textValue: true,
-              selectedOptions: { select: { id: true, optionId: true } },
+              selectedOptions: {
+                orderBy: { id: 'asc' },
+                select: { id: true, optionId: true },
+              },
             },
           },
         },
@@ -892,7 +899,10 @@ describe('F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11)', () =>
     const readSnapshot = async () => prisma.survey.findUnique({
       where: { id: survey.id },
       select: {
+        ownerId: true,
+        mode: true,
         status: true,
+        createdAt: true,
         publishedAt: true,
         closesAt: true,
         closedAt: true,
@@ -922,7 +932,10 @@ describe('F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11)', () =>
                 id: true,
                 questionId: true,
                 textValue: true,
-                selectedOptions: { select: { id: true, optionId: true } },
+                selectedOptions: {
+                  orderBy: { id: 'asc' },
+                  select: { id: true, optionId: true },
+                },
               },
             },
           },
@@ -1046,6 +1059,7 @@ describe('F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11)', () =>
 
   it('STS-LAB7-04: enforces owner role and PUBLISHED state for metadata edits', async () => {
     const published = await createPublishedMetadataSurvey(ownerAId);
+    const publishedBefore = await captureSurveySnapshot(published.id);
 
     const otherOwner = await request(app)
       .patch(`/api/surveys/${published.id}/metadata`)
@@ -1053,6 +1067,7 @@ describe('F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11)', () =>
       .send({ title: 'Other owner must not save' });
     expect(otherOwner.status).toBe(403);
     expect(otherOwner.body.error.code).toBe('FORBIDDEN_OWNERSHIP');
+    expect(await captureSurveySnapshot(published.id)).toEqual(publishedBefore);
 
     const respondent = await request(app)
       .patch(`/api/surveys/${published.id}/metadata`)
@@ -1060,27 +1075,32 @@ describe('F-02 Survey Lifecycle and Authoring (STS-F02-01 to STS-F02-11)', () =>
       .send({ title: 'Respondent must not save' });
     expect(respondent.status).toBe(403);
     expect(respondent.body.error.code).toBe('FORBIDDEN_ROLE');
+    expect(await captureSurveySnapshot(published.id)).toEqual(publishedBefore);
 
     const draft = await prisma.survey.create({
       data: { title: 'Draft metadata fixture', ownerId: ownerAId, status: SurveyStatus.DRAFT },
     });
+    const draftBefore = await captureSurveySnapshot(draft.id);
     const draftPatch = await request(app)
       .patch(`/api/surveys/${draft.id}/metadata`)
       .set('Authorization', `Bearer ${ownerAToken}`)
       .send({ title: 'Draft must stay locked for metadata endpoint' });
     expect(draftPatch.status).toBe(400);
     expect(draftPatch.body.error.code).toBe('SURVEY_NOT_EDITABLE');
+    expect(await captureSurveySnapshot(draft.id)).toEqual(draftBefore);
 
     const closeRes = await request(app)
       .patch(`/api/surveys/${published.id}/close`)
       .set('Authorization', `Bearer ${ownerAToken}`);
     expect(closeRes.status).toBe(200);
+    const closedBefore = await captureSurveySnapshot(published.id);
     const closedPatch = await request(app)
       .patch(`/api/surveys/${published.id}/metadata`)
       .set('Authorization', `Bearer ${ownerAToken}`)
       .send({ title: 'Closed must stay locked' });
     expect(closedPatch.status).toBe(400);
     expect(closedPatch.body.error.code).toBe('SURVEY_NOT_EDITABLE');
+    expect(await captureSurveySnapshot(published.id)).toEqual(closedBefore);
   });
 
   it('STS-LAB7-05: serializes a published metadata update with a concurrent close', async () => {

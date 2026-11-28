@@ -54,11 +54,27 @@ export const surveyInputSchema = z
   })
   .strict();
 
+export const surveyMetadataInputSchema = z
+  .object({
+    title: z.string().trim().min(1, 'Title is required').max(120, 'Title must be at most 120 characters').optional(),
+    description: z.string().max(2000, 'Description must be at most 2,000 characters').optional().nullable(),
+  })
+  .strict()
+  .refine((metadata) => metadata.title !== undefined || metadata.description !== undefined, {
+    message: 'Provide a title or description to update.',
+  });
+
 export type SurveyInput = z.infer<typeof surveyInputSchema>;
+export type SurveyMetadataInput = z.infer<typeof surveyMetadataInputSchema>;
 
 export function parseSurveyInput(body: unknown) {
   const normalized = body && typeof body === 'object' && !Array.isArray(body) ? body : {};
   return surveyInputSchema.safeParse(normalized);
+}
+
+export function parseSurveyMetadataInput(body: unknown) {
+  const normalized = body && typeof body === 'object' && !Array.isArray(body) ? body : {};
+  return surveyMetadataInputSchema.safeParse(normalized);
 }
 
 export interface OptionValidationInput {

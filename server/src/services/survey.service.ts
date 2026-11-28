@@ -4,6 +4,7 @@ import { HttpError, NotFoundError } from '../utils/errors';
 import { parseUuid } from '../utils/uuid';
 import {
   validateSurveyStructure,
+  type SurveyMetadataInput,
   type SurveyInput,
 } from '../validators/survey.validator';
 
@@ -167,6 +168,34 @@ export async function updateSurvey(surveyId: string, ownerId: string, input: Sur
           create: mapQuestionsToCreate(questions || []),
         },
       },
+      include: surveyDetailInclude,
+    });
+  });
+}
+
+export async function updateSurveyMetadata(
+  surveyId: string,
+  ownerId: string,
+  input: SurveyMetadataInput
+) {
+  return prisma.$transaction(async (tx) => {
+    // Serialize with close and recheck owner/status after acquiring the write lock.
+    await tx.$queryRaw`SELECT id FROM surveys WHERE id = ${surveyId} FOR UPDATE`;
+
+    const existing = await getAuthorizedSurvey(surveyId, ownerId, false, tx);
+    if (existing.status !== SurveyStatus.PUBLISHED) {
+      throw new HttpError(400, 'SURVEY_NOT_EDITABLE', 'Only published surveys can update metadata.');
+    }
+
+    const data: Prisma.SurveyUpdateInput = {};
+    if (input.title !== undefined) data.title = input.title;
+    if (input.description !== undefined) {
+      data.description = input.description === '' ? null : input.description;
+    }
+
+    return tx.survey.update({
+      where: { id: existing.id },
+      data,
       include: surveyDetailInclude,
     });
   });

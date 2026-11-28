@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { HttpError } from '../utils/errors';
 import { getValidUuid } from '../utils/uuid';
 import { formatZodDetails } from '../validators/validation';
-import { parseSurveyInput } from '../validators/survey.validator';
+import { parseSurveyInput, parseSurveyMetadataInput } from '../validators/survey.validator';
 import * as surveyService from '../services/survey.service';
 
 export async function listOwnerSurveys(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -74,6 +74,30 @@ export async function updateSurvey(req: Request, res: Response, next: NextFuncti
     // Service-level domain validation (verifying DRAFT status) runs inside the transaction
     // in updateSurvey after shape validation, adhering to SDS §4.5 & §1.3.
     const updated = await surveyService.updateSurvey(surveyId, ownerId, parsed.data);
+    res.status(200).json({ success: true, data: updated });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateSurveyMetadata(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const surveyId = getValidUuid(req.params.id, 'Survey');
+    const parsed = parseSurveyMetadataInput(req.body);
+    if (!parsed.success) {
+      next(
+        new HttpError(
+          400,
+          'VALIDATION_ERROR',
+          'Invalid survey metadata.',
+          formatZodDetails(parsed.error)
+        )
+      );
+      return;
+    }
+
+    const ownerId = req.auth!.id;
+    const updated = await surveyService.updateSurveyMetadata(surveyId, ownerId, parsed.data);
     res.status(200).json({ success: true, data: updated });
   } catch (error) {
     next(error);
